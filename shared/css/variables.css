@@ -1,0 +1,79 @@
+/* Aromin-Sison Dental Clinic: shared brand tokens
+   Used by: public-website, admin-system, patient-dashboard, auth
+   IMPORTANT: every frontend must use these exact variable names. */
+
+:root{
+  /* ---- Brand colors (unchanged: do not alter hex values) ---- */
+  --ink:#1B1B19;
+  --dark:#1C1C1A;
+  --dark-deep:#111110;
+  --ivory:#FAFAF7;
+  --ivory-2:#F1EDE3;
+  --gold:#9C8B3E;
+  --gold-soft:#C7B876;
+  --powder:#B7C4CC;
+  --line: rgba(27,27,25,0.14);
+  --line-light: rgba(250,250,247,0.22);
+
+  /* Status colors: used by tag-green/amber/red, trend indicators, badges
+     across admin-system and patient-dashboard. Single source of truth. */
+  --green:#5C7A5C;
+  --amber:#C7913E;
+  --red:#B4543F;
+  --white:#FFFFFF;
+
+  /* ---- Elevation ---- */
+  --shadow-xs: 0 1px 2px rgba(17,17,16,0.05);
+  --shadow-sm: 0 2px 8px rgba(17,17,16,0.06);
+  --shadow-md: 0 8px 24px rgba(17,17,16,0.08);
+  --shadow-lg: 0 20px 48px rgba(17,17,16,0.14);
+  --shadow-gold: 0 8px 22px rgba(156,139,62,0.22);
+
+  /* ---- Radius scale ---- */
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 16px;
+  --r-xl: 22px;
+  --r-pill: 999px;
+
+  /* ---- Motion ---- */
+  --ease: cubic-bezier(.4,0,.2,1);
+
+  /* ---- Typography ----
+     Single source of truth for the UI font stack (San Francisco on
+     Apple devices, Segoe UI on Windows, Roboto on Android). Keeps every
+     frontend on the same native system font: the iOS-style base layer. */
+  --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+
+  /* ---- Interaction polish (additive: existing tokens unchanged) ---- */
+  --shadow-hover: 0 10px 28px rgba(17,17,16,0.10);
+  --ring-gold: 0 0 0 3px rgba(156,139,62,0.18);
+  --ring-soft: 0 0 0 3px rgba(156,139,62,0.10);
+
+  /* ---- Glass surfaces (additive: Apple-inspired frosted materials) ----
+     Used by admin-system and patient-dashboard for the topbar, sidebar,
+     floating cards, icon controls, and modals. Each frontend defines a
+     solid fallback for browsers without backdrop-filter support. */
+  --glass-bar: rgba(250,250,247,0.72);
+  --glass-card: rgba(255,255,255,0.66);
+  --glass-solid: rgba(255,255,255,0.94);
+  --glass-modal: rgba(255,255,255,0.68);
+  --glass-rail: rgba(28,28,26,0.76);
+  --glass-border: rgba(27,27,25,0.08);
+  --glass-border-light: rgba(250,250,247,0.12);
+  --glass-blur: saturate(160%) blur(20px);
+  --glass-blur-strong: saturate(180%) blur(28px);
+  --glass-shadow: 0 1px 2px rgba(17,17,16,0.04), 0 10px 28px rgba(17,17,16,0.06);
+
+  /* ---- Accessible text variants (additive) ----
+     --gold-text: darker tone of the brand gold for small labels on light
+     surfaces (eyebrows, links, meta text). Brand gold passes AA for large
+     text; small text needs this darker tone.
+     --*-text: status colors darkened for small text/tag chips on light
+     surfaces (the full-strength tones pass for large text and dots). */
+  --gold-text:#7A6B2E;
+  --green-text:#4F6A4F;
+  --amber-text:#8A642A;
+  --red-text:#9C4634;
+  --focus-ring-strong: 0 0 0 3px rgba(156,139,62,0.5);
+}

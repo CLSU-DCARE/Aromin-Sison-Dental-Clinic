@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Admin Dashboard | Aromin-Sison Dental Clinic</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;1,9..144,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<link rel="stylesheet" href="../shared/css/variables.css?v=4">
+<link rel="stylesheet" href="../shared/css/buttons.css?v=5">
+<link rel="stylesheet" href="../shared/css/panels.css?v=2">
+<link rel="stylesheet" href="assets/css/admin.css?v=12">
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ===== SIDEBAR ===== -->
+  <aside class="sidebar" id="sidebar">
+    <div class="side-brand">
+      <img src="../shared/images/asdc logo.png" alt="Aromin-Sison Dental Clinic">
+      <div class="txt">Aromin-Sison<br>Admin Portal</div>
+      <button class="sidebar-close" id="sidebarClose" aria-label="Close menu">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+
+    <nav class="side-nav" aria-label="Main">
+      <div class="nav-group-label">Overview</div>
+      <button class="nav-item active" data-view="dashboard" data-tooltip="Dashboard" aria-current="page">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+        <span class="nav-label">Dashboard</span>
+      </button>
+
+      <div class="nav-group-label">Patients</div>
+      <button class="nav-item" data-view="patients" data-tooltip="Patients">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <span class="nav-label">Patient Management</span>
+      </button>
+      <button class="nav-item" data-view="records" data-tooltip="Records &amp; Protocols">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>
+        <span class="nav-label">Records &amp; Protocols</span>
+      </button>
+
+      <div class="nav-group-label">Scheduling</div>
+      <button class="nav-item" data-view="appointments" data-tooltip="Appointments">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        <span class="nav-label">Appointment Scheduling</span>
+      </button>
+      <button class="nav-item" data-view="braces" data-tooltip="Braces Contracts">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6"/><path d="M22 11h-6"/></svg>
+        <span class="nav-label">Braces Contracts</span>
+      </button>
+
+      <div class="nav-group-label">Marketing</div>
+      <button class="nav-item" data-view="promotions" data-tooltip="Promotions">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7"/><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4"/></svg>
+        <span class="nav-label">Promotions</span>
+      </button>
+
+      <div class="nav-group-label">Operations</div>
+      <button class="nav-item" data-view="payments" data-tooltip="Payment Approvals">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg>
+        <span class="nav-label">Payment Approvals</span>
+      </button>
+      <button class="nav-item" data-view="reports" data-tooltip="Reports">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        <span class="nav-label">Attendance Reports</span>
+      </button>
+      <button class="nav-item" data-view="inventory" data-tooltip="Inventory">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+        <span class="nav-label">Inventory</span>
+      </button>
+    </nav>
+
+    <div class="side-foot">
+      <div class="avatar-sm" id="sideFootAvatar">DS</div>
+      <div>
+        <div class="name" id="sideFootName">Dr. Kathrine Sison</div>
+        <div class="role" id="sideFootRole">Lead Dentist</div>
+      </div>
+      <button class="logout-link" id="logoutBtn" aria-label="Log out" title="Log out">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      </button>
+    </div>
+  </aside>
+
+  <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+  <!-- ===== MAIN ===== -->
+  <div class="main">
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle menu" aria-expanded="false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+        <div class="topbar-title">
+          <div class="crumb" id="viewCrumb">Overview</div>
+          <h1 id="viewTitle">Dashboard</h1>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <div class="search-box">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="search" id="patientSearch" placeholder="Search patients…" aria-label="Search patients">
+          <button type="button" class="search-clear" id="searchClear" aria-label="Clear search" hidden>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+        <button class="icon-btn" id="searchBtn" aria-label="Search patients" aria-haspopup="true" aria-expanded="false" title="Search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        </button>
+        <a href="../public-website/index.html" class="btn btn-secondary btn-sm">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+          View Public Site
+        </a>
+        <button class="icon-btn" id="fullscreenToggle" aria-label="Toggle fullscreen">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+        </button>
+        <button class="icon-btn" id="notifBtn" aria-label="Notifications" aria-haspopup="true" aria-expanded="false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          <span class="badge-count" id="notifBadge" hidden></span>
+        </button>
+        <button type="button" class="user-chip" id="userChip" title="Dr. Kathrine Sison: Lead Dentist" aria-haspopup="menu" aria-expanded="false" aria-label="Account menu">
+          <div class="avatar-sm" id="chipAvatar">DS</div>
+        </button>
+      </div>
+    </header>
+
+    <main class="content">
+
+      <!-- ===== DASHBOARD ===== -->
+      <section class="view active" id="view-dashboard">
+        <div class="page-head">
+          <div>
+            <div class="eyebrow" id="greetingText">Good morning, Dr. Kathrine Sison</div>
+            <p>Here's how the clinic is looking today.</p>
+          </div>
+          <a href="#" class="btn btn-gold" onclick="switchView('appointments');return false;">New Appointment</a>
+        </div>
+
+        <div class="stat-grid" id="dashStats"></div>
+
+        <div class="grid-2">
+          <div class="panel">
+            <div class="panel-head">
+              <h3>This Week: Schedule</h3>
+              <span class="tag tag-amber">Aug 10 – 15</span>
+            </div>
+            <div class="week-scroll">
+              <div class="week-grid" id="dashWeekGrid"></div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-head">
+              <h3>Today's Queue</h3>
+              <span class="tag tag-green">2 in clinic</span>
+            </div>
+            <div class="table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Patient</th>
+                    <th>Time</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="dashQueueBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== PATIENTS ===== -->
+      <section class="view" id="view-patients">
+        <div class="page-head">
+          <div>
+            <div class="eyebrow">Patients</div>
+            <p>Orthodontic patients with a current braces contract.</p>
+          </div>
+          <button class="btn btn-gold" id="addPatientBtn">+ Add Patient</button>
+        </div>
+
+        <div class="panel">
+          <div class="toolbar">
+            <div class="toolbar-left" role="group" aria-label="Filter patients">
+              <button class="filter-chip active" aria-pressed="true">All</button>
+              <button class="filter-chip" aria-pressed="false">Current</button>
+              <button class="filter-chip" aria-pressed="false">Overdue</button>
+            </div>
+            <button class="btn btn-outline btn-sm" id="exportPatientsBtn">Export</button>
+          </div>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>Patient</th>
+                  <th>Contact</th>
+                  <th>Last Visit</th>
+                  <th>Contract Balance</th>
+                  <th>Status</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="patientsBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== RECORDS & PROTOCOLS ===== -->
+      <section class="view" id="view-records">
+        <div class="page-head">
+          <div>
+            <div class="eyebrow">Records</div>
+            <p>Treatment history for patients with a current braces contract.</p>
+          </div>
+          <button class="btn btn-outline btn-sm" id="archiveRecordsBtn">Archive</button>
+        </div>
+        <div class="panel">
+          <div class="toolbar">
+            <div class="toolbar-left" role="group" aria-label="Filter records">
+              <button class="filter-chip active" aria-pressed="true">All</button>
+              <button class="filter-chip" aria-pressed="false">Treatments</button>
+              <button class="filter-chip" aria-pressed="false">Protocols</button>
+              <button class="filter-chip" aria-pressed="false">Lab work</button>
+            </div>
+            <button class="btn btn-gold btn-sm" id="addRecordBtn">+ New Record</button>
+          </div>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th class="check-cell"><input type="checkbox" id="selectAllRecords" aria-label="Select all records"></th>
+                  <th>Patient</th>
+                  <th>Procedure</th>
+                  <th>Date</th>
+                  <th>Dentist</th>
+                  <th>Status</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="recordsBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== APPOINTMENT SCHEDULING ===== -->
+      <section class="view" id="view-appointments">
+        <div class="page-head">
+          <div>
+            <div class="eyebrow">Scheduling</div>
+            <p>Book, move, and confirm appointments.</p>
+          </div>
+          <button class="btn btn-gold" id="addApptBtn">+ Book Appointment</button>
+        </div>
+        <div class="panel">
+          <div class="toolbar">
+            <div class="toolbar-left" role="group" aria-label="Filter schedule">
+              <button class="filter-chip active" aria-pressed="true">Week</button>
+              <button class="filter-chip" aria-pressed="false">Day</button>
+              <button class="filter-chip" aria-pressed="false">List</button>
+            </div>
+            <span class="tag tag-amber" id="apptModeTag">Aug 10 – 15, 2026</span>
+          </div>
+          <div class="week-scroll">
+            <div class="week-grid" id="apptWeekGrid"></div>
+          </div>
+          <div class="table-scroll" id="apptListView" hidden>
+            <table>
+              <thead>
+                <tr>
+                  <th>Day</th>
+                  <th>Time</th>
+                  <th>Patient</th>
+                  <th>Service</th>
+                </tr>
+              </thead>
+              <tbody id="apptListBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== BRACES CONTRACTS ===== -->
+      <section class="view" id="view-braces">
+        <div class="page-head">
+          <div>
+            <div class="eyebrow">Contracts</div>
+            <p>Monthly payment schedules for orthodontic plans.</p>
+          </div>
+          <button class="btn btn-gold" id="addContractBtn">+ New Contract</button>
+        </div>
+        <div class="panel">
+          <div class="toolbar">
+            <div class="toolbar-left" role="group" aria-label="Filter contracts">
+              <button class="filter-chip active" aria-pressed="true">All</button>
+              <button class="filter-chip" aria-pressed="false">Current</button>
+              <button class="filter-chip" aria-pressed="false">Completed</button>
+              <button class="filter-chip" aria-pressed="false">Overdue</button>
+            </div>
+            <button class="btn btn-outline btn-sm" id="exportBracesBtn">Export</button>
+          </div>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>Patient</th>
+                  <th>Plan</th>
+                  <th>Monthly</th>
+                  <th>Paid</th>
+                  <th>Balance</th>
+                  <th>Status</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="bracesBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== PROMOTIONS ===== -->
+      <section class="view" id="view-promotions">
+        <div class="page-head">
+          <div>
+            <div class="eyebrow">Marketing</div>
+            <p>Live campaigns and featured offers.</p>
+          </div>
+          <button class="btn btn-gold" id="addPromoBtn">+ New Promotion</button>
+        </div>
+        <div class="promo-grid" id="promoGrid"></div>
+      </section>
+
+      <!-- ===== PAYMENT APPROVALS ===== -->
+      <section class="view" id="view-payments">
+        <div class="page-head">
+          <div>
+            <div class="eyebrow">Operations</div>
+            <p>Receipts submitted by patients wait here for confirmation before the payment is approved.</p>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="toolbar">
+            <div class="toolbar-left" role="group" aria-label="Filter payments">
+              <button class="filter-chip active" aria-pressed="true">Pending</button>
+              <button class="filter-chip" aria-pressed="false">Approved</button>
+              <button class="filter-chip" aria-pressed="false">Rejected</button>
+              <button class="filter-chip" aria-pressed="false">All</button>
+            </div>
+            <span class="tag tag-amber" id="payQueueCount" hidden></span>
+          </div>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>Patient</th>
+                  <th>Amount</th>
+                  <th>Method</th>
+                  <th>Submitted</th>
+                  <th>Receipt</th>
+                  <th>Status</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="adminPaymentsBody"></tbody>
+            </table>
+          </div>
+          <p class="pay-admin-empty" id="payAdminEmpty" hidden>No payment submissions here yet.</p>
+        </div>
+      </section>
+
+      <!-- ===== ATTENDANCE REPORTS ===== -->
+      <section class="view" id="view-reports">
+        <div class="page-head">
+          <div>
+            <div class="eyebrow">Operations</div>
+            <p>Staff attendance and clinic activity this week.</p>
+          </div>
+          <div class="toolbar-left" role="group" aria-label="Report period">
+            <button class="filter-chip active" aria-pressed="true">This week</button>
+            <button class="filter-chip" aria-pressed="false">Last week</button>
+            <button class="filter-chip" aria-pressed="false">This month</button>
+          </div>
+        </div>
+
+        <div class="stat-grid stat-grid-3" id="reportStats"></div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <h3 id="reportHeading">Attendance: This Week</h3>
+            <span class="tag tag-green">5 staff</span>
+          </div>
+          <div class="bar-chart" id="reportBars"></div>
+        </div>
+      </section>
+
+      <!-- ===== INVENTORY ===== -->
+      <section class="view" id="view-inventory">
+        <div class="page-head">
+          <div>
+            <div class="eyebrow">Operations</div>
+            <p>Supplies, stock levels, and reorder points.</p>
+          </div>
+          <button class="btn btn-gold" id="addInventoryBtn">+ Add Item</button>
+        </div>
+        <div class="panel">
+          <div class="toolbar">
+            <div class="toolbar-left" role="group" aria-label="Filter inventory">
+              <button class="filter-chip active" aria-pressed="true">All</button>
+              <button class="filter-chip" aria-pressed="false">Low stock</button>
+              <button class="filter-chip" aria-pressed="false">Consumables</button>
+              <button class="filter-chip" aria-pressed="false">Equipment</button>
+            </div>
+            <button class="btn btn-outline btn-sm" id="exportInventoryBtn">Export</button>
+          </div>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>Item</th>
+                  <th>Category</th>
+                  <th>Stock</th>
+                  <th>Level</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="inventoryBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<!-- ===== CONFIRM LOGOUT MODAL ===== -->
+<div class="modal-overlay" id="logoutModal" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="logoutTitle">
+    <button class="modal-close" id="logoutModalClose" aria-label="Close">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <div class="modal-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+    </div>
+    <h3 id="logoutTitle">Log out of the clinic?</h3>
+    <p>You'll need to sign back in to manage schedules, patients, and records.</p>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="logoutCancelBtn">Cancel</button>
+      <button class="btn btn-danger" id="logoutConfirmBtn">Log Out</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== RECEIPT REVIEW MODAL ===== -->
+<div class="modal-overlay" id="receiptModal" hidden>
+  <div class="modal modal-wide" role="dialog" aria-modal="true" aria-labelledby="receiptTitle">
+    <button class="modal-close" id="receiptClose" aria-label="Close">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <h3 id="receiptTitle">Review Payment Receipt</h3>
+    <div class="receipt-grid">
+      <div class="receipt-img">
+        <img id="receiptImg" alt="Payment receipt">
+      </div>
+      <div class="receipt-info">
+        <div class="field"><label>Patient</label><div class="val" id="rcPatient"></div></div>
+        <div class="field"><label>Amount</label><div class="val" id="rcAmount"></div></div>
+        <div class="field"><label>Method</label><div class="val" id="rcMethod"></div></div>
+        <div class="field"><label>Submitted</label><div class="val" id="rcSubmitted"></div></div>
+        <div class="field" id="rcNoteField" hidden><label>Patient Note</label><div class="val" id="rcNote"></div></div>
+        <p class="pay-hint">Confirm the receipt matches the amount before approving.</p>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="receiptCancelBtn">Close</button>
+      <button class="btn btn-danger" id="rejectPaymentBtn" hidden>Reject</button>
+      <button class="btn btn-gold" id="approvePaymentBtn" hidden>Approve Payment</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== NOTIFICATIONS POPOVER ===== -->
+<div class="popover" id="notifPanel" role="dialog" aria-label="Notifications">
+  <div class="notif-head">
+    <h3>Notifications</h3>
+    <button type="button" class="btn-link" id="notifMarkAll">Mark all as read</button>
+  </div>
+  <div class="notif-list" id="notifList"></div>
+  <p class="notif-empty" id="notifEmpty" hidden>You're all caught up.</p>
+</div>
+
+<!-- ===== ACCOUNT MENU POPOVER ===== -->
+<div class="popover user-menu" id="userMenu" role="menu" aria-label="Account menu">
+  <div class="user-menu-head">
+    <div class="avatar-sm" id="menuAvatar">DS</div>
+    <div>
+      <div class="name" id="menuName">Dr. Kathrine Sison</div>
+      <div class="role" id="menuRole">Lead Dentist</div>
+    </div>
+  </div>
+  <a class="user-menu-item" href="../public-website/index.html">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+    View Public Site
+  </a>
+  <button type="button" class="user-menu-item danger" id="menuSignOut">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+    Sign out
+  </button>
+</div>
+
+<!-- ===== MOBILE SEARCH POPOVER (shown below 1000px) ===== -->
+<div class="popover search-panel" id="mobileSearchPanel" role="dialog" aria-label="Search patients">
+  <div class="search-field">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <input type="search" id="mobileSearchInput" placeholder="Search patients…" aria-label="Search patients">
+    <button type="button" class="search-clear" id="mobileSearchClear" aria-label="Clear search" hidden>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+  <div class="search-results" id="mobileSearchResults"></div>
+</div>
+
+<!-- ===== VIEW DETAILS MODAL (patient chart / record) ===== -->
+<div class="modal-overlay" id="detailModal" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="detailTitle">
+    <button class="modal-close" id="detailClose" aria-label="Close dialog">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <h3 id="detailTitle">Patient Details</h3>
+    <div class="detail-rows" id="detailRows"></div>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-secondary" id="detailCancelBtn">Close</button>
+      <button type="button" class="btn btn-gold" id="detailEditBtn">Edit</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== ADD / EDIT PATIENT MODAL ===== -->
+<div class="modal-overlay" id="patientFormModal" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="patientFormTitle">
+    <button class="modal-close" id="patientFormClose" aria-label="Close dialog">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <h3 id="patientFormTitle">Add Patient</h3>
+    <div class="form-group">
+      <label for="pfName">Full Name</label>
+      <input type="text" id="pfName" autocomplete="off">
+    </div>
+    <div class="form-group">
+      <label for="pfContact">Contact Number</label>
+      <input type="tel" id="pfContact" autocomplete="off">
+    </div>
+    <div class="form-group">
+      <label for="pfLastVisit">Last Visit</label>
+      <input type="text" id="pfLastVisit" autocomplete="off" placeholder="e.g. Aug 14, 2026">
+    </div>
+    <div class="form-group">
+      <label for="pfBalance">Balance</label>
+      <input type="text" id="pfBalance" autocomplete="off" placeholder="e.g. ₱0.00">
+    </div>
+    <div class="form-group">
+      <label for="pfStatus">Contract Status</label>
+      <select id="pfStatus">
+        <option>Current</option>
+        <option>Overdue</option>
+      </select>
+    </div>
+    <p class="form-note" id="patientFormNote" role="status" hidden></p>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-secondary" id="patientFormCancel">Cancel</button>
+      <button type="button" class="btn btn-gold" id="patientFormSave">
+        <span class="btn-spinner" aria-hidden="true"></span>
+        <span class="btn-label">Add Patient</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== NEW RECORD MODAL ===== -->
+<div class="modal-overlay" id="recordFormModal" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="recordFormTitle">
+    <button class="modal-close" id="recordFormClose" aria-label="Close dialog">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <h3 id="recordFormTitle">Add Treatment Record</h3>
+    <div class="form-group">
+      <label for="rfPatient">Patient</label>
+      <input type="text" id="rfPatient" list="patientList" autocomplete="off" placeholder="Search a patient…">
+      <datalist id="patientList"></datalist>
+    </div>
+    <div class="form-group">
+      <label for="rfProcedure">Procedure</label>
+      <input type="text" id="rfProcedure" autocomplete="off" placeholder="e.g. Braces adjustment">
+    </div>
+    <div class="form-group">
+      <label for="rfDate">Date</label>
+      <input type="date" id="rfDate" autocomplete="off">
+    </div>
+    <div class="form-group">
+      <label for="rfDentist">Dentist</label>
+      <select id="rfDentist"><option>Dr. Kathrine Sison</option><option>Dr. Arsenia Aromin</option></select>
+    </div>
+    <div class="form-group">
+      <label for="rfCategory">Category</label>
+      <select id="rfCategory"><option>Treatment</option><option>Protocol</option><option>Lab work</option></select>
+    </div>
+    <div class="form-group">
+      <label for="rfStatus">Status</label>
+      <select id="rfStatus"><option>Complete</option><option>In progress</option></select>
+    </div>
+    <p class="form-note" id="recordFormNote" role="status" hidden></p>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-secondary" id="recordFormCancel">Cancel</button>
+      <button type="button" class="btn btn-gold" id="recordFormSave">
+        <span class="btn-spinner" aria-hidden="true"></span>
+        <span class="btn-label">Add Record</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== NEW CONTRACT MODAL ===== -->
+<div class="modal-overlay" id="contractFormModal" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="contractFormTitle">
+    <button class="modal-close" id="contractFormClose" aria-label="Close dialog">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <h3 id="contractFormTitle">New Braces Contract</h3>
+    <div class="form-group">
+      <label for="cfPatient">Patient</label>
+      <select id="cfPatient"></select>
+    </div>
+    <div class="form-group">
+      <label for="cfMonths">Duration (months)</label>
+      <input type="number" id="cfMonths" min="1" max="48" autocomplete="off" placeholder="e.g. 24">
+    </div>
+    <div class="form-group">
+      <label for="cfMonthly">Monthly Payment (₱)</label>
+      <input type="number" id="cfMonthly" min="1" step="100" autocomplete="off" placeholder="e.g. 2000">
+    </div>
+    <div class="form-group">
+      <label for="cfStatus">Status</label>
+      <select id="cfStatus"><option>Current</option><option>Overdue</option><option>Completed</option></select>
+    </div>
+    <p class="form-note" id="contractFormNote" role="status" hidden></p>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-secondary" id="contractFormCancel">Cancel</button>
+      <button type="button" class="btn btn-gold" id="contractFormSave">
+        <span class="btn-spinner" aria-hidden="true"></span>
+        <span class="btn-label">Create Contract</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== NEW PROMOTION MODAL ===== -->
+<div class="modal-overlay" id="promoFormModal" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="promoFormTitle">
+    <button class="modal-close" id="promoFormClose" aria-label="Close dialog">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <h3 id="promoFormTitle">New Promotion</h3>
+    <div class="form-group">
+      <label for="pf2Title">Title</label>
+      <input type="text" id="pf2Title" autocomplete="off" placeholder="e.g. Back-to-School Smile">
+    </div>
+    <div class="form-group">
+      <label for="pf2Desc">Description</label>
+      <input type="text" id="pf2Desc" autocomplete="off" placeholder="Short offer summary">
+    </div>
+    <div class="form-group">
+      <label for="pf2Status">Status</label>
+      <select id="pf2Status"><option>Live</option><option>Scheduled</option><option>Ended</option></select>
+    </div>
+    <p class="form-note" id="promoFormNote" role="status" hidden></p>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-secondary" id="promoFormCancel">Cancel</button>
+      <button type="button" class="btn btn-gold" id="promoFormSave">
+        <span class="btn-spinner" aria-hidden="true"></span>
+        <span class="btn-label">Save Promotion</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== NEW INVENTORY ITEM MODAL ===== -->
+<div class="modal-overlay" id="inventoryFormModal" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="inventoryFormTitle">
+    <button class="modal-close" id="inventoryFormClose" aria-label="Close dialog">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <h3 id="inventoryFormTitle">Add Inventory Item</h3>
+    <div class="form-group">
+      <label for="ivName">Item Name</label>
+      <input type="text" id="ivName" autocomplete="off" placeholder="e.g. Gloves (box)">
+    </div>
+    <div class="form-group">
+      <label for="ivCategory">Category</label>
+      <select id="ivCategory"><option>Consumable</option><option>Material</option><option>Imaging</option><option>Instrument</option><option>Equipment</option></select>
+    </div>
+    <div class="form-group">
+      <label for="ivStock">Stock Quantity</label>
+      <input type="number" id="ivStock" min="0" autocomplete="off" placeholder="e.g. 12">
+    </div>
+    <p class="form-note" id="inventoryFormNote" role="status" hidden></p>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-secondary" id="inventoryFormCancel">Cancel</button>
+      <button type="button" class="btn btn-gold" id="inventoryFormSave">
+        <span class="btn-spinner" aria-hidden="true"></span>
+        <span class="btn-label">Add Item</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== NEW APPOINTMENT MODAL ===== -->
+<div class="modal-overlay" id="apptFormModal" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="apptFormTitle">
+    <button class="modal-close" id="apptFormClose" aria-label="Close dialog">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <h3 id="apptFormTitle">Book Appointment</h3>
+    <div class="form-group">
+      <label for="afPatient">Patient</label>
+      <select id="afPatient"></select>
+    </div>
+    <div class="form-group">
+      <label for="afService">Service</label>
+      <select id="afService"><option>Braces Adjustment</option><option>Braces Installation</option><option>Cleaning &amp; Check-up</option><option>Consultation</option></select>
+    </div>
+    <div class="form-group">
+      <label for="afDay">Day</label>
+      <select id="afDay"></select>
+    </div>
+    <div class="form-group">
+      <label for="afTime">Time</label>
+      <select id="afTime"></select>
+    </div>
+    <p class="form-note" id="apptFormNote" role="status" hidden></p>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-secondary" id="apptFormCancel">Cancel</button>
+      <button type="button" class="btn btn-gold" id="apptFormSave">
+        <span class="btn-spinner" aria-hidden="true"></span>
+        <span class="btn-label">Book Appointment</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== DELETE PATIENT CONFIRM MODAL ===== -->
+<div class="modal-overlay" id="deleteModal" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="deleteTitle">
+    <button class="modal-close" id="deleteClose" aria-label="Close dialog">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <div class="modal-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+    </div>
+    <h3 id="deleteTitle">Delete this patient?</h3>
+    <p id="deleteText">This action can't be undone.</p>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-secondary" id="deleteCancelBtn">Cancel</button>
+      <button type="button" class="btn btn-danger" id="deleteConfirmBtn">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== TOAST ===== -->
+<div class="app-toast" id="appToast" role="status" aria-live="polite"></div>
+
+<script src="../shared/js/dashboard-core.js?v=5" defer></script>
+<script src="../shared/js/mock-data/admin.js?v=4" defer></script>
+<script src="assets/js/admin.js?v=13" defer></script>
+
+</body>
+</html>

@@ -1,0 +1,170 @@
+/* =====================================================================
+   Aromin-Sison Dental Clinic: shared dashboard panels
+   Single source of truth for popover dropdowns (notifications, account
+   menu, search) used by BOTH dashboards. Load it right after buttons.css
+   and BEFORE the page's own stylesheet:
+
+     <link rel="stylesheet" href="../shared/css/variables.css">
+     <link rel="stylesheet" href="../shared/css/buttons.css">
+     <link rel="stylesheet" href="../shared/css/panels.css">
+     <link rel="stylesheet" href="assets/css/admin.css">  (or patient.css)
+
+   The popover is anchored by dashboard-core.js (placePopover): clamped to
+   the viewport, flips upward when space runs out, and becomes a bottom
+   sheet on phones (<= 640px) so it never clips off-screen.
+   ===================================================================== */
+
+/* ---- Popover base: anchored frosted panel ---- */
+.popover{
+  position:fixed;z-index:150;
+  min-width:300px;max-width:min(92vw,380px);
+  background:var(--glass-solid);
+  border:1px solid rgba(255,255,255,0.55);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,0.65), var(--shadow-lg);
+  border-radius:var(--r-lg);
+  overflow:hidden;
+  opacity:0;visibility:hidden;
+  transform:translateY(8px) scale(.985);
+  transform-origin:top right;
+  transition:opacity .18s ease, transform .18s ease, visibility .18s ease;
+}
+.popover.open{opacity:1;visibility:visible;transform:none;}
+
+/* ---- Notification panel ---- */
+.notif-head{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:16px 18px;border-bottom:1px solid var(--line);
+}
+.notif-head h3{font-family:'Fraunces',serif;font-size:16px;font-weight:600;}
+.notif-list{max-height:min(60vh,380px);overflow-y:auto;overscroll-behavior:contain;}
+.notif-item{
+  display:flex;align-items:flex-start;gap:12px;width:100%;text-align:left;
+  padding:14px 18px;border-bottom:1px solid var(--line);
+  transition:background .15s ease;
+}
+.notif-item:last-child{border-bottom:none;}
+.notif-item:hover{background:var(--ivory-2);}
+.notif-item{cursor:pointer;}
+.notif-item:focus-visible,
+.user-menu-item:focus-visible,
+.search-result:focus-visible,
+.search-clear:focus-visible{
+  outline:2px solid var(--gold);
+  outline-offset:-2px;
+  outline-color:var(--gold-text);
+}
+.notif-item.unread{background:rgba(156,139,62,0.07);}
+.notif-ic{
+  width:34px;height:34px;border-radius:10px;flex-shrink:0;
+  background:var(--ivory-2);color:var(--gold);
+  display:flex;align-items:center;justify-content:center;
+}
+.notif-ic svg{width:16px;height:16px;}
+.notif-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;}
+.notif-title{font-size:13px;font-weight:600;color:var(--ink);}
+.notif-item.read .notif-title{font-weight:500;}
+.notif-desc{font-size:12px;color:rgba(27,27,25,0.55);line-height:1.45;}
+.notif-time{font-size:11px;color:rgba(27,27,25,0.42);margin-top:2px;}
+.notif-dot{
+  width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:7px;
+  background:var(--gold);transition:background .2s ease;
+}
+.notif-item.read .notif-dot{background:transparent;}
+.notif-empty{padding:28px 18px;text-align:center;font-size:13px;color:rgba(27,27,25,0.5);}
+
+/* Unread count badge on the bell (replaces the plain dot) */
+.badge-count{
+  position:absolute;top:5px;right:4px;
+  min-width:16px;height:16px;padding:0 4px;
+  border-radius:var(--r-pill);
+  background:var(--red);color:var(--white);
+  font-size:10px;font-weight:700;line-height:15px;text-align:center;
+  border:1.5px solid var(--white);
+}
+
+/* ---- Account (user) menu ---- */
+.user-menu{min-width:230px;}
+.user-menu-head{display:flex;align-items:center;gap:12px;padding:16px 18px;border-bottom:1px solid var(--line);}
+.user-menu-head .name{font-size:13.5px;font-weight:600;}
+.user-menu-head .role{font-size:11.5px;color:rgba(27,27,25,0.5);}
+.user-menu-item{
+  display:flex;align-items:center;gap:10px;width:100%;
+  padding:12px 18px;font-size:13.5px;font-weight:500;
+  color:var(--ink);text-align:left;
+  transition:background .15s ease;
+}
+.user-menu-item:hover{background:var(--ivory-2);}
+.user-menu-item{cursor:pointer;}
+.user-menu-item svg{width:16px;height:16px;flex-shrink:0;color:rgba(27,27,25,0.6);}
+.user-menu-item.danger{color:var(--red);}
+.user-menu-item.danger svg{color:var(--red);}
+
+/* ---- Search panel (topbar magnifier on tablets/phones) ---- */
+.search-panel{padding:14px;}
+.search-field{
+  display:flex;align-items:center;gap:9px;
+  border:1px solid var(--line);border-radius:var(--r-pill);
+  background:var(--white);padding:10px 14px;
+  transition:border-color .2s ease, box-shadow .2s ease;
+}
+.search-field:focus-within{border-color:rgba(156,139,62,0.55);box-shadow:var(--ring-soft);}
+.search-field > svg{width:16px;height:16px;color:rgba(27,27,25,0.45);flex-shrink:0;}
+.search-field input{flex:1;min-width:0;border:none;outline:none;background:none;font-size:15px;font-family:inherit;color:var(--ink);}
+.search-field input::placeholder{color:rgba(27,27,25,0.4);}
+.search-clear{
+  width:26px;height:26px;border-radius:50%;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  color:rgba(27,27,25,0.5);
+  transition:color .2s ease, background .2s ease;
+}
+.search-clear:hover{color:var(--ink);background:var(--ivory-2);}
+.search-clear svg{width:13px;height:13px;}
+.search-results{
+  max-height:min(60vh,340px);overflow-y:auto;overscroll-behavior:contain;
+  margin-top:10px;display:flex;flex-direction:column;gap:4px;
+}
+.search-result{
+  display:flex;align-items:center;gap:11px;width:100%;
+  padding:10px 12px;border-radius:var(--r-sm);text-align:left;
+  transition:background .15s ease;
+}
+.search-result:hover{background:var(--ivory-2);}
+.search-result{cursor:pointer;}
+.search-result .mini-avatar{
+  width:32px;height:32px;border-radius:50%;flex-shrink:0;
+  background:var(--ivory-2);color:var(--dark);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Fraunces',serif;font-size:12px;font-weight:600;
+}
+.search-result .name-block{flex:1;min-width:0;}
+.search-result .name-block .full{
+  display:block;font-size:13px;font-weight:600;color:var(--ink);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.search-result .name-block .sub{
+  display:block;font-size:11.5px;color:rgba(27,27,25,0.5);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.search-hint,.search-empty{padding:14px 12px;font-size:12.5px;color:rgba(27,27,25,0.5);text-align:center;}
+
+/* ---- Phones: popovers become bottom sheets, always inside the viewport ---- */
+@media (max-width:640px){
+  .popover.sheet{
+    left:12px;right:12px;top:auto;bottom:12px;
+    width:auto;max-width:none;
+    max-height:calc(76dvh - env(safe-area-inset-bottom));
+    transform-origin:bottom center;
+    padding-bottom:env(safe-area-inset-bottom);
+  }
+  .popover.sheet::before{
+    content:'';display:block;flex-shrink:0;
+    width:36px;height:4px;border-radius:var(--r-pill);
+    background:rgba(27,27,25,0.16);
+    margin:10px auto 2px;
+  }
+  .notif-list{max-height:calc(60dvh - 140px);}
+}
+
+@media (prefers-reduced-motion: reduce){
+  .popover{transition:none;transform:none;}
+}

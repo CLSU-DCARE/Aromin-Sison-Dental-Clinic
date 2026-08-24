@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>About Us | Aromin-Sison Dental Clinic</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<link rel="stylesheet" href="../shared/css/variables.css?v=4">
+<link rel="stylesheet" href="../shared/css/buttons.css?v=5">
+<link rel="stylesheet" href="assets/css/main.css?v=41">
+</head>
+<body>
+
+<!-- Entrance cover: a dark panel with the gold smile band at its top
+     edge covers the screen on load, then rises away to reveal the page. -->
+<div class="site-enter" id="siteEnter" aria-hidden="true">
+  <img class="site-enter-logo" src="../shared/images/asdc logo.png" alt="">
+  <svg class="site-enter-wave" viewBox="0 0 1440 64" preserveAspectRatio="none"><defs><linearGradient id="siteEnterGold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#C7B876"/><stop offset="1" stop-color="#9C8B3E"/></linearGradient></defs><path d="M0,0 L0,20 C240,64 1200,64 1440,20 L1440,0 Z" fill="url(#siteEnterGold)"/></svg>
+</div>
+<script>
+  (function(){
+    var cover = document.getElementById('siteEnter');
+    if (!cover) return;
+    requestAnimationFrame(function(){
+      requestAnimationFrame(function(){
+        cover.className = 'site-enter play';
+        setTimeout(function(){ cover.className = 'site-enter site-enter-off'; }, 1050);
+      });
+    });
+  })();
+</script>
+<noscript><style>.site-enter{display:none;}</style></noscript>
+
+<header id="siteHeader">
+  <nav class="wrap">
+    <a href="index.html" class="logo"><img src="../shared/images/asdc logo.png" alt="Aromin-Sison Dental Clinic"></a>
+    <ul class="nav-links">
+      <li><a href="index.html">Home</a></li>
+      <li class="nav-drop">
+        <button class="nav-drop-trigger" aria-expanded="false" aria-haspopup="true">Our Story <i class="bi bi-arrow-down-right chevron"></i></button>
+        <div class="nav-drop-panel">
+          <a href="about.html">About the Clinic</a>
+          <a href="about.html#mission">Mission &amp; Vision</a>
+        </div>
+      </li>
+      <li><a href="dentist.html">Dentists</a></li>
+      <li><a href="index.html#services">Services</a></li>
+      <li><a href="gallery.html">Gallery</a></li>
+      <li><a href="index.html#visit">Visit Us</a></li>
+      <li><a href="index.html#faq">FAQ</a></li>
+    </ul>
+    <div class="nav-actions">
+      <a href="../auth/login.html" class="nav-icon-btn" title="Log In / Sign Up" aria-label="Log In or Sign Up">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      </a>
+    </div>
+    <button class="nav-toggle" id="navToggle" aria-label="Open menu" aria-expanded="false">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+  </nav>
+</header>
+
+<div class="mobile-menu" id="mobileMenu">
+  <button class="mobile-menu-close" id="mobileMenuClose" aria-label="Close menu">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+  </button>
+  <div class="mobile-menu-links">
+    <a href="index.html">Home</a>
+    <details class="mobile-nav-group">
+      <summary>Our Story <i class="bi bi-arrow-down-right chevron"></i></summary>
+      <div class="mobile-nav-sub">
+        <a href="about.html">About the Clinic</a>
+        <a href="about.html#mission">Mission &amp; Vision</a>
+      </div>
+    </details>
+    <a href="dentist.html">Dentists</a>
+    <a href="index.html#services">Services</a>
+    <a href="gallery.html">Gallery</a>
+    <a href="index.html#visit">Visit Us</a>
+    <a href="index.html#faq">FAQ</a>
+  </div>
+  <div class="mobile-menu-divider"></div>
+  <div class="mobile-menu-actions">
+    <a href="../auth/login.html" class="btn btn-outline-light">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      Log In / Sign Up
+    </a>
+  </div>
+</div>
+
+<!-- ===== ABOUT HERO ===== -->
+<section class="about-hero">
+  <div class="wrap">
+    <div class="eyebrow">About Aromin-Sison Dental Clinic</div>
+    <h1>Four decades of care, built <em>one patient</em> at a time.</h1>
+    <p>Since 1985, we've treated every visit as a chance to earn trust: not just fill a schedule. Here's the story of how that started, and the people who carry it forward today.</p>
+  </div>
+</section>
+
+<!-- ===== HISTORY ===== -->
+<section class="about-section" id="history">
+  <div class="wrap about-grid">
+    <div>
+      <div class="eyebrow">Our History</div>
+      <h2 class="serif" style="font-size:clamp(28px,3vw,38px);margin-top:16px;line-height:1.2;">From a single chair to a full studio.</h2>
+    </div>
+    <div class="body">
+      <p>Aromin-Sison Dental Clinic opened its doors in 1985 in Muñoz, Nueva Ecija, founded on a simple belief: that great dental care shouldn't feel cold or rushed. What began as a single treatment room has grown, over four decades, into a full studio equipped with modern digital scanning, guided imaging, and a team trained in both general and cosmetic dentistry.</p>
+      <p>Through the years, the clinic has stayed in the hands of the same family, with Dr. Arsenia Aromin and Dr. Kathrine Sison carrying forward the founding philosophy while bringing in new techniques, technology, and a second generation of clinical staff. Thousands of patients across Central Luzon have grown up in our chair: some are now bringing in their own children.</p>
+      <p>What hasn't changed is the pace of every appointment: unhurried, explained clearly, and centered on the person in the chair rather than the clock on the wall.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===== MILESTONES ===== -->
+<section class="about-section alt" id="milestones">
+  <div class="wrap">
+    <div class="section-head" style="margin-bottom:0;">
+      <div class="eyebrow" style="justify-content:center;">Four Decades</div>
+      <h2>Milestones along<br>the <em>way.</em></h2>
+    </div>
+    <div class="about-timeline">
+      <div class="timeline-item">
+        <span class="timeline-year">1985</span>
+        <div>
+          <h4>The First Chair</h4>
+          <p>Aromin-Sison Dental Clinic opens in Muñoz, Nueva Ecija with a single treatment room and a belief: great dental care shouldn't feel cold or rushed.</p>
+        </div>
+      </div>
+      <div class="timeline-item">
+        <span class="timeline-year">1990s</span>
+        <div>
+          <h4>The Practice Grows</h4>
+          <p>Word travels across Central Luzon. The clinic welcomes its first wave of families, many of whom are still patients today.</p>
+        </div>
+      </div>
+      <div class="timeline-item">
+        <span class="timeline-year">2010s</span>
+        <div>
+          <h4>The Digital Studio</h4>
+          <p>Digital scanning and guided imaging arrive: sharper diagnostics, fewer guesses, and treatment plans built on real data.</p>
+        </div>
+      </div>
+      <div class="timeline-item">
+        <span class="timeline-year">Today</span>
+        <div>
+          <h4>A Second Generation</h4>
+          <p>The founding philosophy carries forward with new techniques and new faces, while thousands of patients bring in their own children.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== MISSION / VISION ===== -->
+<section class="about-section alt" id="mission">
+  <div class="wrap">
+    <div class="section-head" style="margin-bottom:0;">
+      <div class="eyebrow" style="justify-content:center;">What Drives Us</div>
+      <h2>Mission, vision, and the promise<br>behind every <em>visit.</em></h2>
+    </div>
+    <div class="mvv-grid">
+      <div class="mvv-card">
+        <div class="mvv-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2 2 7l10 5 10-5-10-5Z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+        </div>
+        <h3>Our Mission</h3>
+        <p>To deliver honest, world-class dental care in an environment that feels warm rather than clinical: treating every patient the way we'd want our own family treated.</p>
+      </div>
+      <div class="mvv-card">
+        <div class="mvv-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+        </div>
+        <h3>Our Vision</h3>
+        <p>To be Central Luzon's most trusted dental studio: known as much for how patients are treated as for the quality of the work itself.</p>
+      </div>
+      <div class="mvv-card">
+        <div class="mvv-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78Z"/></svg>
+        </div>
+        <h3>Our Promise</h3>
+        <p>No surprises at checkout, no rushed explanations, and no procedure recommended that we wouldn't recommend to someone we love.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== VALUES ===== -->
+<section class="about-section" id="values">
+  <div class="wrap">
+    <div class="section-head" style="margin-bottom:0;">
+      <div class="eyebrow" style="justify-content:center;">What We Stand For</div>
+      <h2>The values behind<br>every <em>decision.</em></h2>
+    </div>
+    <div class="values-list">
+      <div class="value-item">
+        <div class="value-num">01</div>
+        <div><h4>Honesty First</h4><p>We explain what we see and why, even when the honest answer is "let's just keep watching this." No upselling, no scare tactics.</p></div>
+      </div>
+      <div class="value-item">
+        <div class="value-num">02</div>
+        <div><h4>Unhurried Care</h4><p>Every appointment gets the time it needs. We'd rather run a little behind than rush through your treatment.</p></div>
+      </div>
+      <div class="value-item">
+        <div class="value-num">03</div>
+        <div><h4>Continuous Learning</h4><p>Our team keeps up with modern techniques and materials so the care you receive reflects current best practice, not habit.</p></div>
+      </div>
+      <div class="value-item">
+        <div class="value-num">04</div>
+        <div><h4>Family Feeling</h4><p>Many of our patients have been with us for decades. We aim to make every new patient feel like part of that same family.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== TEAM ===== -->
+<section class="about-section alt" id="team">
+  <div class="wrap">
+    <div class="section-head" style="margin-bottom:0;">
+      <div class="eyebrow" style="justify-content:center;">Our Clinicians</div>
+      <h2>The team behind<br>the <em>smiles.</em></h2>
+    </div>
+    <div class="team-grid">
+      <div class="team-card">
+        <div class="team-photo">
+          <span class="team-mono" aria-hidden="true">DA</span>
+          <span class="team-badge">Est. 1985</span>
+        </div>
+        <div class="team-body">
+          <h3>Dr. Arsenia Aromin</h3>
+          <div class="role">Founding Dentist: General &amp; Restorative</div>
+          <p>Leads diagnostics and restorative treatment, with a focus on digital imaging and long-term oral health planning.</p>
+          <div class="team-tags">
+            <span class="team-tag">Restorative</span>
+            <span class="team-tag">Digital Imaging</span>
+            <span class="team-tag">Root Canal</span>
+          </div>
+        </div>
+      </div>
+      <div class="team-card">
+        <div class="team-photo">
+          <span class="team-mono" aria-hidden="true">DS</span>
+          <span class="team-badge">2nd Gen</span>
+        </div>
+        <div class="team-body">
+          <h3>Dr. Kathrine Sison</h3>
+          <div class="role">Lead Dentist: Orthodontics &amp; Cosmetic</div>
+          <p>Oversees braces and cosmetic treatment plans, from initial consultation through every adjustment along the way.</p>
+          <div class="team-tags">
+            <span class="team-tag">Orthodontics</span>
+            <span class="team-tag">Cosmetic</span>
+            <span class="team-tag">Smile Design</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p class="team-note">Alongside the doctors: our clinical assistants and front-desk team, trained to keep every visit calm, clear, and on time.</p>
+  </div>
+</section>
+
+<!-- ===== COMMITMENT ===== -->
+<section class="about-section" id="commitment">
+  <div class="wrap">
+    <div class="section-head" style="margin-bottom:0;">
+      <div class="eyebrow" style="justify-content:center;">Our Commitment</div>
+      <h2>Care that outlasts<br>the <em>appointment.</em></h2>
+    </div>
+    <p class="commitment-quote">
+      "Our commitment doesn't end when you leave the chair. Every patient gets a clear plan, a real explanation, and a team that remembers where you left off: visit after visit, year after year."
+      <span>Aromin-Sison Dental Clinic</span>
+    </p>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="foot-grid">
+      <div>
+        <img src="../shared/images/asdc logo.png" alt="Aromin-Sison Dental Clinic" style="max-width:100%;width:min(100%,260px);height:auto;margin-bottom:14px;filter:brightness(0) invert(1);">
+        <p class="foot-tag">Where beautiful smiles are made, one honest conversation at a time.</p>
+        <div class="foot-socials">
+          <a href="#" class="social-btn" title="Instagram"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg></a>
+          <a href="https://www.facebook.com/profile.php?id=100054534306794" class="social-btn" title="Facebook" target="_blank"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg></a>
+          <a href="#" class="social-btn" title="YouTube"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z"/><polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"/></svg></a>
+        </div>
+      </div>
+      <div class="foot-col">
+        <h4>Explore</h4>
+        <a href="index.html#story">Our Story</a>
+        <a href="index.html#services">Services</a>
+        <a href="index.html#visit">Visit Us</a>
+      </div>
+      <div class="foot-col">
+        <h4>Support</h4>
+        <a href="about.html">About</a>
+        <a href="index.html#visit">Contact</a>
+        <a href="index.html#faq">FAQs</a>
+      </div>
+      <div class="foot-col">
+        <h4>Reach Us</h4>
+        <a href="mailto:hello@aromin-sisondental.ph">hello@aromin-sisondental.ph</a>
+        <a href="tel:+630000000000">+63 000 000 0000</a>
+      </div>
+    </div>
+    <div class="foot-bottom">
+      <span>© 2026 Aromin-Sison Dental Clinic. All rights reserved.</span>
+      <span>Made with care in Central Luzon, PH.</span>
+    </div>
+  </div>
+</footer>
+
+<script src="assets/js/main.js?v=7" defer></script>
+
+</body>
+</html>

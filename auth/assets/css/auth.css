@@ -1,0 +1,424 @@
+/* Aromin-Sison Dental Clinic: Auth module (frontend-only)
+   Login, Register, and Forgot Password each have their own page.
+   Uses shared brand tokens from /shared/css/variables.css: do not
+   hardcode colors here that already exist as a variable. */
+
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%;}
+body{
+  background:var(--ivory);
+  color:var(--ink);
+  /* Native system font stack (San Francisco on Apple devices, Segoe UI on
+     Windows, Roboto on Android): the iOS-style base layer shared across
+     every frontend via --font-ui in variables.css. */
+  font-family:var(--font-ui);
+  font-size:16px;
+  line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+  -webkit-tap-highlight-color:transparent;
+}
+::selection{background:rgba(156,139,62,0.22);}
+a{color:inherit;text-decoration:none;}
+img{max-width:100%;display:block;}
+button{font-family:inherit;cursor:pointer;background:none;border:none;color:inherit;}
+
+.serif{font-family:'Fraunces',serif;}
+.eyebrow{
+  font-family:var(--font-ui);
+  font-size:12.5px;
+  letter-spacing:0.14em;
+  text-transform:uppercase;
+  color:var(--gold-soft);
+  display:flex;align-items:center;gap:10px;
+}
+.eyebrow::before{content:'';width:24px;height:1px;background:var(--gold-soft);display:inline-block;flex-shrink:0;}
+
+/* ===== SHELL ===== */
+.auth-shell{display:flex;min-height:100vh;min-height:100svh;}
+
+/* ---- Left: brand panel ---- */
+.auth-aside{
+  flex:0 0 42%;
+  position:relative;
+  overflow:hidden;
+  display:flex;flex-direction:column;justify-content:space-between;
+  padding:52px 64px;
+  background:
+    linear-gradient(180deg, rgba(17,17,16,0.86) 0%, rgba(17,17,16,0.94) 100%),
+    linear-gradient(120deg, #1C1C1A 0%, #111110 100%);
+  color:var(--ivory);
+}
+.auth-aside-top .auth-logo img{height:78px;width:auto;filter:brightness(0) invert(1);}
+.auth-aside-mid{max-width:440px;}
+.auth-aside-mid .eyebrow{margin-bottom:24px;}
+.auth-aside-title{
+  font-size:clamp(34px,3.6vw,48px);
+  font-weight:500;
+  line-height:1.14;
+  margin-bottom:24px;
+  transition:opacity .25s ease;
+}
+.auth-aside-title em{font-style:italic;color:var(--gold-soft);font-weight:400;}
+.auth-aside-quote{
+  font-family:'Fraunces',serif;
+  font-style:italic;
+  font-size:16px;
+  color:rgba(250,250,247,0.7);
+  border-left:2px solid var(--gold);
+  padding-left:18px;
+  transition:opacity .25s ease;
+}
+.auth-aside-foot{
+  display:flex;flex-direction:column;gap:7px;
+  font-family:var(--font-ui);
+  font-size:11.5px;letter-spacing:0.04em;
+  color:rgba(250,250,247,0.45);
+}
+.auth-curve{
+  position:absolute;right:-120px;bottom:-120px;
+  width:360px;height:360px;border-radius:50%;
+  border:1px solid rgba(250,250,247,0.08);
+}
+.auth-curve::before{
+  content:'';position:absolute;inset:44px;
+  border-radius:50%;border:1px solid rgba(250,250,247,0.06);
+}
+
+/* ---- Right: form panel ---- */
+.auth-main{
+  flex:1;
+  display:flex;align-items:center;justify-content:center;
+  padding:56px 32px;
+  background:var(--ivory);
+}
+.auth-card{width:100%;max-width:480px;}
+.auth-card-head{margin-bottom:32px;}
+.auth-card-head h2{font-size:27px;font-weight:600;margin-top:8px;letter-spacing:-0.01em;}
+.auth-card-head p{font-size:14.5px;color:rgba(27,27,25,0.6);margin-top:8px;line-height:1.55;}
+/* Eyebrow on the light (right) panel: the soft gold passes on the dark
+   aside but fails contrast on ivory, so use the accessible gold tone. */
+.auth-card-head .eyebrow,
+.modal .eyebrow{color:var(--gold-text);}
+.auth-card-head .eyebrow::before,
+.modal .eyebrow::before{background:var(--gold-text);}
+
+/* ---- Alert ---- */
+.auth-alert{
+  display:flex;align-items:flex-start;gap:11px;
+  background:rgba(180,84,63,0.08);
+  border-left:3px solid var(--red);
+  border-radius:0 var(--r-sm) var(--r-sm) 0;
+  color:#8C3F2E;
+  padding:14px 16px;
+  font-size:13.5px;
+  margin-bottom:22px;
+  animation:alertIn .2s ease;
+}
+.auth-alert[hidden]{display:none;}
+.auth-alert svg{flex-shrink:0;margin-top:1px;}
+@keyframes alertIn{from{opacity:0;transform:translateY(-4px);}to{opacity:1;transform:translateY(0);}}
+
+/* ---- Form ---- */
+.auth-panel{display:flex;flex-direction:column;gap:20px;}
+.auth-panel[hidden]{display:none;}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.form-group label{
+  display:block;
+  font-family:var(--font-ui);
+  font-size:11px;letter-spacing:0.06em;text-transform:uppercase;
+  color:rgba(27,27,25,0.65);
+  margin-bottom:9px;
+}
+.form-group input, .form-group select{
+  width:100%;
+  border:1px solid var(--line);border-radius:10px;
+  background:var(--white);
+  padding:14px 15px;
+  font-family:var(--font-ui);
+  font-size:16px;color:var(--ink);
+  outline:none;
+  transition:border-color .2s ease, box-shadow .2s ease, background .2s ease;
+}
+.form-group input:focus, .form-group select:focus{border-color:var(--gold);box-shadow:var(--ring-gold);}
+.form-group.has-error input{border-color:var(--red);box-shadow:0 0 0 3px rgba(180,84,63,0.12);}
+.field-error{
+  display:none;
+  font-size:12.5px;color:var(--red);margin-top:7px;
+}
+.form-group.has-error .field-error{display:block;}
+
+.input-shell{position:relative;}
+.input-shell input{padding-right:52px;}
+.pw-toggle{
+  position:absolute;right:4px;top:50%;transform:translateY(-50%);
+  color:rgba(27,27,25,0.4);
+  display:flex;align-items:center;justify-content:center;
+  width:44px;height:44px;border-radius:var(--r-sm);
+  transition:color .2s ease, background .2s ease;
+}
+.pw-toggle:hover{color:var(--ink);background:var(--ivory-2);}
+
+.form-row-between{display:flex;align-items:center;justify-content:space-between;font-size:13.5px;flex-wrap:wrap;gap:10px;}
+.checkbox-inline{display:flex;align-items:center;gap:8px;color:rgba(27,27,25,0.65);cursor:pointer;}
+.checkbox-inline input{width:16px;height:16px;accent-color:var(--gold);}
+.link-btn{
+  font-family:var(--font-ui);
+  font-size:12px;letter-spacing:0.03em;
+  color:var(--gold-text);
+  border-bottom:1px solid transparent;
+  padding:8px 4px;
+  transition:border-color .2s ease, color .2s ease;
+}
+.link-btn:hover{border-color:var(--gold-text);color:var(--gold);}
+
+.terms-line{font-size:13px;color:rgba(27,27,25,0.6);line-height:1.5;}
+
+/* ---- Submit buttons ----
+   Log In / Sign In / Create Account / Send Reset Link all use the shared
+   design system (shared/css/buttons.css):
+   <button class="btn btn-block btn-gold btn-lg"> with a .btn-spinner span
+   and the .is-loading state toggled by auth.js setLoading(). */
+
+.auth-switch-note{
+  text-align:center;
+  font-size:14.5px;
+  color:rgba(27,27,25,0.65);
+  margin-top:24px;
+}
+/* Exit hatch back to the public site: styled as a quiet pill button so
+   it reads as an action, not decoration. */
+.auth-back-link{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  margin:20px auto 0;
+  padding:11px 20px;
+  border:1px solid var(--line);
+  border-radius:var(--r-pill);
+  background:var(--white);
+  font-family:var(--font-ui);
+  font-size:12px;letter-spacing:0.04em;
+  color:rgba(27,27,25,0.6);
+  transition:color .2s ease, background .2s ease, border-color .2s ease;
+}
+.auth-back-link svg{width:14px;height:14px;flex-shrink:0;}
+.auth-back-link:hover{color:var(--ink);background:var(--ivory-2);border-color:rgba(156,139,62,0.45);}
+
+.auth-note-box{
+  margin-top:24px;
+  padding:16px 18px;
+  background:var(--ivory-2);
+  border:1px solid var(--line);
+  border-radius:var(--r-sm);
+  font-size:13.5px;
+  color:rgba(27,27,25,0.65);
+  line-height:1.55;
+}
+
+/* ---- Dev/QA-only disclosure: documents the magic mock values used to
+   demo each validation/error state without a real backend. Safe to
+   delete this whole block once real auth is wired up. ---- */
+.demo-hint{
+  margin-top:20px;
+  font-size:12.5px;
+}
+.demo-hint summary{
+  cursor:pointer;
+  font-family:var(--font-ui);
+  font-size:11.5px;letter-spacing:0.04em;text-transform:uppercase;
+  color:rgba(27,27,25,0.4);
+  list-style:none;
+}
+.demo-hint summary::-webkit-details-marker{display:none;}
+.demo-hint summary:hover{color:rgba(27,27,25,0.65);}
+.demo-hint[open] summary{margin-bottom:10px;}
+.demo-hint ul{padding-left:20px;color:rgba(27,27,25,0.55);line-height:1.7;}
+.demo-hint code{
+  background:var(--ivory-2);
+  padding:2px 6px;
+  border-radius:4px;
+  font-size:11.5px;
+}
+
+/* ===== STEP TRANSITIONS (role-select <-> form) ===== */
+.auth-step{opacity:1;transform:translateY(0);transition:opacity .18s ease, transform .18s ease;}
+.auth-step.step-leave{opacity:0;transform:translateY(6px);}
+.auth-step.step-enter{opacity:0;transform:translateY(6px);}
+
+/* ===== ROLE SELECT (Step 1) ===== */
+.role-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:16px;
+  margin-top:10px;
+}
+.role-card{
+  text-align:left;
+  border:1px solid var(--line);
+  border-radius:var(--r-md);
+  padding:26px 24px;
+  display:flex;flex-direction:column;gap:12px;
+  background:var(--ivory);
+  transition:border-color .2s ease, background .2s ease, transform .15s ease, box-shadow .2s ease;
+}
+.role-card:hover{border-color:var(--gold);background:rgba(156,139,62,0.05);box-shadow:var(--shadow-md);transform:translateY(-2px);}
+.role-card:active{transform:scale(.98);}
+.role-icon{
+  width:44px;height:44px;
+  display:flex;align-items:center;justify-content:center;
+  background:var(--ivory-2);
+  border-radius:10px;
+  color:var(--gold);
+}
+.role-icon svg{width:22px;height:22px;}
+.role-name{font-family:'Fraunces',serif;font-size:19px;font-weight:600;color:var(--ink);}
+.role-desc{font-size:13.5px;line-height:1.55;color:rgba(27,27,25,0.6);}
+
+/* ---- Role switcher shown once inside the form step ---- */
+.auth-role-back{
+  display:inline-flex;align-items:center;gap:7px;
+  font-family:var(--font-ui);
+  font-size:12px;letter-spacing:0.04em;
+  color:rgba(27,27,25,0.65);
+  margin-bottom:20px;
+  padding:8px 4px;
+  transition:color .2s ease;
+}
+.auth-role-back:hover{color:var(--ink);}
+.auth-role-back svg{vertical-align:-2px;margin-right:2px;}
+
+.role-tabs{
+  position:relative;
+  display:flex;
+  background:var(--ivory-2);
+  border-radius:var(--r-pill);
+  padding:5px;
+  margin-bottom:28px;
+}
+.role-tab{
+  position:relative;z-index:1;
+  flex:1;
+  padding:13px 16px;
+  font-family:var(--font-ui);
+  font-size:12px;letter-spacing:0.05em;text-transform:uppercase;
+  color:rgba(27,27,25,0.65);
+  border-radius:var(--r-pill);
+  transition:color .2s ease;
+}
+.role-tab.active{color:var(--dark-deep);font-weight:600;}
+.role-tab-indicator{
+  position:absolute;top:5px;bottom:5px;left:5px;width:0;
+  background:var(--gold);
+  border-radius:var(--r-pill);
+  transition:left .28s cubic-bezier(.65,0,.35,1), width .28s cubic-bezier(.65,0,.35,1);
+  z-index:0;
+}
+
+/* ===== FOCUS VISIBILITY (keyboard navigation) =====
+   Note: headings with tabindex="-1" are focused programmatically by
+   auth.js so screen readers announce them on step changes. They are
+   never reachable by Tab, so no outline is drawn on them (the previous
+   h2:focus-visible rule showed a gold ring on page load that only
+   disappeared after clicking elsewhere). */
+.role-card:focus-visible,
+.role-tab:focus-visible,
+.auth-tab:focus-visible,
+.link-btn:focus-visible,
+.modal-close:focus-visible,
+.auth-role-back:focus-visible,
+.auth-back-link:focus-visible,
+.pw-toggle:focus-visible{
+  outline:2px solid var(--gold);
+  outline-offset:3px;
+  box-shadow:none;
+}
+
+body.modal-open{overflow:hidden;}
+
+/* ===== MODAL ===== */
+.modal-overlay{
+  position:fixed;inset:0;z-index:200;
+  display:flex;align-items:center;justify-content:center;
+  background:rgba(17,17,16,0.55);
+  backdrop-filter:blur(3px);
+  padding:22px;
+  animation:overlayIn .18s ease;
+}
+/* CRITICAL: without this, [hidden] never actually hides the overlay.
+   Author-stylesheet rules always beat the browser's default UA rule
+   ([hidden]{display:none}) regardless of specificity: so an unconditional
+   display:flex here would make the modal impossible to close visually,
+   even though JS correctly toggles the hidden attribute/property. */
+.modal-overlay[hidden]{display:none;}
+@keyframes overlayIn{from{opacity:0;}to{opacity:1;}}
+.modal{
+  width:100%;max-width:440px;
+  max-height:calc(100dvh - 32px);
+  overflow-y:auto;
+  overscroll-behavior:contain;
+  background:var(--ivory);
+  border-radius:var(--r-lg);
+  padding:36px;
+  position:relative;
+  box-shadow:var(--shadow-lg);
+  animation:modalIn .22s cubic-bezier(.2,.8,.3,1);
+}
+@keyframes modalIn{from{opacity:0;transform:translateY(10px) scale(.98);}to{opacity:1;transform:translateY(0) scale(1);}}
+.modal h3{margin:10px 0 14px;font-size:22px;font-weight:600;}
+.modal p{font-size:14.5px;color:rgba(27,27,25,0.65);margin-bottom:24px;line-height:1.55;}
+.modal-close{
+  position:absolute;top:20px;right:20px;
+  width:40px;height:40px;
+  display:flex;align-items:center;justify-content:center;
+  border-radius:50%;
+  font-size:20px;line-height:1;
+  color:rgba(27,27,25,0.4);
+  transition:color .2s ease, background .2s ease;
+}
+.modal-close:hover{color:var(--ink);background:var(--ivory-2);}
+
+/* ---- Modal action row (used by Confirm Logout, etc.) ----
+   Buttons use the shared variants: .btn-secondary (Cancel) and
+   .btn-danger (Log Out) from shared/css/buttons.css. */
+.modal-actions{display:flex;gap:12px;margin-top:4px;}
+
+@media (prefers-reduced-motion: reduce){
+  *{animation:none !important;transition:none !important;}
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width:960px){
+  .auth-shell{flex-direction:column;}
+  .auth-aside{
+    flex:none;width:100%;
+    padding:36px 32px;
+    min-height:0;
+  }
+  .auth-aside-mid{max-width:none;}
+  .auth-aside-quote{display:none;}
+  .auth-curve{display:none;}
+  .auth-aside-title{font-size:28px;margin-bottom:0;}
+  .auth-aside-top{margin-bottom:20px;}
+  .auth-main{padding:44px 24px 70px;}
+}
+@media (max-width:560px){
+  .role-grid{grid-template-columns:1fr;}
+  .form-row{grid-template-columns:1fr;}
+}
+@media (max-width:480px){
+  .auth-aside{padding:28px 22px;padding-top:max(28px, env(safe-area-inset-top));}
+  .auth-aside-top .auth-logo img{height:60px;}
+  .auth-main{padding-bottom:max(44px, calc(env(safe-area-inset-bottom) + 24px));}
+  .role-card{padding:20px 18px;}
+}
+@media (max-width:520px){
+  .modal-overlay{padding:16px;align-items:flex-end;}
+  .modal{
+    max-width:100%;
+    padding:26px 22px;
+    border-radius:var(--r-lg) var(--r-lg) var(--r-md) var(--r-md);
+  }
+  .modal h3{font-size:19px;margin:6px 0 10px;}
+  .modal p{font-size:13.5px;margin-bottom:22px;}
+  .modal-close{top:14px;right:14px;width:40px;height:40px;}
+  .modal-actions{flex-direction:column-reverse;gap:10px;}
+  .modal-actions .btn{width:100%;}
+}

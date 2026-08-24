@@ -1,0 +1,16 @@
+{
+  "name": "asdc_v2",
+  "version": "1.0.0",
+  "description": "``` aromin-sison-dental-system/ │ ├── public-website/           Public-facing site (Home, About, Dentists, Services, Promotions, Contact, Book Appointment) │   ├── index.html │   ├── about.html │   ├── dentist.html │   └── assets/ │       ├── css/main.css      Page-specific styles │       └── js/main.js        Page-specific scripts │ ├── auth/                     Login / registration pages shared across frontends │   ├── login.html │   ├── admin-login.html │   ├── patient-login.html │   ├── register.html │   ├── forgot-password.html │   └── assets/ │       ├── css/auth.css │       └── js/auth.js │ ├── admin-system/             Staff-facing admin dashboard │   ├── dashboard.html │   └── assets/ │       ├── css/admin.css │       └── js/admin.js │ ├── patient-dashboard/        Patient-facing portal │   ├── dashboard.html │   └── assets/ │       ├── css/patient.css │       └── js/patient.js │ ├── shared/                   Single source of truth for branding: imported by ALL frontends │   ├── css/variables.css     Color tokens, used via CSS variables (--ink, --gold, --ivory, etc.) │   ├── css/buttons.css       Shared button design system (.btn, .btn-gold, .btn-primary, etc.) │   ├── js/dashboard-core.js  Shared dashboard utilities (Modal, toast, sidebar, fullscreen, logout) │   ├── js/mock-data/         Centralized sample data for both dashboards (admin.js, patient.js) │   └── images/               logo.png, asdc logo.png, interior.png, and future shared photography │ ├── backend/                  PHP API / server code │   ├── config/ │   │   └── db.php            PDO connection: include this at the top of every endpoint │   └── api/ │       ├── auth/ │       │   └── login.php     POST endpoint, prepared statement, session │       └── patients/ │           └── list.php      GET endpoint, returns JSON │ ├── database/ │   └── schema.sql            Starter MySQL schema: see notes below │ └── docs/                     Capstone documentation, ERD exports, meeting notes, etc. ```",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs"
+}
