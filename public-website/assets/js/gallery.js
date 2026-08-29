@@ -99,6 +99,24 @@
       const dot = e.target.closest('.dot');
       if (dot) setIndex(Number(dot.dataset.index));
     });
+
+    // Swipe support for mobile: drag left/right to navigate the carousel.
+    let swipeX = null;
+    let swipeY = null;
+    stage.addEventListener('pointerdown', e => {
+      swipeX = e.clientX;
+      swipeY = e.clientY;
+    });
+    stage.addEventListener('pointerup', e => {
+      if (swipeX === null) return;
+      const dx = e.clientX - swipeX;
+      const dy = e.clientY - swipeY;
+      swipeX = null;
+      swipeY = null;
+      // Only trigger if horizontal swipe is dominant and past threshold.
+      if (Math.abs(dx) < 40 || Math.abs(dy) > Math.abs(dx)) return;
+      setIndex(index + (dx < 0 ? 1 : -1));
+    });
   }
 
   // =====================================================================

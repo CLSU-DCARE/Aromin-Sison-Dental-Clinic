@@ -23,11 +23,6 @@ const ASIDE_CONTENT = {
     title: 'Kumusta,<br>ngiti <em>ka</em> muli.',
     quote: '&ldquo;The Lord is righteous in all his ways and faithful in all he does.&rdquo; &mdash; Psalm 145:17'
   },
-  register: {
-    eyebrow: 'Chapter Zero: Begin Your Story',
-    title: 'Kumusta,<br>simulan <em>natin</em>.',
-    quote: '&ldquo;For I know the plans I have for you,&rdquo; declares the Lord. &mdash; Jeremiah 29:11'
-  },
   staff: {
     eyebrow: 'Staff & Clinician Access',
     title: 'The desk<br>behind the <em>smile</em>.',

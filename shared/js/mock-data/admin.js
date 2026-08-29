@@ -25,7 +25,7 @@ const AdminMock = {
     initials: 'DS',
     name: 'Dr. Kathrine Sison',
     role: 'Lead Dentist',
-    greeting: 'Good morning, Dr. Kathrine Sison'
+    greeting: 'A blessed day!'
   },
 
   // ---------- Notifications (unread dot/count in the topbar bell) ----------

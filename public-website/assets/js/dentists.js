@@ -1,11 +1,12 @@
 // ---------- Dentist profiles (data-driven) ----------
 // Add a clinician by appending one object to DENTISTS: name, title, bio,
-// quote, expertise tags, credentials, and awards. The photo area shows a
-// monogram until a portrait photo is added.
+// quote, expertise tags, credentials, and awards. Each profile uses a
+// portrait photo. Falls back to a monogram if no photo is provided.
 (function(){
   const DENTISTS = [
     {
       initials: 'DA',
+      photo: '../shared/images/dr arsenia.png',
       name: 'Dr. Arsenia Aromin',
       title: 'Founding Dentist: General &amp; Restorative Dentistry',
       alt: false,
@@ -35,6 +36,7 @@
     },
     {
       initials: 'DS',
+      photo: '../shared/images/dr kathrine.png',
       name: 'Dr. Kathrine Sison',
       title: 'Lead Dentist: Orthodontics &amp; Cosmetic Dentistry',
       alt: true,
@@ -71,7 +73,7 @@
 
   grid.innerHTML = DENTISTS.map(d =>
     `<div class="dentist-profile${d.alt ? ' alt-side' : ''}">
-      <div class="dentist-photo"><span class="team-mono" aria-hidden="true">${d.initials}</span></div>
+      <div class="dentist-photo">${d.photo ? `<img src="${d.photo}" alt="${d.name}" style="width:100%;height:100%;object-fit:cover;">` : `<span class="team-mono" aria-hidden="true">${d.initials}</span>`}</div>
       <div>
         <div class="dentist-name">${d.name}</div>
         <div class="dentist-title">${d.title}</div>

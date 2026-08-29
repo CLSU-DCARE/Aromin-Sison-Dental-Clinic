@@ -125,3 +125,57 @@ CREATE TABLE inventory_items (
 --
 -- No separate attendance table is strictly required — keeping status accurate
 -- on `appointments` is enough to generate all report views listed in your scope.
+
+-- ---------- NOTIFICATIONS ----------
+-- Stores reusable message templates for email/SMS notifications.
+-- The {patient_name}, {date}, {time}, {service}, {dentist}, {amount},
+-- {balance} placeholders are replaced at send time by the PHP helper.
+CREATE TABLE notification_templates (
+    template_id INT AUTO_INCREMENT PRIMARY KEY,
+    template_key VARCHAR(80) UNIQUE NOT NULL,   -- e.g. 'appointment_reminder', 'payment_due'
+    name VARCHAR(150) NOT NULL,                 -- human-readable label
+    channel ENUM('email','sms','both') NOT NULL DEFAULT 'both',
+    subject VARCHAR(255) DEFAULT NULL,          -- email subject line (NULL for SMS-only)
+    body TEXT NOT NULL,                          -- message body with {placeholders}
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- Seed default templates for common clinic notifications.
+INSERT INTO notification_templates (template_key, name, channel, subject, body) VALUES
+('appointment_reminder', 'Appointment Reminder', 'both',
+ 'Appointment Reminder — Aromin-Sison Dental Clinic',
+ 'Hi {patient_name}, this is a friendly reminder of your appointment on {date} at {time} for {service}. If you need to reschedule, please call us at least 24 hours in advance. — Aromin-Sison Dental Clinic'),
+
+('appointment_confirmation', 'Appointment Confirmation', 'both',
+ 'Appointment Confirmed — Aromin-Sison Dental Clinic',
+ 'Hi {patient_name}, your appointment has been confirmed for {date} at {time} ({service}) with {dentist}. We look forward to seeing you! — Aromin-Sison Dental Clinic'),
+
+('appointment_cancellation', 'Appointment Cancellation', 'both',
+ 'Appointment Cancelled — Aromin-Sison Dental Clinic',
+ 'Hi {patient_name}, your appointment on {date} at {time} ({service}) has been cancelled. To rebook, please visit our website or call us. — Aromin-Sison Dental Clinic'),
+
+('payment_due', 'Payment Due Reminder', 'email',
+ 'Payment Reminder — Aromin-Sison Dental Clinic',
+ 'Hi {patient_name}, this is a reminder that your next braces contract payment of {amount} is due. Your remaining balance is {balance}. Please visit the clinic or contact us for payment options. — Aromin-Sison Dental Clinic'),
+
+('payment_received', 'Payment Received Confirmation', 'both',
+ 'Payment Received — Aromin-Sison Dental Clinic',
+ 'Hi {patient_name}, we have received your payment of {amount}. Your remaining balance is {balance}. Thank you! — Aromin-Sison Dental Clinic');
+
+-- Logs every notification sent (email or SMS) for audit and history.
+CREATE TABLE notification_logs (
+    log_id INT AUTO_INCREMENT PRIMARY KEY,
+    patient_id INT NOT NULL,
+    template_id INT NULL,
+    channel ENUM('email','sms') NOT NULL,
+    recipient VARCHAR(150) NOT NULL,            -- email address or phone number
+    subject VARCHAR(255) DEFAULT NULL,          -- email subject (NULL for SMS)
+    body TEXT NOT NULL,                          -- final rendered message (placeholders replaced)
+    status ENUM('sent','failed','pending') DEFAULT 'pending',
+    error_message VARCHAR(255) DEFAULT NULL,    -- failure reason if status = 'failed'
+    sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (patient_id) REFERENCES patients(patient_id) ON DELETE CASCADE,
+    FOREIGN KEY (template_id) REFERENCES notification_templates(template_id) ON DELETE SET NULL
+);

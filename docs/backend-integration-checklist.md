@@ -22,8 +22,7 @@ Cross-referenced with `database/schema.sql` and the existing
 |---|----------|----------------------|----------------|--------|
 | 1 | `POST /api/auth/patient/login` | `auth/assets/js/auth.js:341,351` (mockSubmit, `endpoint` var), `auth/login.html:114` | `users` (email, password_hash, is_active, role='patient') | **Needs implementation** (pattern: `auth/login.php`) |
 | 2 | `POST /api/auth/staff/login` | `auth/assets/js/auth.js:341,351`, `auth/login.html:162` | `users` (role='admin'/'staff'/'dentist') | **Needs implementation** |
-| 3 | `POST /api/auth/patient/register` | `auth/register.html:103` (note says "endpoint TBD") | `users` + `patients` (insert both; `patients.user_id` nullable so walk-ins stay supported) | **Needs implementation** (transaction across both tables) |
-| 4 | `POST /api/auth/{role}/forgot-password` | `auth/assets/js/auth.js:477`, `auth/forgot-password.html:61` | **None** — no token table, no mail setup | **Needs implementation + a decision** (see below) |
+| 3 | `POST /api/auth/{role}/forgot-password` | `auth/assets/js/auth.js:477`, `auth/forgot-password.html:61` | **None** — no token table, no mail setup | **Needs implementation + a decision** (see below) |
 | 5 | Logout (clear session) — admin | `admin-system/assets/js/admin.js` -> moved to `shared/js/dashboard-core.js` (`initLogout`) | session only | **Needs implementation** (e.g. `POST /api/auth/logout` calling `session_destroy()`) |
 | 6 | Logout (clear session) — patient | `patient-dashboard/assets/js/patient.js` -> moved to `shared/js/dashboard-core.js`, plus comment at `patient-dashboard/dashboard.html:79` | session only | **Needs implementation** (same endpoint as #5) |
 
@@ -53,6 +52,30 @@ same views once mock data is swapped)
 | `GET /api/reports/attendance.php` | `AdminMock.reports` (derivable per schema.sql comment) | `appointments` derived queries | Needs implementation |
 | `GET /api/patients/{id}/contract.php`, `.../treatment.php`, `.../payments.php` | `PatientMock.braces` / `PatientMock.contract` / `PatientMock.treatments` | `braces_contracts`, `treatment_records`, `contract_payments` | Needs implementation |
 | `GET /api/patient/profile.php` | `PatientMock.user` + `PatientMock.profile` | `users` + `patients` | Needs implementation |
+
+### Notifications (implemented)
+
+| # | Endpoint | Purpose | Schema support | Status |
+|---|----------|---------|----------------|--------|
+| 1 | `POST /api/notifications/send.php` | Send email/SMS to a patient (uses templates or custom body) | `notification_templates`, `notification_logs`, `patients` | **Implemented** |
+| 2 | `GET /api/notifications/list.php` | View notification history (filterable by patient, channel, status) | `notification_logs` | **Implemented** |
+| 3 | `GET /api/notifications/templates.php` | List all notification templates | `notification_templates` | **Implemented** |
+| 4 | `POST /api/notifications/templates.php` | Create or update a notification template | `notification_templates` | **Implemented** |
+
+**Config & helpers:**
+- `backend/config/mail.php` — `send_email()` and `send_sms()` helpers. Email uses PHP `mail()`
+  by default (works on XAMPP); uncomment PHPMailer for Gmail SMTP. SMS simulated by default;
+  uncomment Twilio for real delivery.
+- `backend/config/notifications.php` — `notify_event($pdo, $event, $patientId, $replacements)`
+  auto-trigger helper. Call after a successful DB action to fire the correct template:
+  - `'appointment.booked'` → `appointment_confirmation`
+  - `'appointment.cancelled'` → `appointment_cancellation`
+  - `'payment.approved'` → `payment_received`
+  - `'payment.due'` → `payment_due`
+
+**Admin UI:** The admin dashboard now has a "Notifications" view (sidebar → Operations → Notifications)
+with a log table and a "Send Notification" modal. The modal loads templates from the API, auto-fills
+subject/body when a template is selected, and calls `POST /api/notifications/send.php`.
 
 ## Gap notes (decisions the team must make)
 
@@ -93,7 +116,6 @@ same views once mock data is swapped)
 | `auth/assets/js/auth.js:477` | `POST /api/auth/{role}/forgot-password` |
 | `auth/login.html:114` | `POST /api/auth/patient/login` |
 | `auth/login.html:162` | `POST /api/auth/staff/login` |
-| `auth/register.html:103` | `POST /api/auth/patient/register` |
 | `auth/forgot-password.html:61` | `POST /api/auth/{role}/forgot-password` |
 | `public-website/assets/js/main.js:158` | `POST /api/public/booking-requests` |
 | `patient-dashboard/assets/js/patient.js:101` | `POST /api/patient/appointments` |

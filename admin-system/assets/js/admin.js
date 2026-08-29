@@ -125,7 +125,8 @@ const views = {
   payments: { title: 'Payment Approvals', crumb: 'Operations' },
   promotions: { title: 'Promotions', crumb: 'Marketing' },
   reports: { title: 'Attendance Reports', crumb: 'Operations' },
-  inventory: { title: 'Inventory', crumb: 'Operations' }
+  inventory: { title: 'Inventory', crumb: 'Operations' },
+  notifications: { title: 'Notifications', crumb: 'Operations' }
 };
 
 function switchView(view){
@@ -977,6 +978,34 @@ if (promoFormModal.modal){
     renderPromotions(AdminMock.promotions);
     showToast(editingPromo ? 'Promotion updated' : 'Promotion created');
   });
+
+  // ---- Delete promotion ----
+  const promoDeleteModal = new Modal('promoDeleteModal');
+  let deletingPromoIndex = null;
+
+  if (promoDeleteModal.modal){
+    promoDeleteModal.registerClose(document.getElementById('promoDeleteClose'));
+    promoDeleteModal.registerClose(document.getElementById('promoDeleteCancel'));
+
+    document.getElementById('promoGrid').addEventListener('click', e => {
+      const btn = e.target.closest('[data-action="delete-promo"]');
+      if (!btn) return;
+      deletingPromoIndex = Number(btn.dataset.index);
+      const promo = AdminMock.promotions[deletingPromoIndex];
+      if (!promo) return;
+      document.getElementById('promoDeleteName').textContent = promo.title;
+      promoDeleteModal.open();
+    });
+
+    document.getElementById('promoDeleteConfirm').addEventListener('click', () => {
+      if (deletingPromoIndex === null) return;
+      AdminMock.promotions.splice(deletingPromoIndex, 1);
+      deletingPromoIndex = null;
+      promoDeleteModal.close();
+      renderPromotions(AdminMock.promotions);
+      showToast('Promotion deleted');
+    });
+  }
 }
 
 // =====================================================================
@@ -1211,6 +1240,7 @@ function renderUser(user){
   set('menuName', user.name);
   set('menuRole', user.role);
   set('greetingText', user.greeting);
+  set('greetingSubtext', user.name + ' · ' + user.role);
 }
 
 function renderDashboardStats(stats){
@@ -1276,7 +1306,10 @@ function renderPromotions(promotions){
         <p>${escapeHtml(p.desc)}</p>
         <div class="promo-foot">
           <span class="tag tag-${p.tag}">${p.status}</span>
-          <button class="btn btn-outline btn-sm" data-action="edit-promo" data-index="${i}">Edit</button>
+          <div class="promo-actions">
+            <button class="btn btn-outline btn-sm" data-action="edit-promo" data-index="${i}">Edit</button>
+            <button class="btn btn-outline btn-sm btn-danger" data-action="delete-promo" data-index="${i}">Delete</button>
+          </div>
         </div>
       </div>
     </div>`
@@ -1452,6 +1485,189 @@ document.addEventListener('click', e => {
   setChipGroup(group, 'Pending');
 })();
 
+// =====================================================================
+// NOTIFICATIONS: log table + send modal
+// TODO(backend): wire to real endpoints once backend is ready.
+// Currently uses mock data for the UI; the send modal calls the real
+// backend/api/notifications/send.php endpoint.
+// =====================================================================
+let notifFilter = 'All';
+let notifTemplates = [];
+
+async function loadNotifTemplates(){
+  try {
+    const res = await fetch('../backend/api/notifications/templates.php?active_only=1');
+    const data = await res.json();
+    if (data.success && data.templates) notifTemplates = data.templates;
+  } catch(e){ /* templates will be empty, that's fine */ }
+}
+
+async function renderNotifications(){
+  const tbody = document.getElementById('notifLogBody');
+  const empty = document.getElementById('notifLogEmpty');
+  if (!tbody) return;
+
+  // Try fetching from the real API, fall back to empty
+  let logs = [];
+  try {
+    const params = new URLSearchParams();
+    if (notifFilter === 'Email') params.set('channel', 'email');
+    if (notifFilter === 'SMS') params.set('channel', 'sms');
+    if (notifFilter === 'Failed') params.set('status', 'failed');
+    params.set('limit', '50');
+    const res = await fetch('../backend/api/notifications/list.php?' + params.toString());
+    const data = await res.json();
+    if (data.success) logs = data.logs || [];
+  } catch(e){ /* empty */ }
+
+  if (!logs.length){
+    tbody.innerHTML = '';
+    if (empty) empty.hidden = false;
+    return;
+  }
+  if (empty) empty.hidden = true;
+
+  tbody.innerHTML = logs.map(log => {
+    const chTag = log.channel === 'email'
+      ? '<span class="tag tag-blue">Email</span>'
+      : '<span class="tag tag-amber">SMS</span>';
+    const stTag = log.status === 'sent'
+      ? '<span class="tag tag-green">Sent</span>'
+      : log.status === 'failed'
+        ? '<span class="tag tag-red">Failed</span>'
+        : '<span class="tag tag-amber">Pending</span>';
+    const subject = log.subject || '—';
+    const date = log.sent_at ? new Date(log.sent_at).toLocaleString('en-US', { month:'short', day:'numeric', hour:'numeric', minute:'2-digit' }) : '—';
+    return `<tr>
+      <td>${escapeHtml(log.patient_name || '')}</td>
+      <td>${chTag}</td>
+      <td>${escapeHtml(subject)}</td>
+      <td>${stTag}</td>
+      <td>${escapeHtml(date)}</td>
+    </tr>`;
+  }).join('');
+}
+
+(function wireNotifFilter(){
+  const group = document.querySelector('#view-notifications .toolbar-left');
+  if (!group) return;
+  wireChips(group, label => { notifFilter = label; renderNotifications(); });
+})();
+
+// ---------- Send Notification Modal ----------
+const sendNotifModal = new Modal('sendNotifModal');
+
+if (sendNotifModal.modal){
+  sendNotifModal.registerClose(document.getElementById('sendNotifClose'));
+  sendNotifModal.registerClose(document.getElementById('sendNotifCancel'));
+
+  const snPatient  = document.getElementById('snPatient');
+  const snTemplate = document.getElementById('snTemplate');
+  const snChannel  = document.getElementById('snChannel');
+  const snSubject  = document.getElementById('snSubject');
+  const snBody     = document.getElementById('snBody');
+  const snNote     = document.getElementById('sendNotifNote');
+  const snSaveBtn  = document.getElementById('sendNotifSave');
+
+  // Populate patient dropdown from mock data
+  function fillPatientDropdown(){
+    snPatient.innerHTML = AdminMock.patients
+      .map(p => `<option value="${p.pid}">${p.name}</option>`).join('');
+  }
+
+  // Populate template dropdown
+  function fillTemplateDropdown(){
+    snTemplate.innerHTML = '<option value="">Custom message...</option>' +
+      notifTemplates.map(t =>
+        `<option value="${escapeHtml(t.template_key)}">${escapeHtml(t.name)} (${t.channel})</option>`
+      ).join('');
+  }
+
+  // When a template is selected, auto-fill subject + body
+  snTemplate.addEventListener('change', () => {
+    const key = snTemplate.value;
+    if (!key){
+      snSubject.value = '';
+      snBody.value = '';
+      snChannel.value = 'both';
+      return;
+    }
+    const t = notifTemplates.find(x => x.template_key === key);
+    if (t){
+      snSubject.value = t.subject || '';
+      snBody.value = t.body || '';
+      snChannel.value = t.channel || 'both';
+    }
+  });
+
+  document.getElementById('sendNotifBtn').addEventListener('click', () => {
+    snNote.hidden = true;
+    fillPatientDropdown();
+    fillTemplateDropdown();
+    snSubject.value = '';
+    snBody.value = '';
+    snChannel.value = 'both';
+    snTemplate.value = '';
+    sendNotifModal.open();
+  });
+
+  snSaveBtn.addEventListener('click', async () => {
+    const patientId = snPatient.value;
+    if (!patientId){
+      snNote.textContent = 'Please select a patient.';
+      snNote.classList.add('err'); snNote.classList.remove('ok');
+      snNote.hidden = false;
+      return;
+    }
+    if (!snBody.value.trim()){
+      snNote.textContent = 'Please enter a message body.';
+      snNote.classList.add('err'); snNote.classList.remove('ok');
+      snNote.hidden = false;
+      return;
+    }
+
+    snSaveBtn.classList.add('loading');
+    snSaveBtn.disabled = true;
+
+    const payload = {
+      patient_id: parseInt(patientId, 10),
+      channel: snChannel.value,
+      subject: snSubject.value.trim() || null,
+      body: snBody.value.trim(),
+    };
+    if (snTemplate.value){
+      payload.template_key = snTemplate.value;
+      delete payload.subject;
+      delete payload.body;
+    }
+
+    try {
+      const res = await fetch('../backend/api/notifications/send.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (data.success){
+        sendNotifModal.close();
+        showToast('Notification sent to ' + (snPatient.selectedOptions[0]?.textContent || 'patient'));
+        renderNotifications();
+      } else {
+        snNote.textContent = data.error || 'Failed to send notification.';
+        snNote.classList.add('err'); snNote.classList.remove('ok');
+        snNote.hidden = false;
+      }
+    } catch(e){
+      snNote.textContent = 'Network error. Please try again.';
+      snNote.classList.add('err'); snNote.classList.remove('ok');
+      snNote.hidden = false;
+    } finally {
+      snSaveBtn.classList.remove('loading');
+      snSaveBtn.disabled = false;
+    }
+  });
+}
+
 // ---------- Render everything on load ----------
 renderUser(AdminMock.user);
 renderDashboardStats(AdminMock.dashboard.stats);
@@ -1465,3 +1681,5 @@ renderPromotions(AdminMock.promotions);
 renderReports(AdminMock.reports);
 applyInventory();
 renderPayments();
+loadNotifTemplates();
+renderNotifications();
