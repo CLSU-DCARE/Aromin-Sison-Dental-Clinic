@@ -10,6 +10,13 @@ require_once __DIR__ . '/../../config/auth.php';
 
 header('Content-Type: application/json');
 
+if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+    header('Allow: POST');
+    http_response_code(405);
+    echo json_encode(['error' => 'Method not allowed.']);
+    exit;
+}
+
 secure_session_start();
 
 // Clear all session data and delete the session cookie.

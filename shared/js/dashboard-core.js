@@ -21,6 +21,72 @@
                              unread/read states and "mark all as read"
    ===================================================================== */
 
+// ---------- Authenticated dashboard session ----------
+// Direct dashboard navigation is checked against the server session. The
+// selected login tab and browser storage are never treated as identity.
+(function guardDashboardSession(){
+  const isPatientDashboard = location.pathname.includes('/patient-dashboard/');
+  const isAdminDashboard = location.pathname.includes('/admin-system/');
+  if (!isPatientDashboard && !isAdminDashboard) return;
+
+  // Avoid briefly displaying protected dashboard content while the session
+  // check is in flight.
+  document.documentElement.style.visibility = 'hidden';
+
+  const loginUrl = '../auth/login.html?role=' + (isPatientDashboard ? 'patient' : 'staff');
+  const destinationFor = role => role === 'patient'
+    ? '../patient-dashboard/dashboard.html'
+    : ['admin', 'staff', 'dentist'].includes(role)
+      ? '../admin-system/dashboard.html'
+      : null;
+
+  fetch('../backend/api/auth/me.php', {
+    method: 'GET',
+    credentials: 'same-origin',
+    headers: { 'Accept': 'application/json' }
+  })
+    .then(async response => {
+      let payload = {};
+      try { payload = await response.json(); } catch (e) {}
+      if (!response.ok || !payload.user) throw new Error('unauthenticated');
+      return payload.user;
+    })
+    .then(user => {
+      const destination = destinationFor(user.role);
+      const correctDashboard = (isPatientDashboard && user.role === 'patient') ||
+        (isAdminDashboard && ['admin', 'staff', 'dentist'].includes(user.role));
+
+      if (!destination){
+        location.replace(loginUrl);
+        return;
+      }
+      if (!correctDashboard){
+        location.replace(destination);
+        return;
+      }
+
+      window.ASDCAuthUser = user;
+      const initials = String(user.full_name || '')
+        .trim().split(/\s+/).filter(Boolean).map(part => part[0]).slice(0, 2).join('').toUpperCase();
+      const roleLabel = user.role.charAt(0).toUpperCase() + user.role.slice(1);
+      const set = (id, value) => {
+        const element = document.getElementById(id);
+        if (element) element.textContent = value;
+      };
+
+      ['sideFootAvatar', 'chipAvatar', 'menuAvatar', 'profileAvatar'].forEach(id => set(id, initials));
+      ['sideFootName', 'menuName', 'profileName'].forEach(id => set(id, user.full_name));
+      ['sideFootRole', 'menuRole'].forEach(id => set(id, roleLabel));
+      if (isAdminDashboard) set('greetingSubtext', user.full_name + ' · ' + roleLabel);
+      else set('welcomeTitle', 'Welcome, ' + user.full_name + '!');
+
+      const chip = document.getElementById('userChip');
+      if (chip) chip.title = user.full_name + ': ' + roleLabel;
+      document.documentElement.style.visibility = '';
+    })
+    .catch(() => location.replace(loginUrl + '&error=session'));
+})();
+
 // =====================================================================
 // REUSABLE MODAL COMPONENT (mirrors the pattern used in the auth module)
 // =====================================================================

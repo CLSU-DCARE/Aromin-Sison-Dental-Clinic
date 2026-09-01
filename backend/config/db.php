@@ -9,14 +9,15 @@
  *   // then use the $pdo variable
  */
 
-$DB_HOST = 'localhost';
+$DB_HOST = '127.0.0.1';
+$DB_PORT = 3307;
 $DB_NAME = 'aromin_sison_dental';
 $DB_USER = 'root';   // default XAMPP user
 $DB_PASS = '';        // default XAMPP password is blank
 
 try {
     $pdo = new PDO(
-        "mysql:host=$DB_HOST;dbname=$DB_NAME;charset=utf8mb4",
+        "mysql:host=$DB_HOST;port=$DB_PORT;dbname=$DB_NAME;charset=utf8mb4",
         $DB_USER,
         $DB_PASS,
         [

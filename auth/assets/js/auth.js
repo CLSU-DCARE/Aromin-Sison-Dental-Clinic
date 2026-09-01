@@ -1,12 +1,10 @@
-/* Aromin-Sison Dental Clinic: Auth module (frontend-only)
-   Everything here is a MOCK. No requests are sent anywhere.
-   Look for "TODO(backend)" to find every spot that needs a real
-   endpoint wired in once the backend is ready. */
+/* Aromin-Sison Dental Clinic: Auth module.
+   Login uses the PHP session API. Forgot-password remains a deferred mock
+   until the reset-token and mail workflow is implemented. */
 
 // ---------- Query-param overrides (for design/QA + deep links) ----------
-// ?role=patient | staff            -> skip straight to that login form
-// ?state=loading | error | network -> force that mock outcome on submit
-// None of this is part of the real UX: safe to delete once wired to a backend.
+// ?role=patient | staff -> skip straight to that login form.
+// ?state=loading remains available for the deferred forgot-password mock.
 const FORCE_STATE = new URLSearchParams(location.search).get('state');
 
 // Copy shown in the left brand panel. Keyed by "step": role-select screen,
@@ -299,55 +297,47 @@ function initLiveValidation(){
   });
 }
 
-// ---------- Mock "server" responses ----------
-// Deterministic, driven by magic test values (documented in the on-page
-// "Testing this form?" hint) so every state below is reachable by typing,
-// not just by URL params. This whole block is replaced by real API calls.
-const MOCK_MESSAGES = {
-  notfound: {
-    patient: "We couldn't find a patient account with that email address.",
-    staff: "We couldn't find a staff account with that email address."
-  },
-  wrongpassword: {
-    patient: 'Incorrect password. Please try again.',
-    staff: 'Incorrect password. Please try again.'
-  },
-  emailexists: {
-    patient: 'An account with this email already exists. Try logging in instead.',
-    staff: 'An account with this email already exists.'
-  },
-  network: {
-    patient: "Something went wrong on our end. Please check your connection and try again.",
-    staff: "Something went wrong on our end. Please check your connection and try again."
-  },
-  generic: {
-    patient: 'Invalid patient credentials. Please check your email and password.',
-    staff: 'Invalid staff credentials. Please check your email and password.'
-  }
+// ---------- Real session login ----------
+const AUTH_ENDPOINTS = {
+  login: '../backend/api/auth/login.php',
+  me: '../backend/api/auth/me.php',
+  logout: '../backend/api/auth/logout.php'
 };
 
-function mockOutcome(form, {isRegister = false} = {}){
-  if (FORCE_STATE === 'network') return 'network';
-  if (FORCE_STATE === 'error') return isRegister ? 'emailexists': 'wrongpassword';
+const ROLE_DESTINATIONS = {
+  admin: '../admin-system/dashboard.html',
+  staff: '../admin-system/dashboard.html',
+  dentist: '../admin-system/dashboard.html',
+  patient: '../patient-dashboard/dashboard.html'
+};
 
-  const emailField = form.querySelector('input[type="email"]');
-  const email = emailField ? emailField.value.trim().toLowerCase(): '';
-
-  if (isRegister){
-    if (email === 'exists@example.com') return 'emailexists';
-    return 'ok';
-  }
-  if (email === 'notfound@example.com') return 'notfound';
-  if (email === 'wrongpass@example.com') return 'wrongpassword';
-  return 'ok';
+async function readJsonResponse(response){
+  try { return await response.json(); }
+  catch (e){ return {}; }
 }
 
-// ---------- Mock form submission ----------
-function mockSubmit(form, redirectTo, {role, isRegister = false} = {}){
-  const btn = form.querySelector('.btn-block');
-  const endpoint = role === 'staff' ? '/api/auth/staff/login': '/api/auth/patient/login';
+async function fetchWithTimeout(url, options = {}, timeoutMs = 10000){
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
 
-  form.addEventListener('submit', e => {
+function loginErrorMessage(response, payload){
+  if (response.status === 401) return 'Invalid email or password. Please try again.';
+  if (response.status === 429) return payload.error || 'Too many login attempts. Please wait and try again.';
+  if (response.status >= 500) return 'The clinic server is unavailable right now. Please try again shortly.';
+  return payload.error || 'Unable to sign in. Please check your details and try again.';
+}
+
+function initLoginForm(form){
+  if (!form) return;
+  const btn = form.querySelector('.btn-block');
+
+  form.addEventListener('submit', async e => {
     e.preventDefault();
 
     if (!validateForm(form)) return;
@@ -355,20 +345,47 @@ function mockSubmit(form, redirectTo, {role, isRegister = false} = {}){
     hideAlert();
     setLoading(btn, true);
 
-    // TODO(backend): replace this timeout with a real request to `endpoint`, e.g.:
-    //   const res = await fetch(endpoint, {
-    //     method: 'POST', body: JSON.stringify(Object.fromEntries(new FormData(form)))
-    //   });
-    //   handle res.ok / res.json() instead of the mock branch below.
-    setTimeout(() => {
-      const outcome = mockOutcome(form, {isRegister});
-      if (outcome === 'ok'){
-        window.location.href = redirectTo;
+    const data = new FormData(form);
+    const credentials = {
+      email: String(data.get('email') || '').trim(),
+      password: String(data.get('password') || '')
+    };
+
+    try {
+      const loginResponse = await fetchWithTimeout(AUTH_ENDPOINTS.login, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(credentials)
+      });
+      const loginPayload = await readJsonResponse(loginResponse);
+      if (!loginResponse.ok){
+        showAlert(loginErrorMessage(loginResponse, loginPayload));
         return;
       }
+
+      const meResponse = await fetchWithTimeout(AUTH_ENDPOINTS.me, {
+        method: 'GET',
+        credentials: 'same-origin',
+        headers: { 'Accept': 'application/json' }
+      });
+      const mePayload = await readJsonResponse(meResponse);
+      const user = mePayload.user;
+      const destination = user && ROLE_DESTINATIONS[user.role];
+      if (!meResponse.ok || !destination){
+        await fetch(AUTH_ENDPOINTS.logout, { method: 'POST', credentials: 'same-origin' }).catch(() => {});
+        showAlert('Your account session could not be verified. Please sign in again.');
+        return;
+      }
+
+      window.location.assign(destination);
+    } catch (error){
+      showAlert(error && error.name === 'AbortError'
+        ? 'The clinic server took too long to respond. Please try again.'
+        : 'Unable to reach the clinic server. Check your connection and try again.');
+    } finally {
       setLoading(btn, false);
-      showAlert(MOCK_MESSAGES[outcome][role] || MOCK_MESSAGES.generic[role]);
-    }, 900);
+    }
   });
 }
 

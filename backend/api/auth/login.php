@@ -16,9 +16,17 @@
  */
 
 require_once __DIR__ . '/../../config/auth.php';
-require_once __DIR__ . '/../../config/db.php';
 
 header('Content-Type: application/json');
+
+if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+    header('Allow: POST');
+    http_response_code(405);
+    echo json_encode(['error' => 'Method not allowed.']);
+    exit;
+}
+
+require_once __DIR__ . '/../../config/db.php';
 
 // Start a (hardened) session up front so we can track failed attempts.
 secure_session_start();
@@ -27,14 +35,31 @@ secure_session_start();
 define('MAX_ATTEMPTS', 5);
 define('LOCKOUT_SECONDS', 900); // 15 minutes
 
-$input = json_decode(file_get_contents('php://input'), true);
+$rawInput = file_get_contents('php://input');
+$input = json_decode($rawInput, true);
 
-$email = strtolower(trim($input['email'] ?? ''));
-$password = $input['password'] ?? '';
+if (!is_array($input)) {
+    http_response_code(400);
+    echo json_encode(['error' => 'A valid JSON request body is required.']);
+    exit;
+}
+
+$email = isset($input['email']) && is_string($input['email'])
+    ? strtolower(trim($input['email']))
+    : '';
+$password = isset($input['password']) && is_string($input['password'])
+    ? $input['password']
+    : '';
 
 if (!$email || !$password) {
     http_response_code(400);
     echo json_encode(['error' => 'Email and password are required.']);
+    exit;
+}
+
+if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+    http_response_code(400);
+    echo json_encode(['error' => 'A valid email address is required.']);
     exit;
 }
 
@@ -51,11 +76,11 @@ if (time() < $attempt['lockout_until']) {
     exit;
 }
 
-$stmt = $pdo->prepare('SELECT user_id, role, email, password_hash, full_name FROM users WHERE email = ? AND is_active = 1');
+$stmt = $pdo->prepare('SELECT user_id, role, email, password_hash, full_name, is_active FROM users WHERE email = ?');
 $stmt->execute([$email]);
 $user = $stmt->fetch();
 
-if (!$user || !password_verify($password, $user['password_hash'])) {
+if (!$user || !(bool) $user['is_active'] || !password_verify($password, $user['password_hash'])) {
     $attempt['count']++;
     if ($attempt['count'] >= MAX_ATTEMPTS) {
         $attempt['lockout_until'] = time() + LOCKOUT_SECONDS;
@@ -72,6 +97,14 @@ if (!$user || !password_verify($password, $user['password_hash'])) {
     exit;
 }
 
+$allowedRoles = ['admin', 'staff', 'dentist', 'patient'];
+if (!in_array($user['role'], $allowedRoles, true)) {
+    error_log('Login rejected for user with unsupported role: ' . $user['user_id']);
+    http_response_code(403);
+    echo json_encode(['error' => 'This account role is not supported.']);
+    exit;
+}
+
 // Success: reset the attempt counter and rotate the session id to prevent fixation.
 unset($_SESSION['login_attempts'][$email]);
 session_regenerate_id(true);
@@ -82,7 +115,7 @@ $_SESSION['email'] = $user['email'];
 $_SESSION['full_name'] = $user['full_name'];
 $_SESSION['last_activity'] = time();
 
-unset($user['password_hash']); // never send the hash back to the client
+unset($user['password_hash'], $user['is_active']); // never send sensitive/internal fields
 
 echo json_encode([
     'success' => true,

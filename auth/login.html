@@ -111,15 +111,11 @@
               <span class="btn-label">Log In</span>
               <span class="btn-spinner" aria-hidden="true"></span>
             </button>
-            <!-- TODO(backend): POST /api/auth/patient/login -->
-
             <details class="demo-hint">
-              <summary>Testing this form? (mock scenarios)</summary>
+              <summary>Having trouble signing in?</summary>
               <ul>
-                <li><code>notfound@example.com</code> → "Account not found"</li>
-                <li><code>wrongpass@example.com</code> → "Incorrect password"</li>
-                <li>Any other valid-looking email → succeeds and redirects</li>
-                <li>Add <code>?state=network</code> to the URL → simulates a network error</li>
+                <li>Use the email address registered with the clinic.</li>
+                <li>Contact clinic staff if your patient account is not active.</li>
               </ul>
             </details>
           </form>
@@ -159,15 +155,11 @@
               <span class="btn-label">Sign In</span>
               <span class="btn-spinner" aria-hidden="true"></span>
             </button>
-            <!-- TODO(backend): POST /api/auth/staff/login -->
-
             <details class="demo-hint">
-              <summary>Testing this form? (mock scenarios)</summary>
+              <summary>Having trouble signing in?</summary>
               <ul>
-                <li><code>notfound@example.com</code> → "Account not found"</li>
-                <li><code>wrongpass@example.com</code> → "Incorrect password"</li>
-                <li>Any other valid-looking email → succeeds and redirects</li>
-                <li>Add <code>?state=network</code> to the URL → simulates a network error</li>
+                <li>Use the staff email address assigned by the clinic.</li>
+                <li>Contact an administrator if your account is inactive.</li>
               </ul>
             </details>
           </form>
@@ -187,11 +179,14 @@
   </main>
 </div>
 
-<script src="assets/js/auth.js?v=5" defer></script>
+<script src="assets/js/auth.js?v=7" defer></script>
 <script>
   document.addEventListener('DOMContentLoaded', () => {
-    mockSubmit(document.getElementById('panel-login'), '../patient-dashboard/dashboard.html', {role: 'patient'});
-    mockSubmit(document.getElementById('panel-admin-login'), '../admin-system/dashboard.html', {role: 'staff'});
+    initLoginForm(document.getElementById('panel-login'));
+    initLoginForm(document.getElementById('panel-admin-login'));
+    if (new URLSearchParams(location.search).get('error') === 'session') {
+      showAlert('Your session has expired. Please sign in again.');
+    }
   });
 </script>
 </body>
