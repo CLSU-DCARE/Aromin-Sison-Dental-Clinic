@@ -929,6 +929,12 @@ header.scrolled .nav-toggle:hover{border-color:var(--gold);background:var(--ivor
   border-radius:var(--r-lg);
   padding:42px;
 }
+.cta-form-fields{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+  column-gap:24px;
+}
+.cta-form-fields .field-full{grid-column:1 / -1;}
 .cta-form-card .field{
   padding:17px 0;
   border-bottom:1px solid var(--line);
@@ -2097,6 +2103,7 @@ footer{
 }
 @media (max-width:1150px){
   .cta-grid{grid-template-columns:1fr;gap:56px;}
+  .cta-form-card{width:100%;max-width:760px;justify-self:center;}
   .banner-grid{grid-template-columns:1fr;gap:56px;}
   .banner-visual{aspect-ratio:16/9;max-width:560px;}
   .visit-grid{grid-template-columns:1fr;}
@@ -2142,6 +2149,9 @@ footer{
   .visit-card{padding:32px 26px;}
   .gallery-grid,.mvv-grid,.values-list,.team-grid{grid-template-columns:1fr;}
   .tooth-item{width:190px;}
+  .cta-form-card{padding:30px 24px;}
+  .cta-form-fields{grid-template-columns:1fr;column-gap:0;}
+  .cta-form-fields .field-full{grid-column:auto;}
 
   /* ===== GALLERY HERO: compact ===== */
   .gallery-hero{padding:110px 0 36px;}

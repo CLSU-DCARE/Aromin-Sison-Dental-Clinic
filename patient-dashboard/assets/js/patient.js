@@ -44,12 +44,12 @@ async function patientAppointmentRequest(
 
   if (!response.ok) {
     throw new Error(
-      payload.error ||
+      (payload.error && (payload.error.message || payload.error)) ||
       'Unable to process the appointment request.'
     );
   }
 
-  return payload;
+  return payload.data || payload;
 }
 
 async function patientBracesRequest() {

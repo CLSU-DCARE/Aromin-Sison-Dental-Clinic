@@ -265,33 +265,48 @@
         <div class="page-head">
           <div>
             <div class="eyebrow">Scheduling</div>
-            <p>Book, move, and confirm appointments.</p>
+            <p>Review public requests and manage the confirmed weekly schedule.</p>
           </div>
-          <button class="btn btn-gold" id="addApptBtn">+ Book Appointment</button>
+          <button class="btn btn-secondary" id="refreshAppointmentsBtn">Refresh Schedule</button>
         </div>
         <div class="panel">
-          <div class="toolbar">
+          <div class="toolbar appointment-toolbar">
             <div class="toolbar-left" role="group" aria-label="Filter schedule">
               <button class="filter-chip active" aria-pressed="true">Week</button>
               <button class="filter-chip" aria-pressed="false">Day</button>
               <button class="filter-chip" aria-pressed="false">List</button>
             </div>
-            <span class="tag tag-amber" id="apptModeTag">Aug 10 – 15, 2026</span>
+            <div class="appointment-week-nav">
+              <button type="button" class="btn btn-outline btn-sm" id="apptPrevWeek">Previous</button>
+              <button type="button" class="btn btn-outline btn-sm" id="apptCurrentWeek">This Week</button>
+              <button type="button" class="btn btn-outline btn-sm" id="apptNextWeek">Next</button>
+              <span class="tag tag-amber" id="apptModeTag">Loading schedule…</span>
+            </div>
           </div>
           <div class="week-scroll">
-            <div class="week-grid" id="apptWeekGrid"></div>
+            <div class="week-grid appointment-week-grid" id="apptWeekGrid" aria-live="polite"></div>
           </div>
           <div class="table-scroll" id="apptListView" hidden>
             <table>
-              <thead>
-                <tr>
-                  <th>Day</th>
-                  <th>Time</th>
-                  <th>Patient</th>
-                  <th>Service</th>
-                </tr>
-              </thead>
+              <thead><tr><th>Day</th><th>Time</th><th>Patient</th><th>Service</th><th>Status</th></tr></thead>
               <tbody id="apptListBody"></tbody>
+            </table>
+          </div>
+          <p class="form-note err appointment-load-error" id="appointmentLoadError" role="alert" hidden></p>
+        </div>
+
+        <div class="panel appointment-request-panel">
+          <div class="panel-head">
+            <div>
+              <h3>Pending Booking Requests</h3>
+              <p>Requests submitted through the public website for the selected week.</p>
+            </div>
+            <span class="tag tag-amber" id="appointmentRequestCount">Loading…</span>
+          </div>
+          <div class="table-scroll">
+            <table class="appointment-request-table">
+              <thead><tr><th>Patient</th><th>Service</th><th>Requested Schedule</th><th>Contact Number</th><th>Status</th><th>Actions</th></tr></thead>
+              <tbody id="appointmentRequestsBody"><tr><td colspan="6" class="empty-cell">Loading booking requests…</td></tr></tbody>
             </table>
           </div>
         </div>
@@ -781,35 +796,28 @@
   </div>
 </div>
 
-<!-- ===== NEW APPOINTMENT MODAL ===== -->
-<div class="modal-overlay" id="apptFormModal" hidden>
-  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="apptFormTitle">
-    <button class="modal-close" id="apptFormClose" aria-label="Close dialog">
+<!-- ===== RESCHEDULE PUBLIC BOOKING REQUEST ===== -->
+<div class="modal-overlay" id="requestRescheduleModal" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="requestRescheduleTitle">
+    <button class="modal-close" id="requestRescheduleClose" aria-label="Close dialog">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
     </button>
-    <h3 id="apptFormTitle">Book Appointment</h3>
+    <h3 id="requestRescheduleTitle">Reschedule Booking Request</h3>
+    <p class="modal-subtitle" id="requestReschedulePatient"></p>
     <div class="form-group">
-      <label for="afPatient">Patient</label>
-      <select id="afPatient"></select>
+      <label for="requestRescheduleDate">New Date</label>
+      <input type="date" id="requestRescheduleDate" required>
     </div>
     <div class="form-group">
-      <label for="afService">Service</label>
-      <select id="afService"><option>Braces Adjustment</option><option>Braces Installation</option><option>Cleaning &amp; Check-up</option><option>Consultation</option></select>
+      <label for="requestRescheduleTime">New Time</label>
+      <input type="time" id="requestRescheduleTime" required>
     </div>
-    <div class="form-group">
-      <label for="afDay">Day</label>
-      <select id="afDay"></select>
-    </div>
-    <div class="form-group">
-      <label for="afTime">Time</label>
-      <select id="afTime"></select>
-    </div>
-    <p class="form-note" id="apptFormNote" role="status" hidden></p>
+    <p class="form-note" id="requestRescheduleNote" role="status" hidden></p>
     <div class="modal-actions">
-      <button type="button" class="btn btn-secondary" id="apptFormCancel">Cancel</button>
-      <button type="button" class="btn btn-gold" id="apptFormSave">
+      <button type="button" class="btn btn-secondary" id="requestRescheduleCancel">Cancel</button>
+      <button type="button" class="btn btn-gold" id="requestRescheduleSave">
         <span class="btn-spinner" aria-hidden="true"></span>
-        <span class="btn-label">Book Appointment</span>
+        <span class="btn-label">Save New Schedule</span>
       </button>
     </div>
   </div>
