@@ -1,6 +1,14 @@
 // =====================================================================
 const PATIENT_APPOINTMENTS_ENDPOINT =
   '../backend/api/patients/appointments.php';
+const PATIENT_BRACES_ENDPOINT =
+  '../backend/api/patients/braces.php';
+
+const PatientDashboardVisibility = {
+  braces: false,
+  contract: false,
+  balance: false
+};
 
 async function patientAppointmentRequest(
   method = 'GET',
@@ -38,6 +46,36 @@ async function patientAppointmentRequest(
     throw new Error(
       payload.error ||
       'Unable to process the appointment request.'
+    );
+  }
+
+  return payload;
+}
+
+async function patientBracesRequest() {
+  const response = await fetch(
+    PATIENT_BRACES_ENDPOINT,
+    {
+      method: 'GET',
+      credentials: 'same-origin',
+      headers: {
+        Accept: 'application/json'
+      }
+    }
+  );
+
+  let payload = {};
+
+  try {
+    payload = await response.json();
+  } catch (error) {
+    payload = {};
+  }
+
+  if (!response.ok) {
+    throw new Error(
+      payload.error ||
+      'Unable to load braces information.'
     );
   }
 
@@ -450,6 +488,7 @@ if (confirmBookingBtn) {
         );
 
         await loadPatientAppointments();
+        await loadPatientBraces();
 
         slot.classList.add(
           'unavailable'
@@ -1182,8 +1221,41 @@ function renderDashboardStats(stats) {
       })
       .length;
 
+  const visibleStats =
+    stats.filter(stat => {
+      if (
+        stat.label ===
+        'Braces Treatment Progress'
+      ) {
+        return PatientDashboardVisibility.braces;
+      }
+
+      if (
+        stat.label ===
+        'Outstanding Balance'
+      ) {
+        return PatientDashboardVisibility.balance;
+      }
+
+      if (
+        stat.label ===
+        'Completed Visits'
+      ) {
+        return !PatientDashboardVisibility.braces;
+      }
+
+      if (
+        stat.label ===
+        'Treatment Records'
+      ) {
+        return !PatientDashboardVisibility.balance;
+      }
+
+      return true;
+    });
+
   grid.innerHTML =
-    stats.map(stat => {
+    visibleStats.map(stat => {
       const number =
         stat.label ===
         'Upcoming Appointment'
@@ -1488,6 +1560,7 @@ if (reschedModal.modal) {
         );
 
         await loadPatientAppointments();
+        await loadPatientBraces();
 
         reschedModal.close();
 
@@ -1649,6 +1722,16 @@ function renderBracesProgress(braces) {
   setValue(
     'bracesNext',
     braces.next
+  );
+
+  setValue(
+    'bracesHeading',
+    braces.heading
+  );
+
+  setValue(
+    'bracesDescription',
+    braces.description
   );
 
   const offset =
@@ -2657,6 +2740,118 @@ const fmtDate = date => {
   );
 };
 
+function setDashboardStat(
+  label,
+  value
+) {
+  const stat =
+    PatientMock.dashboard.stats
+      .find(item => {
+        return item.label === label;
+      });
+
+  if (stat) {
+    stat.num = String(value);
+  }
+}
+
+function setPatientViewVisibility(
+  view,
+  visible
+) {
+  document
+    .querySelectorAll(
+      `[data-view="${view}"]`
+    )
+    .forEach(button => {
+      button.hidden = !visible;
+      button.style.display =
+        visible ? '' : 'none';
+    });
+}
+
+function applyPatientFeatureVisibility() {
+  setPatientViewVisibility(
+    'braces',
+    PatientDashboardVisibility.braces
+  );
+
+  setPatientViewVisibility(
+    'contract',
+    PatientDashboardVisibility.contract
+  );
+}
+
+async function loadPatientBraces() {
+  try {
+    const payload =
+      await patientBracesRequest();
+
+    PatientDashboardVisibility.braces =
+      payload.has_braces_treatment === true;
+
+    PatientDashboardVisibility.contract =
+      payload.has_contract === true;
+
+    PatientDashboardVisibility.balance =
+      payload.has_outstanding_balance === true;
+
+    PatientMock.braces =
+      payload.braces || PatientMock.braces;
+
+    PatientMock.contract =
+      payload.contract || PatientMock.contract;
+
+    setDashboardStat(
+      'Braces Treatment Progress',
+      payload.braces_progress || '0%'
+    );
+
+    setDashboardStat(
+      'Outstanding Balance',
+      payload.outstanding_balance || '₱0.00'
+    );
+
+    setDashboardStat(
+      'Completed Visits',
+      payload.completed_visits || 0
+    );
+
+    setDashboardStat(
+      'Treatment Records',
+      payload.treatment_records || 0
+    );
+
+    applyPatientFeatureVisibility();
+
+    renderDashboardStats(
+      PatientMock.dashboard.stats
+    );
+
+    renderBracesProgress(
+      PatientMock.braces
+    );
+
+    renderContract(
+      PatientMock.contract
+    );
+
+    renderPayments();
+  } catch (error) {
+    PatientDashboardVisibility.braces = false;
+    PatientDashboardVisibility.contract = false;
+    PatientDashboardVisibility.balance = false;
+
+    applyPatientFeatureVisibility();
+
+    renderDashboardStats(
+      PatientMock.dashboard.stats
+    );
+
+    showToast(error.message);
+  }
+}
+
 async function loadPatientAppointments() {
   try {
     const payload =
@@ -2787,4 +2982,7 @@ renderPromoCards(
   PatientMock.promoCards
 );
 
+applyPatientFeatureVisibility();
+
 loadPatientAppointments();
+loadPatientBraces();
