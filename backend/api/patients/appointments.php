@@ -10,6 +10,7 @@ header('Content-Type: application/json');
 
 require_once __DIR__ . '/../../config/auth.php';
 require_once __DIR__ . '/../../config/db.php';
+require_once __DIR__ . '/../../config/appointments.php';
 
 require_role('patient');
 
@@ -38,9 +39,7 @@ reschedule_appointment($pdo, $patientId, $input);
 
 function respond_error(int $status, string $message): void
 {
-    http_response_code($status);
-    echo json_encode(['error' => $message]);
-    exit;
+    appointment_error($status, $status === 409 ? 'slot_unavailable' : 'request_failed', $message);
 }
 
 function current_patient_id(PDO $pdo, int $userId): int
@@ -193,12 +192,7 @@ function list_appointments(PDO $pdo, int $patientId): void
         $schedule
     );
 
-    echo json_encode([
-        'schedule' => $schedule,
-        'upcoming' => $upcoming,
-        'history' => $history,
-    ]);
-    exit;
+    appointment_ok(['schedule' => $schedule, 'upcoming' => $upcoming, 'history' => $history]);
 }
 
 function create_appointment(PDO $pdo, int $patientId, array $input): void
@@ -232,6 +226,14 @@ function create_appointment(PDO $pdo, int $patientId, array $input): void
     }
     if ($time === null) {
         respond_error(400, 'Please choose a valid appointment time.');
+    }
+
+    $lock = appointment_lock($pdo, $date, $time);
+    $pdo->beginTransaction();
+    if (appointment_slot_taken($pdo, $date, $time)) {
+        $pdo->rollBack();
+        appointment_unlock($pdo, $lock);
+        respond_error(409, 'That appointment slot is no longer available.');
     }
 
     $duplicate = $pdo->prepare("
@@ -307,12 +309,11 @@ function create_appointment(PDO $pdo, int $patientId, array $input): void
         $notes,
     ]);
 
-    http_response_code(201);
-    echo json_encode([
-        'success' => true,
-        'appointment_id' => (int) $pdo->lastInsertId(),
-    ]);
-    exit;
+    $appointmentId = (int) $pdo->lastInsertId();
+    $pdo->commit();
+    appointment_unlock($pdo, $lock);
+
+    appointment_ok(['appointment_id' => $appointmentId, 'status' => 'pending'], 'Appointment booked.', 201);
 }
 
 function reschedule_appointment(PDO $pdo, int $patientId, array $input): void
@@ -340,6 +341,9 @@ function reschedule_appointment(PDO $pdo, int $patientId, array $input): void
         respond_error(400, 'Please choose a valid appointment time.');
     }
 
+    $lock = appointment_lock($pdo, $date, $time);
+    $pdo->beginTransaction();
+
     $appointment = $pdo->prepare("
         SELECT appointment_id, dentist_id
         FROM appointments
@@ -347,12 +351,21 @@ function reschedule_appointment(PDO $pdo, int $patientId, array $input): void
           AND patient_id = ?
           AND status IN ('pending', 'confirmed')
         LIMIT 1
+        FOR UPDATE
     ");
     $appointment->execute([(int) $appointmentId, $patientId]);
     $row = $appointment->fetch();
 
     if (!$row) {
+        $pdo->rollBack();
+        appointment_unlock($pdo, $lock);
         respond_error(404, 'Appointment not found or cannot be rescheduled.');
+    }
+
+    if (appointment_slot_taken($pdo, $date, $time, (int) $appointmentId, null)) {
+        $pdo->rollBack();
+        appointment_unlock($pdo, $lock);
+        respond_error(409, 'That appointment slot is no longer available.');
     }
 
     if ($row['dentist_id'] !== null) {
@@ -373,6 +386,8 @@ function reschedule_appointment(PDO $pdo, int $patientId, array $input): void
             (int) $appointmentId,
         ]);
         if ($occupied->fetch()) {
+            $pdo->rollBack();
+            appointment_unlock($pdo, $lock);
             respond_error(409, 'That dentist is no longer available at the selected time.');
         }
     }
@@ -387,7 +402,9 @@ function reschedule_appointment(PDO $pdo, int $patientId, array $input): void
     ");
     $update->execute([$date, $time, (int) $appointmentId, $patientId]);
 
-    echo json_encode(['success' => true]);
-    exit;
+    $pdo->commit();
+    appointment_unlock($pdo, $lock);
+
+    appointment_ok(['appointment_id' => (int) $appointmentId, 'scheduled_date' => $date, 'scheduled_time' => $time], 'Appointment rescheduled.');
 }
 

@@ -548,6 +548,138 @@ function renderApptMode(mode){
 const apptGroup = document.querySelector('[aria-label="Filter schedule"]');
 wireChips(apptGroup, label => renderApptMode(label));
 
+const APPOINTMENT_WEEK_ENDPOINT = '../backend/api/appointments/week.php';
+const APPOINTMENT_ACTION_ENDPOINT = '../backend/api/appointments/actions.php';
+const appointmentState = { start: appointmentMonday(new Date()), mode: 'Week', appointments: [], requests: [], loading: false };
+
+function appointmentLocalDate(value){
+  if (value instanceof Date) return new Date(value.getFullYear(), value.getMonth(), value.getDate());
+  const parts = String(value).split('-').map(Number);
+  return new Date(parts[0], parts[1] - 1, parts[2]);
+}
+function appointmentIsoDate(value){
+  const date = appointmentLocalDate(value);
+  return [date.getFullYear(), String(date.getMonth() + 1).padStart(2, '0'), String(date.getDate()).padStart(2, '0')].join('-');
+}
+function appointmentMonday(value){
+  const date = appointmentLocalDate(value);
+  const day = date.getDay() || 7;
+  date.setDate(date.getDate() - day + 1);
+  return appointmentIsoDate(date);
+}
+function appointmentAddDays(value, amount){
+  const date = appointmentLocalDate(value);
+  date.setDate(date.getDate() + amount);
+  return appointmentIsoDate(date);
+}
+function appointmentTimeLabel(value){
+  const parts = String(value || '00:00').split(':').map(Number);
+  return `${parts[0] % 12 || 12}:${String(parts[1] || 0).padStart(2, '0')} ${parts[0] >= 12 ? 'PM' : 'AM'}`;
+}
+function appointmentDateLabel(value, options){
+  return appointmentLocalDate(value).toLocaleDateString('en-US', options || { month:'short', day:'numeric', year:'numeric' });
+}
+function appointmentStatusTag(status){
+  const normalized = String(status || 'pending').toLowerCase();
+  const color = ['confirmed','completed'].includes(normalized) ? 'green' : ['pending','rescheduled'].includes(normalized) ? 'amber' : 'red';
+  const label = normalized === 'no_show' ? 'No-Show' : normalized.charAt(0).toUpperCase() + normalized.slice(1);
+  return `<span class="tag tag-${color}">${escapeHtml(label)}</span>`;
+}
+async function appointmentApi(url, options = {}){
+  const defaults = { credentials:'same-origin', headers:{ Accept:'application/json' } };
+  const response = await fetch(url, Object.assign(defaults, options));
+  let payload = {};
+  try { payload = await response.json(); } catch (e) {}
+  if (!response.ok){
+    const error = new Error(payload.error?.message || 'Unable to process the appointment request.');
+    error.code = payload.error?.code || 'request_failed';
+    throw error;
+  }
+  return payload.data || {};
+}
+
+function renderAppointmentSchedule(){
+  const grid = document.getElementById('apptWeekGrid');
+  const listView = document.getElementById('apptListView');
+  const tbody = document.getElementById('apptListBody');
+  const tag = document.getElementById('apptModeTag');
+  if (!grid || !listView || !tbody || !tag) return;
+  const days = Array.from({length:7}, (_, index) => appointmentAddDays(appointmentState.start, index));
+  const range = `${appointmentDateLabel(days[0], {month:'short',day:'numeric'})} – ${appointmentDateLabel(days[6], {month:'short',day:'numeric',year:'numeric'})}`;
+  tag.textContent = range + (appointmentState.mode === 'Week' ? '' : ` · ${appointmentState.mode} view`);
+  if (appointmentState.mode === 'List'){
+    grid.hidden = true;
+    listView.hidden = false;
+    tbody.innerHTML = appointmentState.appointments.length
+      ? appointmentState.appointments.map(item => `<tr><td>${escapeHtml(appointmentDateLabel(item.scheduled_date, {weekday:'short',month:'short',day:'numeric'}))}</td><td>${escapeHtml(appointmentTimeLabel(item.scheduled_time))}</td><td>${escapeHtml(item.patient_name)}</td><td>${escapeHtml(item.service_type)}</td><td>${appointmentStatusTag(item.status)}</td></tr>`).join('')
+      : '<tr><td colspan="5" class="empty-cell">No appointments scheduled for this week.</td></tr>';
+    return;
+  }
+  grid.hidden = false;
+  listView.hidden = true;
+  const today = appointmentIsoDate(new Date());
+  const visibleDays = appointmentState.mode === 'Day' ? [days.includes(today) ? today : days[0]] : days;
+  grid.style.setProperty('--appointment-day-count', visibleDays.length);
+  const times = [...new Set(appointmentState.appointments.map(item => String(item.scheduled_time).slice(0,5)))].sort();
+  if (!times.length) times.push('09:00','10:00','11:00','13:00','14:00','15:00','16:00');
+  const header = [''].concat(visibleDays.map(day => appointmentDateLabel(day, {weekday:'short',month:'short',day:'numeric'})))
+    .map((label,index) => `<div class="cell${index ? ' head' : ''}">${escapeHtml(label)}</div>`).join('');
+  const cells = times.map(time => {
+    const row = visibleDays.map(day => {
+      const item = appointmentState.appointments.find(appt => appt.scheduled_date === day && String(appt.scheduled_time).slice(0,5) === time);
+      return item ? `<div class="cell"><div class="appt-block"><strong>${escapeHtml(item.patient_name)}</strong><span class="t">${escapeHtml(item.service_type)} · ${escapeHtml(item.status)}</span></div></div>` : '<div class="cell"></div>';
+    }).join('');
+    return `<div class="cell time">${escapeHtml(appointmentTimeLabel(time))}</div>${row}`;
+  }).join('');
+  grid.innerHTML = header + cells;
+}
+
+function renderAppointmentRequests(){
+  const tbody = document.getElementById('appointmentRequestsBody');
+  const count = document.getElementById('appointmentRequestCount');
+  if (!tbody || !count) return;
+  count.textContent = `${appointmentState.requests.length} pending`;
+  tbody.innerHTML = appointmentState.requests.length ? appointmentState.requests.map(request => {
+    const initials = String(request.patient_name).split(/\s+/).map(part => part[0]).slice(0,2).join('').toUpperCase();
+    return `<tr><td>${nameCell(initials, request.patient_name, request.email || '')}</td><td>${escapeHtml(request.service_type)}</td>
+      <td><strong>${escapeHtml(appointmentDateLabel(request.scheduled_date))}</strong><div class="request-time">${escapeHtml(appointmentTimeLabel(request.scheduled_time))}</div></td>
+      <td>${escapeHtml(request.contact_number || '—')}</td><td>${appointmentStatusTag(request.status)}</td>
+      <td><div class="appointment-request-actions"><button type="button" class="btn btn-sm btn-approve" data-request-action="approve" data-request-id="${Number(request.request_id)}">Approve</button><button type="button" class="btn btn-sm btn-outline" data-request-action="reschedule" data-request-id="${Number(request.request_id)}">Reschedule</button><button type="button" class="btn btn-sm btn-reject" data-request-action="cancel" data-request-id="${Number(request.request_id)}">Reject</button></div></td></tr>`;
+  }).join('') : '<tr><td colspan="6" class="empty-cell">No pending booking requests for this week.</td></tr>';
+}
+
+async function loadAppointmentWeek(){
+  if (appointmentState.loading) return;
+  appointmentState.loading = true;
+  const refresh = document.getElementById('refreshAppointmentsBtn');
+  const errorNote = document.getElementById('appointmentLoadError');
+  const tbody = document.getElementById('appointmentRequestsBody');
+  if (refresh){ refresh.disabled = true; refresh.classList.add('is-loading'); }
+  if (errorNote) errorNote.hidden = true;
+  if (tbody) tbody.innerHTML = '<tr><td colspan="6" class="empty-cell">Loading booking requests…</td></tr>';
+  try {
+    const data = await appointmentApi(`${APPOINTMENT_WEEK_ENDPOINT}?start=${encodeURIComponent(appointmentState.start)}`);
+    appointmentState.appointments = Array.isArray(data.appointments) ? data.appointments : [];
+    appointmentState.requests = Array.isArray(data.requests) ? data.requests : [];
+    renderAppointmentSchedule();
+    renderAppointmentRequests();
+  } catch (error){
+    appointmentState.appointments = [];
+    appointmentState.requests = [];
+    renderAppointmentSchedule();
+    renderAppointmentRequests();
+    if (errorNote){ errorNote.textContent = error.message; errorNote.hidden = false; }
+  } finally {
+    appointmentState.loading = false;
+    if (refresh){ refresh.disabled = false; refresh.classList.remove('is-loading'); }
+  }
+}
+
+function renderApptMode(mode){
+  appointmentState.mode = mode;
+  renderAppointmentSchedule();
+}
+
 // =====================================================================
 // REPORTS: period chips update the panel heading (mock period switch)
 // =====================================================================
@@ -1135,6 +1267,91 @@ if (apptFormModal.modal){
   });
 }
 
+// ---------- Public booking request actions ----------
+const requestRescheduleModal = new Modal('requestRescheduleModal');
+let reschedulingRequestId = null;
+
+if (requestRescheduleModal.modal){
+  requestRescheduleModal.registerClose(document.getElementById('requestRescheduleClose'));
+  requestRescheduleModal.registerClose(document.getElementById('requestRescheduleCancel'));
+  const dateInput = document.getElementById('requestRescheduleDate');
+  const timeInput = document.getElementById('requestRescheduleTime');
+  const saveButton = document.getElementById('requestRescheduleSave');
+  const note = document.getElementById('requestRescheduleNote');
+  dateInput.min = appointmentIsoDate(new Date());
+
+  saveButton.addEventListener('click', async () => {
+    if (!reschedulingRequestId || !dateInput.value || !timeInput.value){
+      note.textContent = 'Choose a valid new date and time.';
+      note.classList.add('err'); note.classList.remove('ok'); note.hidden = false;
+      return;
+    }
+    saveButton.disabled = true;
+    saveButton.classList.add('is-loading');
+    note.hidden = true;
+    try {
+      await runAppointmentRequestAction('reschedule', reschedulingRequestId, {
+        scheduled_date: dateInput.value,
+        scheduled_time: timeInput.value
+      }, false);
+      requestRescheduleModal.close();
+      showToast('Booking request rescheduled');
+      await loadAppointmentWeek();
+    } catch (error){
+      note.textContent = error.code === 'slot_unavailable' ? 'That date and time are already booked. Choose another slot.' : error.message;
+      note.classList.add('err'); note.classList.remove('ok'); note.hidden = false;
+    } finally {
+      saveButton.disabled = false;
+      saveButton.classList.remove('is-loading');
+    }
+  });
+}
+
+async function runAppointmentRequestAction(action, requestId, extra = {}, refresh = true){
+  const data = await appointmentApi(APPOINTMENT_ACTION_ENDPOINT, {
+    method: action === 'reschedule' ? 'PATCH' : 'POST',
+    headers: { Accept:'application/json', 'Content-Type':'application/json' },
+    body: JSON.stringify(Object.assign({ action, resource_type:'request', request_id:Number(requestId) }, extra))
+  });
+  if (refresh) await loadAppointmentWeek();
+  return data;
+}
+
+document.getElementById('appointmentRequestsBody')?.addEventListener('click', async event => {
+  const button = event.target.closest('[data-request-action]');
+  if (!button || button.disabled) return;
+  const requestId = Number(button.dataset.requestId);
+  const request = appointmentState.requests.find(item => Number(item.request_id) === requestId);
+  if (!request) return;
+  if (button.dataset.requestAction === 'reschedule'){
+    reschedulingRequestId = requestId;
+    document.getElementById('requestReschedulePatient').textContent = `${request.patient_name} · ${request.service_type}`;
+    document.getElementById('requestRescheduleDate').value = request.scheduled_date;
+    document.getElementById('requestRescheduleTime').value = String(request.scheduled_time).slice(0,5);
+    document.getElementById('requestRescheduleNote').hidden = true;
+    requestRescheduleModal.open(button);
+    return;
+  }
+  const action = button.dataset.requestAction;
+  if (action === 'cancel' && !window.confirm(`Reject the booking request from ${request.patient_name}?`)) return;
+  const rowButtons = button.closest('tr').querySelectorAll('button');
+  rowButtons.forEach(item => { item.disabled = true; });
+  button.classList.add('is-loading');
+  try {
+    await runAppointmentRequestAction(action, requestId);
+    showToast(action === 'approve' ? 'Booking request approved and added to the schedule' : 'Booking request rejected', action === 'approve' ? 'success' : 'error');
+  } catch (error){
+    showToast(error.code === 'slot_unavailable' ? 'That appointment slot is already booked.' : error.message, 'error');
+    rowButtons.forEach(item => { item.disabled = false; });
+    button.classList.remove('is-loading');
+  }
+});
+
+document.getElementById('refreshAppointmentsBtn')?.addEventListener('click', loadAppointmentWeek);
+document.getElementById('apptPrevWeek')?.addEventListener('click', () => { appointmentState.start = appointmentAddDays(appointmentState.start, -7); loadAppointmentWeek(); });
+document.getElementById('apptCurrentWeek')?.addEventListener('click', () => { appointmentState.start = appointmentMonday(new Date()); loadAppointmentWeek(); });
+document.getElementById('apptNextWeek')?.addEventListener('click', () => { appointmentState.start = appointmentAddDays(appointmentState.start, 7); loadAppointmentWeek(); });
+
 // =====================================================================
 // EXPORT (PDF) + ARCHIVE: real mock actions replacing the old data-toast
 // placeholders. Export prints the currently filtered rows; Archive moves
@@ -1672,7 +1889,7 @@ if (sendNotifModal.modal){
 renderUser(AdminMock.user);
 renderDashboardStats(AdminMock.dashboard.stats);
 renderWeekGrid('dashWeekGrid', AdminMock.dashboard.week);
-renderApptMode('Week');
+loadAppointmentWeek();
 renderQueue(AdminMock.dashboard.queue);
 applyPatients();                            // TODO(backend): GET /backend/api/patients/list.php
 applyRecords();

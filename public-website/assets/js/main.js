@@ -137,7 +137,7 @@ if (ctaForm){
     today.setMinutes(today.getMinutes() - today.getTimezoneOffset());
     ctaDate.min = today.toISOString().split('T')[0];
   }
-  ctaForm.addEventListener('submit', e => {
+  ctaForm.addEventListener('submit', async e => {
     e.preventDefault();
     const service = document.getElementById('ctaService');
     const btn = document.getElementById('ctaSubmit');
@@ -155,13 +155,31 @@ if (ctaForm){
     if (note) note.hidden = true;
     btn.classList.add('is-loading');
     btn.disabled = true;
-    // TODO(backend): replace with a real request to POST /api/public/booking-requests
-    setTimeout(() => {
+    try {
+      const response = await fetch('../backend/api/public/appointment-requests.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({
+          first_name: document.getElementById('ctaFirstName').value,
+          last_name: document.getElementById('ctaLastName').value,
+          contact_number: document.getElementById('ctaContact').value,
+          email: document.getElementById('ctaEmail').value,
+          service_type: service.value,
+          requested_date: ctaDate.value,
+          requested_time: document.getElementById('ctaTime').value
+        })
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error?.message || 'Unable to submit booking.');
       btn.classList.remove('is-loading');
       btn.disabled = false;
       showCtaNote('Request received! Our team will confirm within the hour.', 'ok');
       ctaForm.reset();
-    }, 900);
+    } catch (error) {
+      btn.classList.remove('is-loading');
+      btn.disabled = false;
+      showCtaNote(error.message, 'err');
+    }
   });
 }
 
