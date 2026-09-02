@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Create Patient Account | Aromin-Sison Dental Clinic</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/css/variables.css?v=4">
+<link rel="stylesheet" href="../shared/css/buttons.css?v=5">
+<link rel="stylesheet" href="assets/css/auth.css?v=7">
+</head>
+<body>
+
+<div class="auth-shell">
+  <aside class="auth-aside">
+    <div class="auth-aside-top">
+      <a href="../public-website/index.html" class="auth-logo">
+        <img src="../shared/images/asdc logo.png" alt="Aromin-Sison Dental Clinic">
+      </a>
+    </div>
+    <div class="auth-aside-mid">
+      <div class="eyebrow">Patient Registration</div>
+      <h1 class="serif auth-aside-title">Your healthier<br>smile starts <em>here</em>.</h1>
+      <p class="auth-aside-quote">Create your patient account to manage appointments and access your clinic information.</p>
+    </div>
+    <div class="auth-aside-foot">
+      <span>Est. 1985: Founded with Care</span>
+      <span>Central Luzon, Philippines</span>
+    </div>
+    <div class="auth-curve" aria-hidden="true"></div>
+  </aside>
+
+  <main class="auth-main">
+    <div class="auth-card">
+      <a class="auth-role-back" href="login.html?role=patient">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+        Back to patient sign in
+      </a>
+
+      <div class="auth-card-head">
+        <div class="eyebrow">Create Account</div>
+        <h2 class="serif" id="signupHeading">Patient Sign Up</h2>
+        <p>Enter your information to create your patient portal account.</p>
+      </div>
+
+      <div id="authAlert" class="auth-alert" role="alert" hidden>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span id="authAlertText"></span>
+      </div>
+
+      <form class="auth-panel" id="panel-patient-signup" novalidate>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="registerFirstName">First Name</label>
+            <input type="text" id="registerFirstName" name="first_name" required autocomplete="given-name">
+            <div class="field-error"></div>
+          </div>
+          <div class="form-group">
+            <label for="registerLastName">Last Name</label>
+            <input type="text" id="registerLastName" name="last_name" required autocomplete="family-name">
+            <div class="field-error"></div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="registerEmail">Email Address</label>
+          <input type="email" id="registerEmail" name="email" required placeholder="you@email.com" autocomplete="email">
+          <div class="field-error"></div>
+        </div>
+
+        <div class="form-group">
+          <label for="registerContact">Contact Number</label>
+          <input type="tel" id="registerContact" name="contact_number" placeholder="09XX XXX XXXX" autocomplete="tel">
+          <div class="field-error"></div>
+        </div>
+
+        <div class="form-group">
+          <label for="registerPassword">Password</label>
+          <div class="input-shell">
+            <input type="password" id="registerPassword" name="password" required minlength="8" placeholder="At least 8 characters" autocomplete="new-password">
+            <button type="button" class="pw-toggle" aria-label="Show password"></button>
+          </div>
+          <div class="field-error"></div>
+        </div>
+
+        <div class="form-group">
+          <label for="registerConfirm">Confirm Password</label>
+          <div class="input-shell">
+            <input type="password" id="registerConfirm" name="password_confirmation" required minlength="8" placeholder="Re-enter your password" autocomplete="new-password">
+            <button type="button" class="pw-toggle" aria-label="Show password"></button>
+          </div>
+          <div class="field-error"></div>
+        </div>
+
+        <div class="form-group">
+          <label class="checkbox-inline terms-line">
+            <input type="checkbox" name="terms" required>
+            I confirm that the information I provided is correct.
+          </label>
+          <div class="field-error"></div>
+        </div>
+
+        <button type="submit" class="btn btn-block btn-gold btn-lg">
+          <span class="btn-label">Create Patient Account</span>
+          <span class="btn-spinner" aria-hidden="true"></span>
+        </button>
+      </form>
+
+      <div class="auth-note-box" id="signupSuccess" role="status" tabindex="-1" hidden>
+        Your patient account has been created successfully.
+        <a class="link-btn" href="login.html?role=patient">Continue to sign in</a>
+      </div>
+
+      <p class="auth-switch-note">
+        Already have an account? <a class="link-btn" href="login.html?role=patient">Sign in</a>
+      </p>
+    </div>
+  </main>
+</div>
+
+<script src="assets/js/auth.js?v=7" defer></script>
+<script src="assets/js/patient-signup.js?v=1" defer></script>
+</body>
+</html>

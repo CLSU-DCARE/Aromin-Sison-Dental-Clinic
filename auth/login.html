@@ -107,10 +107,15 @@
               <label class="checkbox-inline"><input type="checkbox" name="remember"> Remember me</label>
               <a class="link-btn" href="forgot-password.html?role=patient">Forgot password?</a>
             </div>
-            <button type="submit" class="btn btn-block btn-gold btn-lg">
-              <span class="btn-label">Log In</span>
-              <span class="btn-spinner" aria-hidden="true"></span>
-            </button>
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              <button type="submit" class="btn btn-block btn-gold btn-lg">
+                <span class="btn-label">Log In</span>
+                <span class="btn-spinner" aria-hidden="true"></span>
+              </button>
+              <p class="auth-switch-note" style="margin: 0;">
+                New patient? <a class="link-btn" href="patient-signup.html">Sign up</a>
+              </p>
+            </div>
             <details class="demo-hint">
               <summary>Having trouble signing in?</summary>
               <ul>
@@ -119,10 +124,6 @@
               </ul>
             </details>
           </form>
-
-          <p class="auth-switch-note">
-            New patient? Please contact the clinic to create your account.
-          </p>
         </div>
 
         <!-- ---------- STAFF LOGIN ---------- -->
