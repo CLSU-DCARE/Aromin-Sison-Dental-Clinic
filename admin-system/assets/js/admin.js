@@ -585,6 +585,12 @@ function appointmentStatusTag(status){
   const label = normalized === 'no_show' ? 'No-Show' : normalized.charAt(0).toUpperCase() + normalized.slice(1);
   return `<span class="tag tag-${color}">${escapeHtml(label)}</span>`;
 }
+function appointmentActionControls(item, compact = false){
+  if (!['pending','confirmed'].includes(String(item.status).toLowerCase())) return '';
+  const id = Number(item.appointment_id);
+  const size = compact ? ' appointment-card-actions' : ' appointment-request-actions';
+  return `<div class="${size.trim()}"><button type="button" class="btn btn-sm btn-outline" data-appointment-action="reschedule" data-appointment-id="${id}">Reschedule</button><button type="button" class="btn btn-sm btn-reject" data-appointment-action="cancel" data-appointment-id="${id}">Cancel</button></div>`;
+}
 async function appointmentApi(url, options = {}){
   const defaults = { credentials:'same-origin', headers:{ Accept:'application/json' } };
   const response = await fetch(url, Object.assign(defaults, options));
@@ -611,8 +617,8 @@ function renderAppointmentSchedule(){
     grid.hidden = true;
     listView.hidden = false;
     tbody.innerHTML = appointmentState.appointments.length
-      ? appointmentState.appointments.map(item => `<tr><td>${escapeHtml(appointmentDateLabel(item.scheduled_date, {weekday:'short',month:'short',day:'numeric'}))}</td><td>${escapeHtml(appointmentTimeLabel(item.scheduled_time))}</td><td>${escapeHtml(item.patient_name)}</td><td>${escapeHtml(item.service_type)}</td><td>${appointmentStatusTag(item.status)}</td></tr>`).join('')
-      : '<tr><td colspan="5" class="empty-cell">No appointments scheduled for this week.</td></tr>';
+      ? appointmentState.appointments.map(item => `<tr><td>${escapeHtml(appointmentDateLabel(item.scheduled_date, {weekday:'short',month:'short',day:'numeric'}))}</td><td>${escapeHtml(appointmentTimeLabel(item.scheduled_time))}</td><td>${escapeHtml(item.patient_name)}</td><td>${escapeHtml(item.service_type)}</td><td>${appointmentStatusTag(item.status)}</td><td>${appointmentActionControls(item)}</td></tr>`).join('')
+      : '<tr><td colspan="6" class="empty-cell">No appointments scheduled for this week.</td></tr>';
     return;
   }
   grid.hidden = false;
@@ -627,7 +633,7 @@ function renderAppointmentSchedule(){
   const cells = times.map(time => {
     const row = visibleDays.map(day => {
       const item = appointmentState.appointments.find(appt => appt.scheduled_date === day && String(appt.scheduled_time).slice(0,5) === time);
-      return item ? `<div class="cell"><div class="appt-block"><strong>${escapeHtml(item.patient_name)}</strong><span class="t">${escapeHtml(item.service_type)} · ${escapeHtml(item.status)}</span></div></div>` : '<div class="cell"></div>';
+      return item ? `<div class="cell"><div class="appt-block"><strong>${escapeHtml(item.patient_name)}</strong><span class="t">${escapeHtml(item.service_type)} · ${escapeHtml(item.status)}</span>${appointmentActionControls(item, true)}</div></div>` : '<div class="cell"></div>';
     }).join('');
     return `<div class="cell time">${escapeHtml(appointmentTimeLabel(time))}</div>${row}`;
   }).join('');
@@ -1192,84 +1198,9 @@ if (inventoryFormModal.modal){
   });
 }
 
-// =====================================================================
-// APPOINTMENTS: book a slot on the week grid (functional mock)
-// =====================================================================
-const apptFormModal = new Modal('apptFormModal');
-
-if (apptFormModal.modal){
-  apptFormModal.registerClose(document.getElementById('apptFormClose'));
-  apptFormModal.registerClose(document.getElementById('apptFormCancel'));
-  const apptNote = document.getElementById('apptFormNote');
-  const apptSaveBtn = document.getElementById('apptFormSave');
-  const afPatient = document.getElementById('afPatient');
-  const afDay = document.getElementById('afDay');
-  const afTime = document.getElementById('afTime');
-
-  const fillApptForm = () => {
-    afPatient.innerHTML = AdminMock.patients
-      .map(p => `<option value="${p.name}">${p.name} (${p.id})</option>`).join('');
-    afDay.innerHTML = AdminMock.dashboard.week.days.map(d => `<option>${d}</option>`).join('');
-    afTime.innerHTML = AdminMock.dashboard.week.rows.map(r => `<option>${r.time}</option>`).join('');
-  };
-  fillApptForm();
-  const svcShort = {
-    'Braces Adjustment': 'Braces adj.',
-    'Braces Installation': 'Braces install',
-    'Cleaning & Check-up': 'Cleaning',
-    'Consultation': 'Consult'
-  };
-
-  document.getElementById('addApptBtn').addEventListener('click', () => {
-    apptNote.hidden = true;
-    apptFormModal.open();
-  });
-
-  apptSaveBtn.addEventListener('click', () => {
-    const patient = AdminMock.patients.find(p => p.name === afPatient.value);
-    if (!patient){
-      apptNote.textContent = 'Choose a patient first.';
-      apptNote.classList.add('err'); apptNote.classList.remove('ok');
-      apptNote.hidden = false;
-      return;
-    }
-    const week = AdminMock.dashboard.week;
-    const dayIdx = week.days.indexOf(afDay.value);
-    const row = week.rows.find(r => r.time === afTime.value);
-    if (dayIdx < 0 || !row){
-      apptNote.textContent = 'Pick a valid day and time.';
-      apptNote.classList.add('err'); apptNote.classList.remove('ok');
-      apptNote.hidden = false;
-      return;
-    }
-    if (row.appts[dayIdx]){
-      apptNote.textContent = 'That slot is already booked. Pick another.';
-      apptNote.classList.add('err'); apptNote.classList.remove('ok');
-      apptNote.hidden = false;
-      return;
-    }
-    const svc = document.getElementById('afService').value;
-    const short = name => name.trim().split(/\s+/).map(w => w[0] + '.').join(' ');
-    row.appts[dayIdx] = { name: short(patient.name), t: afTime.value + ' · ' + (svcShort[svc] || svc) };
-    AdminMock.dashboard.queue.unshift({
-      initials: patient.initials,
-      name: patient.name,
-      sub: svc,
-      time: afTime.value,
-      status: 'Waiting',
-      tag: 'amber'
-    });
-    apptFormModal.close();
-    renderApptMode('Week');
-    renderWeekGrid('dashWeekGrid', week);
-    renderQueue(AdminMock.dashboard.queue);
-    showToast('Appointment booked');
-  });
-}
-
-// ---------- Public booking request actions ----------
+// ---------- Public request and approved appointment actions ----------
 const requestRescheduleModal = new Modal('requestRescheduleModal');
-let reschedulingRequestId = null;
+let reschedulingResource = null;
 
 if (requestRescheduleModal.modal){
   requestRescheduleModal.registerClose(document.getElementById('requestRescheduleClose'));
@@ -1281,7 +1212,7 @@ if (requestRescheduleModal.modal){
   dateInput.min = appointmentIsoDate(new Date());
 
   saveButton.addEventListener('click', async () => {
-    if (!reschedulingRequestId || !dateInput.value || !timeInput.value){
+    if (!reschedulingResource || !dateInput.value || !timeInput.value){
       note.textContent = 'Choose a valid new date and time.';
       note.classList.add('err'); note.classList.remove('ok'); note.hidden = false;
       return;
@@ -1290,12 +1221,12 @@ if (requestRescheduleModal.modal){
     saveButton.classList.add('is-loading');
     note.hidden = true;
     try {
-      await runAppointmentRequestAction('reschedule', reschedulingRequestId, {
+      await runAppointmentAction('reschedule', reschedulingResource.type, reschedulingResource.id, {
         scheduled_date: dateInput.value,
         scheduled_time: timeInput.value
       }, false);
       requestRescheduleModal.close();
-      showToast('Booking request rescheduled');
+      showToast(reschedulingResource.type === 'request' ? 'Booking request rescheduled' : 'Appointment rescheduled');
       await loadAppointmentWeek();
     } catch (error){
       note.textContent = error.code === 'slot_unavailable' ? 'That date and time are already booked. Choose another slot.' : error.message;
@@ -1307,11 +1238,12 @@ if (requestRescheduleModal.modal){
   });
 }
 
-async function runAppointmentRequestAction(action, requestId, extra = {}, refresh = true){
+async function runAppointmentAction(action, resourceType, resourceId, extra = {}, refresh = true){
+  const idKey = resourceType === 'request' ? 'request_id' : 'appointment_id';
   const data = await appointmentApi(APPOINTMENT_ACTION_ENDPOINT, {
     method: action === 'reschedule' ? 'PATCH' : 'POST',
     headers: { Accept:'application/json', 'Content-Type':'application/json' },
-    body: JSON.stringify(Object.assign({ action, resource_type:'request', request_id:Number(requestId) }, extra))
+    body: JSON.stringify(Object.assign({ action, resource_type:resourceType, [idKey]:Number(resourceId) }, extra))
   });
   if (refresh) await loadAppointmentWeek();
   return data;
@@ -1324,7 +1256,8 @@ document.getElementById('appointmentRequestsBody')?.addEventListener('click', as
   const request = appointmentState.requests.find(item => Number(item.request_id) === requestId);
   if (!request) return;
   if (button.dataset.requestAction === 'reschedule'){
-    reschedulingRequestId = requestId;
+    reschedulingResource = { type:'request', id:requestId };
+    document.getElementById('requestRescheduleTitle').textContent = 'Reschedule Booking Request';
     document.getElementById('requestReschedulePatient').textContent = `${request.patient_name} · ${request.service_type}`;
     document.getElementById('requestRescheduleDate').value = request.scheduled_date;
     document.getElementById('requestRescheduleTime').value = String(request.scheduled_time).slice(0,5);
@@ -1338,7 +1271,7 @@ document.getElementById('appointmentRequestsBody')?.addEventListener('click', as
   rowButtons.forEach(item => { item.disabled = true; });
   button.classList.add('is-loading');
   try {
-    await runAppointmentRequestAction(action, requestId);
+    await runAppointmentAction(action, 'request', requestId);
     showToast(action === 'approve' ? 'Booking request approved and added to the schedule' : 'Booking request rejected', action === 'approve' ? 'success' : 'error');
   } catch (error){
     showToast(error.code === 'slot_unavailable' ? 'That appointment slot is already booked.' : error.message, 'error');
@@ -1346,6 +1279,41 @@ document.getElementById('appointmentRequestsBody')?.addEventListener('click', as
     button.classList.remove('is-loading');
   }
 });
+
+async function handleScheduledAppointmentAction(event){
+  const button = event.target.closest('[data-appointment-action]');
+  if (!button || button.disabled) return;
+  const appointmentId = Number(button.dataset.appointmentId);
+  const appointment = appointmentState.appointments.find(item => Number(item.appointment_id) === appointmentId);
+  if (!appointment) return;
+  const action = button.dataset.appointmentAction;
+  if (action === 'reschedule'){
+    reschedulingResource = { type:'appointment', id:appointmentId };
+    document.getElementById('requestRescheduleTitle').textContent = 'Reschedule Appointment';
+    document.getElementById('requestReschedulePatient').textContent = `${appointment.patient_name} · ${appointment.service_type}`;
+    document.getElementById('requestRescheduleDate').value = appointment.scheduled_date;
+    document.getElementById('requestRescheduleTime').value = String(appointment.scheduled_time).slice(0,5);
+    document.getElementById('requestRescheduleNote').hidden = true;
+    requestRescheduleModal.open(button);
+    return;
+  }
+  if (!window.confirm(`Cancel the appointment for ${appointment.patient_name}?`)) return;
+  const controls = button.closest('.appointment-card-actions, .appointment-request-actions');
+  const buttons = controls ? controls.querySelectorAll('button') : [button];
+  buttons.forEach(item => { item.disabled = true; });
+  button.classList.add('is-loading');
+  try {
+    await runAppointmentAction('cancel', 'appointment', appointmentId);
+    showToast('Appointment cancelled', 'error');
+  } catch (error){
+    showToast(error.message, 'error');
+    buttons.forEach(item => { item.disabled = false; });
+    button.classList.remove('is-loading');
+  }
+}
+
+document.getElementById('apptWeekGrid')?.addEventListener('click', handleScheduledAppointmentAction);
+document.getElementById('apptListBody')?.addEventListener('click', handleScheduledAppointmentAction);
 
 document.getElementById('refreshAppointmentsBtn')?.addEventListener('click', loadAppointmentWeek);
 document.getElementById('apptPrevWeek')?.addEventListener('click', () => { appointmentState.start = appointmentAddDays(appointmentState.start, -7); loadAppointmentWeek(); });

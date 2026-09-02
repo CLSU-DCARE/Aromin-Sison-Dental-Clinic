@@ -557,6 +557,8 @@ background:var(--ivory-2);color:rgba(27,27,25,0.65);padding:13px 10px;min-height
   border-radius:var(--r-sm);padding:6px 8px;font-size:11.5px;font-weight:600;color:var(--dark);margin-bottom:4px;
 }
 .appt-block .t{font-weight:400;color:rgba(27,27,25,0.65);font-size:10.5px;margin-left:5px;}
+.appointment-card-actions{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px;}
+.appointment-card-actions .btn{min-height:28px;padding:5px 8px;font-size:10px;line-height:1.2;white-space:nowrap;}
 .appointment-week-nav{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap;}
 .appointment-request-panel{margin-top:22px;}
 .appointment-request-panel .panel-head{align-items:flex-start;gap:20px;}
