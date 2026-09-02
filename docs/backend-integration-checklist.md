@@ -22,7 +22,7 @@ Cross-referenced with `database/schema.sql` and the existing
 |---|----------|----------------------|----------------|--------|
 | 1 | `POST /api/auth/patient/login` | `auth/assets/js/auth.js:341,351` (mockSubmit, `endpoint` var), `auth/login.html:114` | `users` (email, password_hash, is_active, role='patient') | **Needs implementation** (pattern: `auth/login.php`) |
 | 2 | `POST /api/auth/staff/login` | `auth/assets/js/auth.js:341,351`, `auth/login.html:162` | `users` (role='admin'/'staff'/'dentist') | **Needs implementation** |
-| 3 | `POST /api/auth/{role}/forgot-password` | `auth/assets/js/auth.js:477`, `auth/forgot-password.html:61` | **None** — no token table, no mail setup | **Needs implementation + a decision** (see below) |
+| 3 | `POST /backend/api/auth/forgot-password.php` + `reset-password.php` | `auth/forgot-password.html`, `auth/reset-password.html` | `password_reset_tokens` + mail helper | **Implemented** |
 | 5 | Logout (clear session) — admin | `admin-system/assets/js/admin.js` -> moved to `shared/js/dashboard-core.js` (`initLogout`) | session only | **Needs implementation** (e.g. `POST /api/auth/logout` calling `session_destroy()`) |
 | 6 | Logout (clear session) — patient | `patient-dashboard/assets/js/patient.js` -> moved to `shared/js/dashboard-core.js`, plus comment at `patient-dashboard/dashboard.html:79` | session only | **Needs implementation** (same endpoint as #5) |
 
@@ -79,11 +79,10 @@ subject/body when a template is selected, and calls `POST /api/notifications/sen
 
 ## Gap notes (decisions the team must make)
 
-1. **Forgot password** — `schema.sql` has no password-reset token table and
-   nothing sends email locally. Decide: (a) add a reset-tokens table + mail(),
-   (b) dev-only "token logged to console" behavior, or (c) keep the current
-   "Feature Not Available Yet" modal. Do not build the endpoint before this is
-   chosen.
+1. **Forgot password (decided and implemented)** — one-hour, single-use reset
+   tokens are stored as SHA-256 hashes and sent with the existing mail helper.
+   Delivery uses Gmail SMTP through PHPMailer. Reset URLs and SMTP credentials
+   are never included in logs or API responses.
 2. **Public booking requests** — `appointments.patient_id` is `NOT NULL` and
    there is no `booking_requests` table. Decide: (a) add a `booking_requests`
    table, or (b) auto-create a walk-in `patients` row on submit. **Do not invent
@@ -107,16 +106,13 @@ subject/body when a template is selected, and calls `POST /api/notifications/sen
    - `GET /api/braces-contracts/list.php` → only return `active`/`defaulted` by default
      (the UI's default filter is now `Current`, not `All`)
 
-## Marker inventory (all 12 found)
+## Remaining historical marker inventory (8 entries)
 
 | File:line | Endpoint |
 |-----------|----------|
-| `auth/assets/js/auth.js:3` | Module header (informational — "everything is a MOCK") |
 | `auth/assets/js/auth.js:351` | `POST /api/auth/patient/login` / `POST /api/auth/staff/login` (via `endpoint` var at line 341) |
-| `auth/assets/js/auth.js:477` | `POST /api/auth/{role}/forgot-password` |
 | `auth/login.html:114` | `POST /api/auth/patient/login` |
 | `auth/login.html:162` | `POST /api/auth/staff/login` |
-| `auth/forgot-password.html:61` | `POST /api/auth/{role}/forgot-password` |
 | `public-website/assets/js/main.js:158` | `POST /api/public/booking-requests` |
 | `patient-dashboard/assets/js/patient.js:101` | `POST /api/patient/appointments` |
 | `patient-dashboard/assets/js/patient.js:299` (moved to `shared/js/dashboard-core.js`) | logout: clear session server-side |

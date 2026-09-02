@@ -21,6 +21,20 @@ CREATE TABLE users (
     is_active BOOLEAN DEFAULT TRUE
 );
 
+-- ---------- PASSWORD RESET TOKENS ----------
+-- Only a SHA-256 hash of the emailed token is stored.
+CREATE TABLE password_reset_tokens (
+    reset_id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    token_hash CHAR(64) NOT NULL UNIQUE,
+    expires_at DATETIME NOT NULL,
+    used_at DATETIME NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_password_reset_user (user_id),
+    INDEX idx_password_reset_expiry (expires_at),
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+);
+
 -- ---------- PATIENTS ----------
 -- Extends users where role = 'patient'; also allows walk-in patients with no login
 CREATE TABLE patients (

@@ -233,11 +233,19 @@ POST /backend/api/notifications/send.php
 
 ### Mail/SMS configuration
 
-Edit `backend/config/mail.php` to switch delivery methods:
+Email uses the installed PHPMailer dependency with Gmail SMTP over STARTTLS on
+port 587. Configure these Windows **System environment variables** (do not put
+the App Password in this repository):
 
-- **Email**: defaults to PHP `mail()` (works on XAMPP locally). For real delivery,
-  install PHPMailer (`composer require phpmailer/phpmailer`) and uncomment the
-  Gmail SMTP section with your clinic email + app password.
+- `ASDC_GMAIL_ADDRESS` — the complete Gmail address used to authenticate and send
+- `ASDC_GMAIL_APP_PASSWORD` — the 16-character Gmail App Password
+- `ASDC_MAIL_FROM_NAME` — optional; defaults to `Aromin-Sison Dental Clinic`
+
+After adding or changing them, fully exit the XAMPP Control Panel, reopen it,
+and restart Apache so PHP inherits the updated environment. If Apache is
+installed as a Windows service, System variables are required because User
+variables may not be visible to the service.
+
 - **SMS**: simulated (logged only) by default. For real SMS, install the Twilio SDK
   (`composer require twilio/sdk`) and uncomment the Twilio section with your
   account SID, auth token, and Twilio phone number.

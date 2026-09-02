@@ -7,10 +7,8 @@
  *   send_email($to, $subject, $body)   — sends an email
  *   send_sms($to, $body)               — sends an SMS (simulated / logged)
  *
- * Email setup:
- *   - XAMPP default: uses PHP's mail() (works for local testing, no real delivery)
- *   - Gmail SMTP: uncomment the PHPMailer section and install PHPMailer via Composer:
- *       composer require phpmailer/phpmailer
+ * Email uses PHPMailer with Gmail SMTP. Credentials come from environment
+ * variables and are never stored in this repository.
  *
  * SMS setup:
  *   - Default: logs to notification_logs only (no real SMS sent)
@@ -18,23 +16,10 @@
  */
 
 // ──────────────────────────────────────────────
-// 1. EMAIL — PHPMailer with Gmail SMTP (recommended for real sending)
+// 1. EMAIL — PHPMailer with Gmail SMTP
 // ──────────────────────────────────────────────
-// To use PHPMailer, run: composer require phpmailer/phpmailer
-// Then uncomment the use statements and the send_email() body below.
-
-// use PHPMailer\PHPMailer\PHPMailer;
-// use PHPMailer\PHPMailer\SMTP;
-// use PHPMailer\PHPMailer\Exception;
-
-// Gmail SMTP credentials — replace with your own or use environment variables.
-// For Gmail: enable 2FA → App Passwords → generate an "App Password" for this app.
-// define('SMTP_HOST',     'smtp.gmail.com');
-// define('SMTP_PORT',     587);
-// define('SMTP_USERNAME', 'your-clinic-email@gmail.com');
-// define('SMTP_PASSWORD', 'your-app-password-here');
-// define('SMTP_FROM',     'your-clinic-email@gmail.com');
-// define('SMTP_FROM_NAME','Aromin-Sison Dental Clinic');
+// Required environment variables: ASDC_GMAIL_ADDRESS and
+// ASDC_GMAIL_APP_PASSWORD. ASDC_MAIL_FROM_NAME is optional.
 
 if (!function_exists('send_email')) {
     /**
@@ -46,38 +31,42 @@ if (!function_exists('send_email')) {
      * @return array
      */
     function send_email($to, $subject, $body) {
-        // ── Option A: PHPMailer via SMTP (uncomment above + below) ──
-        // try {
-        //     $mail = new PHPMailer(true);
-        //     $mail->isSMTP();
-        //     $mail->Host       = SMTP_HOST;
-        //     $mail->SMTPAuth   = true;
-        //     $mail->Username   = SMTP_USERNAME;
-        //     $mail->Password   = SMTP_PASSWORD;
-        //     $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-        //     $mail->Port       = SMTP_PORT;
-        //     $mail->setCharset('UTF-8');
-        //     $mail->setFrom(SMTP_FROM, SMTP_FROM_NAME);
-        //     $mail->addAddress($to);
-        //     $mail->isHTML(false);
-        //     $mail->Subject = $subject;
-        //     $mail->Body    = $body;
-        //     $mail->send();
-        //     return ['ok' => true];
-        // } catch (Exception $e) {
-        //     return ['ok' => false, 'error' => $mail->ErrorInfo];
-        // }
+        $gmailAddress = trim((string) getenv('ASDC_GMAIL_ADDRESS'));
+        $gmailAppPassword = trim((string) getenv('ASDC_GMAIL_APP_PASSWORD'));
+        $fromName = trim((string) (getenv('ASDC_MAIL_FROM_NAME') ?: 'Aromin-Sison Dental Clinic'));
 
-        // ── Option B: PHP mail() — works on XAMPP out of the box ──
-        $headers  = "From: Aromin-Sison Dental Clinic <no-reply@aromin-sison.local>\r\n";
-        $headers .= "Reply-To: no-reply@aromin-sison.local\r\n";
-        $headers .= "X-Mailer: ASDC-System/1.0\r\n";
-        $headers .= "Content-Type: text/plain; charset=UTF-8\r\n";
+        if (!filter_var($gmailAddress, FILTER_VALIDATE_EMAIL) || $gmailAppPassword === '') {
+            return ['ok' => false, 'error' => 'Email delivery is not configured.'];
+        }
 
-        $result = @mail($to, $subject, $body, $headers);
-        return $result
-            ? ['ok' => true]
-            : ['ok' => false, 'error' => 'PHP mail() failed. Check XAMPP sendmail config.'];
+        $autoload = dirname(__DIR__, 2) . '/vendor/autoload.php';
+        if (!is_file($autoload)) {
+            return ['ok' => false, 'error' => 'Email delivery dependency is unavailable.'];
+        }
+        require_once $autoload;
+
+        try {
+            $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
+            $mail->isSMTP();
+            $mail->Host = 'smtp.gmail.com';
+            $mail->Port = 587;
+            $mail->SMTPAuth = true;
+            $mail->SMTPSecure = \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
+            $mail->Username = $gmailAddress;
+            $mail->Password = $gmailAppPassword;
+            $mail->CharSet = 'UTF-8';
+            $mail->Timeout = 15;
+            $mail->SMTPDebug = 0;
+            $mail->setFrom($gmailAddress, $fromName);
+            $mail->addAddress($to);
+            $mail->isHTML(false);
+            $mail->Subject = $subject;
+            $mail->Body = $body;
+            $mail->send();
+            return ['ok' => true];
+        } catch (\Throwable $e) {
+            return ['ok' => false, 'error' => 'Email delivery failed.'];
+        }
     }
 }
 

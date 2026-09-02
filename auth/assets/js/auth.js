@@ -1,6 +1,4 @@
-/* Aromin-Sison Dental Clinic: Auth module.
-   Login uses the PHP session API. Forgot-password remains a deferred mock
-   until the reset-token and mail workflow is implemented. */
+/* Aromin-Sison Dental Clinic: Auth module. */
 
 // ---------- Query-param overrides (for design/QA + deep links) ----------
 // ?role=patient | staff -> skip straight to that login form.
@@ -248,12 +246,12 @@ function validateField(input){
     setFieldError(input, 'Please enter a valid email address.');
     return false;
   }
-  if (input.id === 'registerPassword' && value && value.length < 8){
+  if ((input.id === 'registerPassword' || input.id === 'resetPassword') && value && value.length < 8){
     setFieldError(input, 'Password must be at least 8 characters.');
     return false;
   }
-  if (input.id === 'registerConfirm'){
-    const pw = document.getElementById('registerPassword');
+  if (input.id === 'registerConfirm' || input.id === 'resetConfirm'){
+    const pw = document.getElementById(input.id === 'resetConfirm' ? 'resetPassword' : 'registerPassword');
     if (value && pw && value !== pw.value){
       setFieldError(input, "Passwords don't match.");
       return false;
@@ -272,7 +270,7 @@ function validateField(input){
 // Focuses the first invalid field so keyboard/screen-reader users land
 // exactly where they need to.
 function validateForm(form){
-  const fields = form.querySelectorAll('input[required], input[type="email"], #registerPassword, #registerConfirm');
+  const fields = form.querySelectorAll('input[required], input[type="email"], #registerPassword, #registerConfirm, #resetPassword, #resetConfirm');
   let firstInvalid = null;
   let allValid = true;
   fields.forEach(field => {
@@ -301,7 +299,9 @@ function initLiveValidation(){
 const AUTH_ENDPOINTS = {
   login: '../backend/api/auth/login.php',
   me: '../backend/api/auth/me.php',
-  logout: '../backend/api/auth/logout.php'
+  logout: '../backend/api/auth/logout.php',
+  forgotPassword: '../backend/api/auth/forgot-password.php',
+  resetPassword: '../backend/api/auth/reset-password.php'
 };
 
 const ROLE_DESTINATIONS = {
@@ -492,28 +492,77 @@ function setupModal(modalId, triggerIds = [], closeIds = []){
 // with a valid-looking email.
 function wireForgotPasswordForm(form, modal){
   const btn = form.querySelector('.btn-block');
-  form.addEventListener('submit', e => {
+  form.addEventListener('submit', async e => {
     e.preventDefault();
     if (!validateForm(form)) return;
 
     hideAlert();
     setLoading(btn, true);
-
-    // TODO(backend): replace with a real request to POST /api/auth/{role}/forgot-password
-    setTimeout(() => {
-      setLoading(btn, false);
-      const emailField = form.querySelector('input[type="email"]');
-      const email = emailField ? emailField.value.trim(): '';
+    const emailField = form.querySelector('input[type="email"]');
+    const role = new URLSearchParams(location.search).get('role') === 'staff' ? 'staff' : 'patient';
+    try {
+      const response = await fetchWithTimeout(AUTH_ENDPOINTS.forgotPassword, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: emailField.value.trim(), role })
+      });
+      const payload = await readJsonResponse(response);
+      if (!response.ok){
+        showAlert(payload.error || 'Unable to send a reset link. Please try again.');
+        return;
+      }
       const titleEl = document.getElementById('recoveryModalTitle');
       const textEl = document.getElementById('recoveryModalText');
       if (titleEl) titleEl.textContent = 'Check your inbox';
-      if (textEl){
-        textEl.textContent = email
-          ? 'We\'ve sent a password reset link to ' + email + '. This demo doesn\'t send real mail — the reset link would arrive there in the live system.'
-          : 'We\'ve sent a password reset link to your email. This demo doesn\'t send real mail — the reset link would arrive there in the live system.';
-      }
+      if (textEl) textEl.textContent = 'If an active account matches that email, a password reset link has been sent.';
       modal.open(btn);
-    }, 700);
+    } catch (error){
+      showAlert(error && error.name === 'AbortError'
+        ? 'The clinic server took too long to respond. Please try again.'
+        : 'Unable to reach the clinic server. Check your connection and try again.');
+    } finally {
+      setLoading(btn, false);
+    }
+  });
+}
+
+function wireResetPasswordForm(form){
+  if (!form) return;
+  const btn = form.querySelector('.btn-block');
+  const token = new URLSearchParams(location.search).get('token') || '';
+  if (!/^[a-f0-9]{64}$/.test(token)){
+    showAlert('This password reset link is invalid or incomplete. Request a new one.');
+    btn.disabled = true;
+  }
+
+  form.addEventListener('submit', async e => {
+    e.preventDefault();
+    if (!validateForm(form) || btn.disabled) return;
+    hideAlert();
+    setLoading(btn, true);
+    try {
+      const response = await fetchWithTimeout(AUTH_ENDPOINTS.resetPassword, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, password: form.elements.password.value })
+      });
+      const payload = await readJsonResponse(response);
+      if (!response.ok){
+        showAlert(payload.error || 'Unable to reset your password. Please request a new link.');
+        return;
+      }
+      form.hidden = true;
+      const success = document.getElementById('resetSuccess');
+      if (success) success.hidden = false;
+    } catch (error){
+      showAlert(error && error.name === 'AbortError'
+        ? 'The clinic server took too long to respond. Please try again.'
+        : 'Unable to reach the clinic server. Check your connection and try again.');
+    } finally {
+      setLoading(btn, false);
+    }
   });
 }
 
