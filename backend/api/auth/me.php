@@ -36,7 +36,7 @@ if (!$user) {
     exit;
 }
 
-$allowedRoles = ['admin', 'staff', 'dentist', 'patient'];
+$allowedRoles = ['dentist', 'receptionist', 'patient'];
 if (!in_array($user['role'], $allowedRoles, true) || $user['role'] !== ($_SESSION['role'] ?? null)) {
     $_SESSION = [];
     session_destroy();

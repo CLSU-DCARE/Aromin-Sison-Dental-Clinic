@@ -1078,7 +1078,7 @@ initSidebar(
 );
 
 initLogout(
-  '../auth/login.html?role=patient'
+  '../auth/login.html'
 );
 
 // ---------- Rendering ----------
@@ -2403,7 +2403,7 @@ if (submitPaymentButton) {
       renderPayments();
 
       showToast(
-        'Payment submitted — awaiting admin confirmation.'
+        'Payment submitted — awaiting confirmation.'
       );
     }
   );

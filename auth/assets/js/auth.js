@@ -1,166 +1,7 @@
 /* Aromin-Sison Dental Clinic: Auth module. */
 
-// ---------- Query-param overrides (for design/QA + deep links) ----------
-// ?role=patient | staff -> skip straight to that login form.
-// ?state=loading remains available for the deferred forgot-password mock.
+// ---------- Query-param overrides (for design/QA) ----------
 const FORCE_STATE = new URLSearchParams(location.search).get('state');
-
-// Copy shown in the left brand panel. Keyed by "step": role-select screen,
-// each patient sub-tab, and staff: so the panel always reflects exactly
-// what the person is looking at.
-const ASIDE_CONTENT = {
-  role: {
-    eyebrow: 'Sign In',
-    title: 'Kumusta!<br>Saan ka <em>papunta</em>?',
-    quote: '&ldquo;The Lord is righteous in all his ways and faithful in all he does.&rdquo; &mdash; Psalm 145:17'
-  },
-  patient: {
-    eyebrow: 'Chapter Six: Welcome Back',
-    title: 'Kumusta,<br>ngiti <em>ka</em> muli.',
-    quote: '&ldquo;The Lord is righteous in all his ways and faithful in all he does.&rdquo; &mdash; Psalm 145:17'
-  },
-  staff: {
-    eyebrow: 'Staff & Clinician Access',
-    title: 'The desk<br>behind the <em>smile</em>.',
-    quote: 'Everything the front desk and clinical team need to run the day: patients, schedules, and records, in one place.'
-  },
-  recover: {
-    eyebrow: 'Account Recovery',
-    title: 'Kumusta,<br>let&rsquo;s get you <em>back in</em>.',
-    quote: '&ldquo;The Lord is righteous in all his ways and faithful in all he does.&rdquo; &mdash; Psalm 145:17'
-  }
-};
-
-function setAside(key, animate = true){
-  const content = ASIDE_CONTENT[key];
-  if (!content) return;
-  const eyebrow = document.getElementById('asideEyebrow');
-  const title = document.getElementById('asideTitle');
-  const quote = document.getElementById('asideQuote');
-  const swap = () => {
-    if (eyebrow) eyebrow.textContent = content.eyebrow;
-    if (title) title.innerHTML = content.title;
-    if (quote) quote.innerHTML = content.quote;
-  };
-  if (animate && title){
-    title.style.opacity = 0; quote.style.opacity = 0;
-    setTimeout(() => { swap(); title.style.opacity = 1; quote.style.opacity = 1; }, 140);
-  } else swap();
-}
-
-// ---------- Generic sliding tab indicator (reused by role tabs + login/register tabs) ----------
-function moveIndicator(indicator, tab){
-  if (!indicator || !tab) return;
-  indicator.style.left = tab.offsetLeft + 'px';
-  indicator.style.width = tab.offsetWidth + 'px';
-}
-
-// ---------- Step transition: role-select <-> login/register form ----------
-function switchStep(fromEl, toEl, after){
-  if (!fromEl || !toEl){ if (after) after(); return; }
-  fromEl.classList.add('step-leave');
-  setTimeout(() => {
-    fromEl.hidden = true;
-    fromEl.classList.remove('step-leave');
-    toEl.hidden = false;
-    toEl.classList.add('step-enter');
-    requestAnimationFrame(() => toEl.classList.remove('step-enter'));
-    if (after) after();
-  }, 180);
-}
-
-function focusHeading(id){
-  const el = document.getElementById(id);
-  if (el) requestAnimationFrame(() => el.focus());
-}
-
-function updateRoleParam(role){
-  const url = new URL(location.href);
-  if (role) url.searchParams.set('role', role);
-  else url.searchParams.delete('role');
-  history.replaceState(null, '', url);
-}
-
-// ---------- Unified role-select + form flow ----------
-function initRoleFlow(){
-  const stepRole = document.getElementById('step-role');
-  const stepForm = document.getElementById('step-form');
-  if (!stepRole || !stepForm) return; // not on the unified page
-
-  const roleTabs = document.querySelectorAll('.role-tab');
-  const roleIndicator = document.querySelector('.role-tab-indicator');
-  const sectionPatient = document.getElementById('section-patient');
-  const sectionStaff = document.getElementById('section-staff');
-
-  function showRoleSection(role, {animate = true} = {}){
-    roleTabs.forEach(t => {
-      const active = t.dataset.role === role;
-      t.classList.toggle('active', active);
-      t.setAttribute('aria-selected', active ? 'true': 'false');
-      if (active) moveIndicator(roleIndicator, t);
-    });
-    if (sectionPatient) sectionPatient.hidden = role !== 'patient';
-    if (sectionStaff) sectionStaff.hidden = role !== 'staff';
-    setAside(role, animate);
-    hideAlert();
-    focusHeading(role === 'patient' ? 'patientFormHeading': 'staffFormHeading');
-  }
-
-  function goToForm(role, {animate = true} = {}){
-    updateRoleParam(role);
-    if (animate) switchStep(stepRole, stepForm, () => showRoleSection(role, {animate: true}));
-    else { stepRole.hidden = true; stepForm.hidden = false; showRoleSection(role, {animate: false}); }
-  }
-
-  function goToRoleSelect(){
-    updateRoleParam(null);
-    switchStep(stepForm, stepRole, () => {
-      hideAlert();
-      focusHeading('roleHeading');
-    });
-  }
-
-  document.querySelectorAll('.role-card').forEach(card => {
-    card.addEventListener('click', () => goToForm(card.dataset.role));
-  });
-  roleTabs.forEach(tab => {
-    tab.addEventListener('click', () => showRoleSection(tab.dataset.role));
-  });
-  // WAI-ARIA tabs pattern: Left/Right arrows move between tabs and
-  // activate the one you land on.
-  const roleTabList = Array.from(roleTabs);
-  roleTabList.forEach((tab, i) => {
-    tab.addEventListener('keydown', e => {
-      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
-      e.preventDefault();
-      const next = roleTabList[(i + (e.key === 'ArrowRight' ? 1: roleTabList.length - 1)) % roleTabList.length];
-      next.focus();
-      next.click();
-    });
-  });
-  const backBtn = document.getElementById('backToRoleBtn');
-  if (backBtn) backBtn.addEventListener('click', goToRoleSelect);
-
-  window.addEventListener('resize', () => {
-    const active = document.querySelector('.role-tab.active');
-    if (active) moveIndicator(roleIndicator, active);
-  });
-
-  // Escape returns to role-select from the form step (only when no modal is open)
-  document.addEventListener('keydown', e => {
-    if (e.key !== 'Escape') return;
-    if (Modal.anyOpen() || stepForm.hidden) return;
-    goToRoleSelect();
-  });
-
-  // Deep link: ?role=patient or ?role=staff skips the role-select screen
-  const requestedRole = new URLSearchParams(location.search).get('role');
-  if (requestedRole === 'patient' || requestedRole === 'staff'){
-    goToForm(requestedRole, {animate: false});
-  } else {
-    setAside('role', false);
-  }
-}
 
 // ---------- Password show/hide ----------
 function initPasswordToggles(){
@@ -184,7 +25,7 @@ function eyeOffIcon(){
   return '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a21.6 21.6 0 0 1 5.06-6.06M9.9 4.24A10.4 10.4 0 0 1 12 4c7 0 11 8 11 8a21.7 21.7 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
 }
 
-// ---------- Alert banner (role-level: wrong credentials, network error, etc.) ----------
+// ---------- Alert banner ----------
 function showAlert(message){
   const alertBox = document.getElementById('authAlert');
   const alertText = document.getElementById('authAlertText');
@@ -198,9 +39,6 @@ function hideAlert(){
 }
 
 // ---------- Field-level error ----------
-// The error message is linked to its input (aria-describedby) and the
-// input is marked aria-invalid, so screen readers announce both the
-// failure and where it happened.
 function setFieldError(inputEl, message){
   const group = inputEl.closest('.form-group');
   if (!group) return;
@@ -229,9 +67,6 @@ function setLoading(btn, on){
 
 // =====================================================================
 // VALIDATION LAYER
-// Polished, inline, real-time field validation: replaces the browser's
-// native validation bubbles with branded messaging. This is presentation
-// only; the backend must re-validate everything server-side later.
 // =====================================================================
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -246,17 +81,6 @@ function validateField(input){
     setFieldError(input, 'Please enter a valid email address.');
     return false;
   }
-  if ((input.id === 'registerPassword' || input.id === 'resetPassword') && value && value.length < 8){
-    setFieldError(input, 'Password must be at least 8 characters.');
-    return false;
-  }
-  if (input.id === 'registerConfirm' || input.id === 'resetConfirm'){
-    const pw = document.getElementById(input.id === 'resetConfirm' ? 'resetPassword' : 'registerPassword');
-    if (value && pw && value !== pw.value){
-      setFieldError(input, "Passwords don't match.");
-      return false;
-    }
-  }
   if (input.type === 'checkbox' && input.hasAttribute('required') && !input.checked){
     setFieldError(input, 'You need to agree before continuing.');
     return false;
@@ -266,11 +90,8 @@ function validateField(input){
   return true;
 }
 
-// Validates every relevant field in a form; returns true only if all pass.
-// Focuses the first invalid field so keyboard/screen-reader users land
-// exactly where they need to.
 function validateForm(form){
-  const fields = form.querySelectorAll('input[required], input[type="email"], #registerPassword, #registerConfirm, #resetPassword, #resetConfirm');
+  const fields = form.querySelectorAll('input[required], input[type="email"]');
   let firstInvalid = null;
   let allValid = true;
   fields.forEach(field => {
@@ -284,9 +105,8 @@ function validateForm(form){
   return allValid;
 }
 
-// Live feedback: clear/re-check a field as the person types or leaves it.
 function initLiveValidation(){
-  document.querySelectorAll('.auth-panel input, #panel-admin-login input').forEach(input => {
+  document.querySelectorAll('.auth-panel input').forEach(input => {
     input.addEventListener('blur', () => { if (input.value.trim()) validateField(input); });
     input.addEventListener('input', () => {
       const group = input.closest('.form-group');
@@ -295,7 +115,9 @@ function initLiveValidation(){
   });
 }
 
-// ---------- Real session login ----------
+// =====================================================================
+// REAL SESSION LOGIN
+// =====================================================================
 const AUTH_ENDPOINTS = {
   login: '../backend/api/auth/login.php',
   me: '../backend/api/auth/me.php',
@@ -305,9 +127,8 @@ const AUTH_ENDPOINTS = {
 };
 
 const ROLE_DESTINATIONS = {
-  admin: '../admin-system/dashboard.html',
-  staff: '../admin-system/dashboard.html',
-  dentist: '../admin-system/dashboard.html',
+  dentist: '../dentist-dashboard/dashboard.html',
+  receptionist: '../admin-system/dashboard.html',
   patient: '../patient-dashboard/dashboard.html'
 };
 
@@ -391,15 +212,11 @@ function initLoginForm(form){
 
 // =====================================================================
 // REUSABLE MODAL COMPONENT
-// One class, used by every dialog on every auth page. Guards against
-// being wired up twice on the same element, traps focus while open, and
-// closes via ×, OK/close buttons, Escape, or backdrop click: all paths
-// converge on the same close() so state can never get out of sync.
 // =====================================================================
 class Modal {
   constructor(modalId){
     const existing = Modal._registry.get(modalId);
-    if (existing) return existing; // never wire the same modal twice
+    if (existing) return existing;
 
     this.modal = document.getElementById(modalId);
     if (!this.modal) return;
@@ -422,7 +239,7 @@ class Modal {
   }
 
   open(trigger){
-    if (this.modal.hidden === false) return; // already open
+    if (this.modal.hidden === false) return;
     this.lastTrigger = trigger || document.activeElement;
     this.modal.hidden = false;
     document.body.classList.add('modal-open');
@@ -432,7 +249,7 @@ class Modal {
   }
 
   close(){
-    if (this.modal.hidden) return; // already closed
+    if (this.modal.hidden) return;
     this.modal.hidden = true;
     document.body.classList.remove('modal-open');
     document.removeEventListener('keydown', this._onKeydown);
@@ -475,9 +292,6 @@ class Modal {
 }
 Modal._registry = new Map();
 
-// One-line helper: get-or-create a Modal, wire up any number of triggers
-// and close-buttons in one call. Safe to call more than once: subsequent
-// calls just add more triggers to the same underlying instance.
 function setupModal(modalId, triggerIds = [], closeIds = []){
   const modal = new Modal(modalId);
   triggerIds.forEach(id => modal.registerTrigger(document.getElementById(id)));
@@ -486,10 +300,6 @@ function setupModal(modalId, triggerIds = [], closeIds = []){
 }
 
 // ---------- Forgot Password: validate, then simulate the reset flow ----------
-// The mock keeps the full journey alive: valid email -> loading -> success
-// dialog (echoing the email, like the real mail step would). The dialog
-// never appears on page load; it only opens after a real submit attempt
-// with a valid-looking email.
 function wireForgotPasswordForm(form, modal){
   const btn = form.querySelector('.btn-block');
   form.addEventListener('submit', async e => {
@@ -499,13 +309,12 @@ function wireForgotPasswordForm(form, modal){
     hideAlert();
     setLoading(btn, true);
     const emailField = form.querySelector('input[type="email"]');
-    const role = new URLSearchParams(location.search).get('role') === 'staff' ? 'staff' : 'patient';
     try {
       const response = await fetchWithTimeout(AUTH_ENDPOINTS.forgotPassword, {
         method: 'POST',
         credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: emailField.value.trim(), role })
+        body: JSON.stringify({ email: emailField.value.trim() })
       });
       const payload = await readJsonResponse(response);
       if (!response.ok){
@@ -574,14 +383,8 @@ function applyForcedState(){
   }
 }
 
-// ---------- Back to the public website ----------
-// Links pointing at the public site (logo + "Back to website") navigate
-// immediately: no exit transition on this page. The public homepage runs
-// its own entrance animation on load, so the handoff stays smooth without
-// any cross-page synchronization.
-
+// ---------- Init ----------
 document.addEventListener('DOMContentLoaded', () => {
-  initRoleFlow();
   initPasswordToggles();
   initLiveValidation();
   applyForcedState();

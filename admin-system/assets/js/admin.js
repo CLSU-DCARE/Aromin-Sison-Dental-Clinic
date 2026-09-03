@@ -728,7 +728,7 @@ initNotifications({
   markAllId: 'notifMarkAll',
   emptyId: 'notifEmpty',
   notifications: adminNotifList,
-  storageKey: 'asdc.notif.admin',
+  storageKey: 'asdc.notif.receptionist',
   onSelect: n => {
     if (n.id === 'pay-pending'){ switchView('payments'); Popover.close(document.getElementById('notifPanel')); }
     else showToast('Opening: ' + n.title + ' (mock)');
@@ -1405,8 +1405,8 @@ if (archiveRecordsBtn){
 // =====================================================================
 initToastTriggers();
 initFullscreenToggle();
-initSidebar('asdc.admin.sidebar.collapsed');
-initLogout('../auth/login.html?role=staff');
+initSidebar('asdc.receptionist.sidebar.collapsed');
+initLogout('../auth/login.html');
 
 // =====================================================================
 // MOCK DATA RENDERING
@@ -1419,13 +1419,13 @@ function renderUser(user){
   const set = (id, value) => { const el = document.getElementById(id); if (el) el.textContent = value; };
   set('sideFootAvatar', user.initials);
   set('sideFootName', user.name);
-  set('sideFootRole', user.role);
+  set('sideFootRole', 'Receptionist');
   set('chipAvatar', user.initials);
   set('menuAvatar', user.initials);
   set('menuName', user.name);
-  set('menuRole', user.role);
+  set('menuRole', 'Receptionist');
   set('greetingText', user.greeting);
-  set('greetingSubtext', user.name + ' · ' + user.role);
+  set('greetingSubtext', user.name + ' · Receptionist');
 }
 
 function renderDashboardStats(stats){

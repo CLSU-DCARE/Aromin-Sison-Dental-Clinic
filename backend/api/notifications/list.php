@@ -9,7 +9,7 @@
  *   ?offset=0       — pagination offset (default 0)
  *
  * Returns notification log entries with patient + template info.
- * Protected: requires admin, staff, or dentist role.
+ * Protected: requires receptionist or dentist role.
  */
 
 require_once __DIR__ . '/../../config/auth.php';
@@ -17,7 +17,7 @@ require_once __DIR__ . '/../../config/db.php';
 
 header('Content-Type: application/json');
 
-require_role('admin', 'staff', 'dentist');
+require_role('receptionist', 'dentist');
 
 // ── Parse query params ──
 $patientId = isset($_GET['patient_id']) ? intval($_GET['patient_id']) : null;

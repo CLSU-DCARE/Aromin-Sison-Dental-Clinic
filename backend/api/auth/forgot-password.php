@@ -15,7 +15,6 @@ require_once __DIR__ . '/../../config/mail.php';
 secure_session_start();
 $input = json_decode(file_get_contents('php://input'), true);
 $email = is_array($input) && isset($input['email']) && is_string($input['email']) ? strtolower(trim($input['email'])) : '';
-$role = is_array($input) && isset($input['role']) && $input['role'] === 'staff' ? 'staff' : 'patient';
 
 if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
     http_response_code(400);
@@ -35,7 +34,7 @@ if (count($attempts) >= 3) {
 $attempts[] = $now;
 $_SESSION['password_reset_attempts'] = $attempts;
 
-$roleSql = $role === 'staff' ? "role IN ('admin', 'staff', 'dentist')" : "role = 'patient'";
+$roleSql = "role IN ('dentist', 'receptionist', 'patient')";
 $stmt = $pdo->prepare("SELECT user_id, email, full_name FROM users WHERE email = ? AND {$roleSql} AND is_active = 1 LIMIT 1");
 $stmt->execute([$email]);
 $user = $stmt->fetch();

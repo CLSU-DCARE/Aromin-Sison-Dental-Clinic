@@ -12,7 +12,7 @@ USE aromin_sison_dental;
 -- Covers login for Admin System staff AND Patient Dashboard accounts
 CREATE TABLE users (
     user_id INT AUTO_INCREMENT PRIMARY KEY,
-    role ENUM('admin', 'staff', 'dentist', 'patient') NOT NULL,
+    role ENUM('dentist', 'receptionist', 'patient') NOT NULL,
     email VARCHAR(150) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
     full_name VARCHAR(150) NOT NULL,

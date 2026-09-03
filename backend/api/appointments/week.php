@@ -3,7 +3,7 @@ header('Content-Type: application/json');
 require_once __DIR__ . '/../../config/auth.php';
 require_once __DIR__ . '/../../config/db.php';
 require_once __DIR__ . '/../../config/appointments.php';
-require_role('admin', 'staff');
+require_role('receptionist', 'dentist');
 appointment_assert_method('GET');
 
 $start = appointment_date($_GET['start'] ?? date('Y-m-d', strtotime('monday this week')));

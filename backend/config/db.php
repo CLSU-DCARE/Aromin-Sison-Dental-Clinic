@@ -10,7 +10,7 @@
  */
 
 $DB_HOST = '127.0.0.1';
-$DB_PORT = 3307;
+$DB_PORT = 3306;
 $DB_NAME = 'aromin_sison_dental';
 $DB_USER = 'root';   // default XAMPP user
 $DB_PASS = '';        // default XAMPP password is blank

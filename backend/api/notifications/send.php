@@ -20,7 +20,7 @@
  * Sends an email and/or SMS to the specified patient, logs the result in
  * notification_logs, and returns the log entry.
  *
- * Protected: requires admin, staff, or dentist role.
+ * Protected: requires receptionist or dentist role.
  */
 
 require_once __DIR__ . '/../../config/auth.php';
@@ -29,7 +29,7 @@ require_once __DIR__ . '/../../config/mail.php';
 
 header('Content-Type: application/json');
 
-require_role('admin', 'staff', 'dentist');
+require_role('receptionist', 'dentist');
 
 $input = json_decode(file_get_contents('php://input'), true);
 

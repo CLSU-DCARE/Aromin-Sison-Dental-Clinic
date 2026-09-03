@@ -15,7 +15,7 @@
  *
  * Placeholders: {patient_name}, {date}, {time}, {service}, {dentist}, {amount}, {balance}
  *
- * Protected: requires admin or staff role.
+ * Protected: requires receptionist role.
  */
 
 require_once __DIR__ . '/../../config/auth.php';
@@ -23,7 +23,7 @@ require_once __DIR__ . '/../../config/db.php';
 
 header('Content-Type: application/json');
 
-require_role('admin', 'staff');
+require_role('receptionist');
 
 // ── GET: list templates ──
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {

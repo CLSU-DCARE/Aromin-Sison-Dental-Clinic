@@ -97,7 +97,7 @@ if (!$user || !(bool) $user['is_active'] || !password_verify($password, $user['p
     exit;
 }
 
-$allowedRoles = ['admin', 'staff', 'dentist', 'patient'];
+$allowedRoles = ['dentist', 'receptionist', 'patient'];
 if (!in_array($user['role'], $allowedRoles, true)) {
     error_log('Login rejected for user with unsupported role: ' . $user['user_id']);
     http_response_code(403);

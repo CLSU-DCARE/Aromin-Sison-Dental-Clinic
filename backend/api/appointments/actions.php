@@ -3,7 +3,7 @@ header('Content-Type: application/json');
 require_once __DIR__ . '/../../config/auth.php';
 require_once __DIR__ . '/../../config/db.php';
 require_once __DIR__ . '/../../config/appointments.php';
-require_role('admin', 'staff');
+require_role('receptionist', 'dentist');
 appointment_assert_method('POST', 'PATCH');
 $body = appointment_body();
 $action = isset($body['action']) && is_string($body['action']) ? strtolower(trim($body['action'])) : '';

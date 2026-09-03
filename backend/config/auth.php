@@ -6,7 +6,7 @@
  *
  *   require_once __DIR__ . '/../../config/auth.php';
  *   require_login();                    // any authenticated user
- *   require_role('admin', 'staff');     // restrict to specific roles
+ *   require_role('receptionist', 'dentist'); // restrict to specific roles
  *
  * It starts a hardened session (HttpOnly + SameSite cookie, optional Secure),
  * enforces an idle timeout, and centralizes the 401/403 JSON responses so

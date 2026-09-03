@@ -8,7 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../shared/css/variables.css?v=4">
 <link rel="stylesheet" href="../shared/css/buttons.css?v=5">
-<link rel="stylesheet" href="assets/css/auth.css?v=7">
+<link rel="stylesheet" href="assets/css/auth.css?v=8">
 </head>
 <body>
 
@@ -22,9 +22,9 @@
       </a>
     </div>
     <div class="auth-aside-mid">
-      <div class="eyebrow" id="asideEyebrow">Sign In</div>
-      <h1 class="serif auth-aside-title" id="asideTitle">Kumusta!<br>Saan ka <em>papunta</em>?</h1>
-      <p class="auth-aside-quote" id="asideQuote">&ldquo;The Lord is righteous in all his ways and faithful in all he does.&rdquo; &mdash; Psalm 145:17</p>
+      <div class="eyebrow">Sign In</div>
+      <h1 class="serif auth-aside-title">Kumusta!<br>Saan ka <em>papunta</em>?</h1>
+      <p class="auth-aside-quote">&ldquo;The Lord is righteous in all his ways and faithful in all he does.&rdquo; &mdash; Psalm 145:17</p>
     </div>
     <div class="auth-aside-foot">
       <span>Est. 1985: Founded with Care</span>
@@ -33,144 +33,56 @@
     <div class="auth-curve" aria-hidden="true"></div>
   </aside>
 
-  <!-- ===== RIGHT: STEPS ===== -->
+  <!-- ===== RIGHT: LOGIN FORM ===== -->
   <main class="auth-main">
     <div class="auth-card">
 
-      <!-- ============ STEP 1: ROLE SELECT ============ -->
-      <section class="auth-step" id="step-role" data-step="role">
-        <div class="auth-card-head">
-          <div class="eyebrow">Sign In</div>
-          <h2 class="serif" id="roleHeading" tabindex="-1">How would you like to sign in?</h2>
-          <p>Choose the option that matches your account. You can switch anytime before logging in.</p>
-        </div>
+      <div class="auth-card-head">
+        <div class="eyebrow">Sign In</div>
+        <h2 class="serif" id="formHeading" tabindex="-1">Welcome back</h2>
+        <p>Sign in with your registered email and password. Your role will be identified automatically.</p>
+      </div>
 
-        <div class="role-grid" role="group" aria-label="Choose account type">
-          <button type="button" class="role-card" data-role="patient" aria-describedby="roleDescPatient">
-            <span class="role-icon" aria-hidden="true">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-            </span>
-            <span class="role-name">Patient</span>
-            <span class="role-desc" id="roleDescPatient">Access appointments, medical records, billing, and personal information.</span>
+      <div id="authAlert" class="auth-alert" role="alert" hidden>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span id="authAlertText">Invalid credentials. Please try again.</span>
+      </div>
+
+      <form class="auth-panel" id="panel-login" data-panel="login" novalidate>
+        <div class="form-group">
+          <label for="loginEmail">Email Address</label>
+          <input type="email" id="loginEmail" name="email" required placeholder="you@email.com" autocomplete="email">
+          <div class="field-error"></div>
+        </div>
+        <div class="form-group">
+          <label for="loginPassword">Password</label>
+          <div class="input-shell">
+            <input type="password" id="loginPassword" name="password" required placeholder="••••••••" autocomplete="current-password">
+            <button type="button" class="pw-toggle" aria-label="Show password"></button>
+          </div>
+          <div class="field-error"></div>
+        </div>
+        <div class="form-row-between">
+          <label class="checkbox-inline"><input type="checkbox" name="remember"> Remember me</label>
+          <a class="link-btn" href="forgot-password.html">Forgot password?</a>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <button type="submit" class="btn btn-block btn-gold btn-lg">
+            <span class="btn-label">Log In</span>
+            <span class="btn-spinner" aria-hidden="true"></span>
           </button>
-
-          <button type="button" class="role-card" data-role="staff" aria-describedby="roleDescStaff">
-            <span class="role-icon" aria-hidden="true">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="14" rx="1"/><path d="M8 21h8M12 18v3"/></svg>
-            </span>
-            <span class="role-name">Staff / Administrator</span>
-            <span class="role-desc" id="roleDescStaff">Access the clinic management dashboard and administrative tools.</span>
-          </button>
+          <p class="auth-switch-note" style="margin: 0;">
+            New patient? <a class="link-btn" href="patient-signup.html">Sign up</a>
+          </p>
         </div>
-      </section>
-
-      <!-- ============ STEP 2: LOGIN FORM ============ -->
-      <section class="auth-step" id="step-form" data-step="form" hidden>
-
-        <button type="button" class="auth-role-back" id="backToRoleBtn">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
-          Choose a different way to sign in
-        </button>
-
-        <div class="role-tabs" role="tablist" aria-label="Account type">
-          <button class="role-tab" data-role="patient" role="tab" id="roleTabPatient" aria-selected="false" aria-controls="section-patient">Patient</button>
-          <button class="role-tab" data-role="staff" role="tab" id="roleTabStaff" aria-selected="false" aria-controls="section-staff">Staff / Admin</button>
-          <span class="role-tab-indicator" aria-hidden="true"></span>
-        </div>
-
-        <div id="authAlert" class="auth-alert" role="alert" hidden>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-          <span id="authAlertText">Invalid credentials. Please try again.</span>
-        </div>
-
-        <!-- ---------- PATIENT LOGIN ---------- -->
-        <div id="section-patient" data-role-section="patient" hidden>
-          <div class="auth-card-head">
-            <h2 class="serif" id="patientFormHeading" tabindex="-1">Patient Sign In</h2>
-          </div>
-
-          <form class="auth-panel" id="panel-login" data-panel="login" novalidate>
-            <div class="form-group">
-              <label for="loginEmail">Email Address</label>
-              <input type="email" id="loginEmail" name="email" required placeholder="you@email.com" autocomplete="email">
-              <div class="field-error"></div>
-            </div>
-            <div class="form-group">
-              <label for="loginPassword">Password</label>
-              <div class="input-shell">
-                <input type="password" id="loginPassword" name="password" required placeholder="••••••••" autocomplete="current-password">
-                <button type="button" class="pw-toggle" aria-label="Show password"></button>
-              </div>
-              <div class="field-error"></div>
-            </div>
-            <div class="form-row-between">
-              <label class="checkbox-inline"><input type="checkbox" name="remember"> Remember me</label>
-              <a class="link-btn" href="forgot-password.html?role=patient">Forgot password?</a>
-            </div>
-            <div style="display: flex; flex-direction: column; gap: 8px;">
-              <button type="submit" class="btn btn-block btn-gold btn-lg">
-                <span class="btn-label">Log In</span>
-                <span class="btn-spinner" aria-hidden="true"></span>
-              </button>
-              <p class="auth-switch-note" style="margin: 0;">
-                New patient? <a class="link-btn" href="patient-signup.html">Sign up</a>
-              </p>
-            </div>
-            <details class="demo-hint">
-              <summary>Having trouble signing in?</summary>
-              <ul>
-                <li>Use the email address registered with the clinic.</li>
-                <li>Contact clinic staff if your patient account is not active.</li>
-              </ul>
-            </details>
-          </form>
-        </div>
-
-        <!-- ---------- STAFF LOGIN ---------- -->
-        <div id="section-staff" data-role-section="staff" hidden>
-
-          <div class="auth-card-head">
-            <h2 class="serif" id="staffFormHeading" tabindex="-1">Staff Sign In</h2>
-            <p>For dentists, front desk, and clinic administrators.</p>
-          </div>
-
-          <form class="auth-panel" id="panel-admin-login" data-panel="login" novalidate>
-            <div class="form-group">
-              <label for="adminEmail">Staff Email</label>
-              <input type="email" id="adminEmail" name="email" required placeholder="you@aromin-sisondental.ph" autocomplete="email">
-              <div class="field-error"></div>
-            </div>
-            <div class="form-group">
-              <label for="adminPassword">Password</label>
-              <div class="input-shell">
-                <input type="password" id="adminPassword" name="password" required placeholder="••••••••" autocomplete="current-password">
-                <button type="button" class="pw-toggle" aria-label="Show password"></button>
-              </div>
-              <div class="field-error"></div>
-            </div>
-            <div class="form-row-between">
-              <label class="checkbox-inline"><input type="checkbox" name="remember"> Keep me signed in</label>
-              <a class="link-btn" href="forgot-password.html?role=staff">Trouble signing in?</a>
-            </div>
-            <button type="submit" class="btn btn-block btn-gold btn-lg">
-              <span class="btn-label">Sign In</span>
-              <span class="btn-spinner" aria-hidden="true"></span>
-            </button>
-            <details class="demo-hint">
-              <summary>Having trouble signing in?</summary>
-              <ul>
-                <li>Use the staff email address assigned by the clinic.</li>
-                <li>Contact an administrator if your account is inactive.</li>
-              </ul>
-            </details>
-          </form>
-
-          <div class="auth-note-box">
-            Staff accounts are created by the clinic administrator: there is no self-registration for this dashboard.
-          </div>
-        </div>
-
-      </section>
+        <details class="demo-hint">
+          <summary>Having trouble signing in?</summary>
+          <ul>
+            <li>Use the email address registered with the clinic.</li>
+            <li>Contact clinic staff if your account is not active.</li>
+          </ul>
+        </details>
+      </form>
 
       <a class="auth-back-link" href="../public-website/index.html">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
@@ -180,11 +92,10 @@
   </main>
 </div>
 
-<script src="assets/js/auth.js?v=7" defer></script>
+<script src="assets/js/auth.js?v=8" defer></script>
 <script>
   document.addEventListener('DOMContentLoaded', () => {
     initLoginForm(document.getElementById('panel-login'));
-    initLoginForm(document.getElementById('panel-admin-login'));
     if (new URLSearchParams(location.search).get('error') === 'session') {
       showAlert('Your session has expired. Please sign in again.');
     }

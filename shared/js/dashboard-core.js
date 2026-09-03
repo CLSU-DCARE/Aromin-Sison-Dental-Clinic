@@ -1,8 +1,8 @@
 /* =====================================================================
    Aromin-Sison Dental Clinic: shared dashboard core
-   Single source of truth for utilities used by BOTH dashboards
-   (admin-system and patient-dashboard). Load this BEFORE the
-   page-specific dashboard script (admin.js / patient.js).
+   Single source of truth for utilities used by ALL dashboards
+   (dentist, receptionist, and patient). Load this BEFORE the
+   page-specific dashboard script (dentist.js / admin.js / patient.js).
 
    Exposes (all global, matching the legacy behavior they replace):
      class Modal           - reusable dialog (focus trap, Esc, backdrop)
@@ -26,19 +26,24 @@
 // selected login tab and browser storage are never treated as identity.
 (function guardDashboardSession(){
   const isPatientDashboard = location.pathname.includes('/patient-dashboard/');
-  const isAdminDashboard = location.pathname.includes('/admin-system/');
-  if (!isPatientDashboard && !isAdminDashboard) return;
+  const isDentistDashboard = location.pathname.includes('/dentist-dashboard/');
+  const isReceptionistDashboard = location.pathname.includes('/admin-system/');
+  const isAnyDashboard = isPatientDashboard || isDentistDashboard || isReceptionistDashboard;
+  if (!isAnyDashboard) return;
 
   // Avoid briefly displaying protected dashboard content while the session
   // check is in flight.
   document.documentElement.style.visibility = 'hidden';
 
-  const loginUrl = '../auth/login.html?role=' + (isPatientDashboard ? 'patient' : 'staff');
-  const destinationFor = role => role === 'patient'
-    ? '../patient-dashboard/dashboard.html'
-    : ['admin', 'staff', 'dentist'].includes(role)
-      ? '../admin-system/dashboard.html'
-      : null;
+  const loginUrl = '../auth/login.html';
+  const destinationFor = role => {
+    const map = {
+      patient: '../patient-dashboard/dashboard.html',
+      dentist: '../dentist-dashboard/dashboard.html',
+      receptionist: '../admin-system/dashboard.html'
+    };
+    return map[role] || null;
+  };
 
   fetch('../backend/api/auth/me.php', {
     method: 'GET',
@@ -53,8 +58,10 @@
     })
     .then(user => {
       const destination = destinationFor(user.role);
-      const correctDashboard = (isPatientDashboard && user.role === 'patient') ||
-        (isAdminDashboard && ['admin', 'staff', 'dentist'].includes(user.role));
+      const correctDashboard =
+        (isPatientDashboard && user.role === 'patient') ||
+        (isDentistDashboard && user.role === 'dentist') ||
+        (isReceptionistDashboard && user.role === 'receptionist');
 
       if (!destination){
         location.replace(loginUrl);
@@ -77,14 +84,14 @@
       ['sideFootAvatar', 'chipAvatar', 'menuAvatar', 'profileAvatar'].forEach(id => set(id, initials));
       ['sideFootName', 'menuName', 'profileName'].forEach(id => set(id, user.full_name));
       ['sideFootRole', 'menuRole'].forEach(id => set(id, roleLabel));
-      if (isAdminDashboard) set('greetingSubtext', user.full_name + ' · ' + roleLabel);
+      if (!isPatientDashboard) set('greetingSubtext', user.full_name + ' · ' + roleLabel);
       else set('welcomeTitle', 'Welcome, ' + user.full_name + '!');
 
       const chip = document.getElementById('userChip');
       if (chip) chip.title = user.full_name + ': ' + roleLabel;
       document.documentElement.style.visibility = '';
     })
-    .catch(() => location.replace(loginUrl + '&error=session'));
+    .catch(() => location.replace(loginUrl + '?error=session'));
 })();
 
 // =====================================================================
@@ -317,8 +324,7 @@ function initSidebar(collapseKey){
 }
 
 // ---------- Confirm Logout ----------
-// Wires the #logoutModal flow; redirectUrl differs per dashboard
-// (staff -> login.html?role=staff, patient -> login.html?role=patient).
+// Wires the #logoutModal flow; redirectUrl is always the login page.
 function initLogout(redirectUrl){
   const logoutModal = new Modal('logoutModal');
   const logoutBtn = document.getElementById('logoutBtn');
