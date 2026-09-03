@@ -48,7 +48,8 @@
   fetch('../backend/api/auth/me.php', {
     method: 'GET',
     credentials: 'same-origin',
-    headers: { 'Accept': 'application/json' }
+    headers: { 'Accept': 'application/json' },
+    cache: 'no-store'
   })
     .then(async response => {
       let payload = {};
@@ -323,6 +324,20 @@ function initSidebar(collapseKey){
   applyCollapsed();
 }
 
+// ---------- Destroy session and navigate ----------
+// Posts to the server-side logout endpoint synchronously so the session is
+// guaranteed destroyed before the redirect fires. Uses location.replace
+// (not location.href) so the dashboard is removed from browser history.
+function destroySessionAndRedirect(url){
+  try {
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', '../backend/api/auth/logout.php', false); // false = synchronous
+    xhr.setRequestHeader('Content-Type', 'application/json');
+    xhr.send();
+  } catch (e) { /* best-effort: redirect even if server unreachable */ }
+  window.location.replace(url);
+}
+
 // ---------- Confirm Logout ----------
 // Wires the #logoutModal flow; redirectUrl is always the login page.
 function initLogout(redirectUrl){
@@ -337,11 +352,7 @@ function initLogout(redirectUrl){
   if (logoutModalClose) logoutModal.registerClose(logoutModalClose);
   if (logoutConfirmBtn){
     logoutConfirmBtn.addEventListener('click', () => {
-      // Clear the server-side session before redirecting. If the request
-      // fails we still redirect client-side rather than trap the user.
-      fetch('../backend/api/auth/logout.php', { method: 'POST' })
-        .catch(() => {})
-        .finally(() => { window.location.href = redirectUrl; });
+      destroySessionAndRedirect(redirectUrl);
     });
   }
   window.__logoutModal = logoutModal;
@@ -350,6 +361,16 @@ function initLogout(redirectUrl){
 // Open the logout confirm dialog from anywhere (e.g. the user menu).
 function openLogoutConfirm(trigger){
   if (window.__logoutModal) window.__logoutModal.open(trigger || document.activeElement);
+}
+
+// ---------- View Public Site (destroys session first) ----------
+function wirePublicSiteLinks(){
+  document.addEventListener('click', e => {
+    const link = e.target.closest('a[href*="public-website"]');
+    if (!link) return;
+    e.preventDefault();
+    destroySessionAndRedirect(link.getAttribute('href'));
+  });
 }
 
 // =====================================================================
@@ -532,3 +553,52 @@ function initNotifications(opts){
   trigger.addEventListener('click', () => Popover.toggle(trigger, panel, { onOpen: render }));
   render();
 }
+
+// =====================================================================
+// BFCACHE / BACK-FORWARD PROTECTION
+// When the browser restores a page from the back-forward cache (bfcache),
+// JavaScript state is frozen but the session may have been destroyed.
+// The pageshow event fires with persisted=true for bfcache restores;
+// re-validate the session and redirect to login if it is gone.
+// =====================================================================
+window.addEventListener('pageshow', e => {
+  if (!e.persisted) return;
+  // Page was restored from bfcache — verify session is still alive.
+  fetch('../backend/api/auth/me.php', {
+    method: 'GET',
+    credentials: 'same-origin',
+    headers: { 'Accept': 'application/json' },
+    cache: 'no-store'
+  })
+    .then(r => { if (!r.ok) throw new Error('unauthenticated'); return r.json(); })
+    .then(payload => {
+      if (!payload.user) throw new Error('unauthenticated');
+    })
+    .catch(() => { window.location.replace('../auth/login.html?error=session'); });
+});
+
+// =====================================================================
+// VISIBILITY-CHANGE SESSION CHECK
+// When the user returns to this tab after it was backgrounded, re-validate
+// the session. This catches session expiry that happened while the user
+// was on another tab or the OS had suspended the page.
+// =====================================================================
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) return;
+  fetch('../backend/api/auth/me.php', {
+    method: 'GET',
+    credentials: 'same-origin',
+    headers: { 'Accept': 'application/json' },
+    cache: 'no-store'
+  })
+    .then(r => { if (!r.ok) throw new Error('unauthenticated'); return r.json(); })
+    .then(payload => {
+      if (!payload.user) throw new Error('unauthenticated');
+    })
+    .catch(() => { window.location.replace('../auth/login.html?error=session'); });
+});
+
+// =====================================================================
+// WIRE PUBLIC SITE LINKS (destroy session before navigating)
+// =====================================================================
+wirePublicSiteLinks();

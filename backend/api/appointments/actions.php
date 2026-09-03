@@ -1,5 +1,8 @@
 <?php
 header('Content-Type: application/json');
+header('Cache-Control: no-cache, no-store, must-revalidate, max-age=0');
+header('Pragma: no-cache');
+header('Expires: 0');
 require_once __DIR__ . '/../../config/auth.php';
 require_once __DIR__ . '/../../config/db.php';
 require_once __DIR__ . '/../../config/appointments.php';

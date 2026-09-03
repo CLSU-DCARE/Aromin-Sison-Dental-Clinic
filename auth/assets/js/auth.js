@@ -199,7 +199,7 @@ function initLoginForm(form){
         return;
       }
 
-      window.location.assign(destination);
+      window.location.replace(destination);
     } catch (error){
       showAlert(error && error.name === 'AbortError'
         ? 'The clinic server took too long to respond. Please try again.'
@@ -375,6 +375,42 @@ function wireResetPasswordForm(form){
   });
 }
 
+// =====================================================================
+// AUTHENTICATED-USER GUARD
+// If a user already has an active session and lands on a login / signup /
+// forgot-password page (e.g. via browser Back), hide the page and
+// redirect them to their correct dashboard. The page remains visible
+// by default so unauthenticated users always see the form — even if
+// the backend is unreachable.
+// =====================================================================
+function guardAuthPages(){
+  const isLoginPage    = !!document.getElementById('panel-login');
+  const isSignupPage   = !!document.getElementById('panel-patient-signup');
+  const isForgotPage   = !!document.getElementById('panel-forgot');
+  if (!isLoginPage && !isSignupPage && !isForgotPage) return;
+
+  const authShell = document.querySelector('.auth-shell');
+
+  fetch(AUTH_ENDPOINTS.me, {
+    method: 'GET',
+    credentials: 'same-origin',
+    headers: { 'Accept': 'application/json' },
+    cache: 'no-store'
+  })
+    .then(r => { if (!r.ok) throw new Error(); return r.json(); })
+    .then(payload => {
+      if (payload.user && ROLE_DESTINATIONS[payload.user.role]){
+        // Authenticated — hide page and redirect to dashboard.
+        if (authShell) authShell.style.visibility = 'hidden';
+        window.location.replace(ROLE_DESTINATIONS[payload.user.role]);
+      }
+      // Not authenticated — page stays visible (no action needed).
+    })
+    .catch(() => {
+      // Backend unreachable — page stays visible so user can still log in.
+    });
+}
+
 // ---------- Force loading/error state on load, for design QA ----------
 function applyForcedState(){
   if (FORCE_STATE === 'loading'){
@@ -385,7 +421,70 @@ function applyForcedState(){
 
 // ---------- Init ----------
 document.addEventListener('DOMContentLoaded', () => {
+  guardAuthPages();
   initPasswordToggles();
   initLiveValidation();
   applyForcedState();
+});
+
+// =====================================================================
+// BFCACHE PROTECTION FOR AUTH PAGES
+// When the browser restores a login/signup/forgot-password page from the
+// back-forward cache, re-check whether the user is already authenticated
+// and redirect them to their dashboard. This catches the scenario:
+//   Login → Dashboard → Back (shows login from bfcache) → redirect
+// =====================================================================
+window.addEventListener('pageshow', e => {
+  if (!e.persisted) return;
+  const isAuthPage =
+    !!document.getElementById('panel-login') ||
+    !!document.getElementById('panel-patient-signup') ||
+    !!document.getElementById('panel-forgot');
+  if (!isAuthPage) return;
+
+  const authShell = document.querySelector('.auth-shell');
+
+  fetch(AUTH_ENDPOINTS.me, {
+    method: 'GET',
+    credentials: 'same-origin',
+    headers: { 'Accept': 'application/json' },
+    cache: 'no-store'
+  })
+    .then(r => { if (!r.ok) throw new Error(); return r.json(); })
+    .then(payload => {
+      if (payload.user && ROLE_DESTINATIONS[payload.user.role]){
+        if (authShell) authShell.style.visibility = 'hidden';
+        window.location.replace(ROLE_DESTINATIONS[payload.user.role]);
+      }
+    })
+    .catch(() => {});
+});
+
+// =====================================================================
+// VISIBILITY-CHANGE GUARD FOR AUTH PAGES
+// If the user returns to the login tab after authenticating in another
+// tab, redirect them to their dashboard.
+// =====================================================================
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) return;
+  const isAuthPage =
+    !!document.getElementById('panel-login') ||
+    !!document.getElementById('panel-patient-signup') ||
+    !!document.getElementById('panel-forgot');
+  if (!isAuthPage) return;
+
+  fetch(AUTH_ENDPOINTS.me, {
+    method: 'GET',
+    credentials: 'same-origin',
+    headers: { 'Accept': 'application/json' },
+    cache: 'no-store'
+  })
+    .then(r => { if (!r.ok) throw new Error(); return r.json(); })
+    .then(payload => {
+      if (payload.user && ROLE_DESTINATIONS[payload.user.role]){
+        document.querySelector('.auth-shell').style.visibility = 'hidden';
+        window.location.replace(ROLE_DESTINATIONS[payload.user.role]);
+      }
+    })
+    .catch(() => {});
 });

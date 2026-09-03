@@ -9,25 +9,44 @@
 const viewButtons = document.querySelectorAll('.nav-item[data-view]');
 const viewSections = document.querySelectorAll('.view');
 const viewTitle = document.getElementById('viewTitle');
+const viewCrumb = document.getElementById('viewCrumb');
 
-const VIEW_TITLES = {
-  dashboard: 'Dashboard',
-  patients: 'Patients',
-  records: 'Treatment Records',
-  appointments: 'Appointments'
+const VIEW_META = {
+  dashboard:    { title: 'Dashboard',          crumb: 'Overview' },
+  patients:     { title: 'Patients',           crumb: 'Patients' },
+  records:      { title: 'Treatment Records',  crumb: 'Records' },
+  appointments: { title: 'Appointments',       crumb: 'Scheduling' }
 };
 
 function switchView(viewKey){
+  const target = document.getElementById('view-' + viewKey);
+  if (!target || target.classList.contains('active')) return;
+
   viewButtons.forEach(b => {
     const active = b.dataset.view === viewKey;
     b.classList.toggle('active', active);
-    b.setAttribute('aria-current', active ? 'page' : 'false');
+    if (active) b.setAttribute('aria-current', 'page');
+    else b.removeAttribute('aria-current');
   });
-  viewSections.forEach(s => {
-    const show = s.dataset.view === viewKey;
-    s.hidden = !show;
-  });
-  if (viewTitle) viewTitle.textContent = VIEW_TITLES[viewKey] || viewKey;
+
+  const meta = VIEW_META[viewKey] || { title: viewKey, crumb: '' };
+  if (viewTitle) viewTitle.textContent = meta.title;
+  if (viewCrumb) viewCrumb.textContent = meta.crumb;
+
+  const current = document.querySelector('.view.active');
+  const swap = () => {
+    viewSections.forEach(s => s.classList.remove('active', 'view-leave'));
+    target.classList.add('active');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    closeSidebar();
+    announce('Showing ' + meta.title);
+  };
+  if (current && current !== target){
+    current.classList.add('view-leave');
+    setTimeout(swap, 180);
+  } else {
+    swap();
+  }
 }
 
 viewButtons.forEach(btn => btn.addEventListener('click', () => switchView(btn.dataset.view)));
@@ -36,16 +55,16 @@ viewButtons.forEach(btn => btn.addEventListener('click', () => switchView(btn.da
 function wireChips(container, onChange){
   if (!container) return;
   container.addEventListener('click', e => {
-    const chip = e.target.closest('.chip');
+    const chip = e.target.closest('.filter-chip');
     if (!chip) return;
-    container.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+    container.querySelectorAll('.filter-chip').forEach(c => {
+      c.classList.remove('active');
+      c.setAttribute('aria-pressed', 'false');
+    });
     chip.classList.add('active');
-    onChange(chip.dataset.filter);
+    chip.setAttribute('aria-pressed', 'true');
+    onChange(chip.dataset.filter || chip.textContent.trim());
   });
-}
-function setChipGroup(container, label){
-  if (!container) return;
-  container.querySelectorAll('.chip').forEach(c => c.classList.toggle('active', c.dataset.filter === label));
 }
 
 // ---------- Helpers ----------
@@ -53,13 +72,13 @@ function escapeHtml(s){
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 function nameCell(initials, name, sub){
-  return `<div class="name-cell"><div class="avatar-xs">${initials}</div><div><div class="name">${escapeHtml(name)}</div>${sub ? '<div class="sub">'+escapeHtml(sub)+'</div>' : ''}</div></div>`;
+  return `<div class="cell-name"><div class="mini-avatar">${escapeHtml(initials)}</div><div class="name-block"><div class="full">${escapeHtml(name)}</div>${sub ? '<div class="sub">'+escapeHtml(sub)+'</div>' : ''}</div></div>`;
 }
 function statusTag(item){
   return `<span class="tag tag-${item.tag}">${item.status}</span>`;
 }
 function statCard(stat){
-  return `<div class="stat-card"><div class="stat-top"><div class="stat-icon" style="background:${stat.iconBg};color:${stat.iconColor};">${stat.icon}</div></div><div class="stat-num">${stat.num}</div><div class="stat-label">${stat.label}</div></div>`;
+  return `<div class="stat-card"><div class="stat-top"><div class="stat-icon" style="background:${stat.iconBg};color:${stat.iconColor};">${stat.icon}</div>${stat.trend ? '<span class="stat-trend '+stat.trendClass+'">'+escapeHtml(stat.trend)+'</span>' : ''}</div><div class="stat-num">${stat.num}</div><div class="stat-label">${stat.label}</div></div>`;
 }
 
 // =====================================================================
@@ -70,12 +89,37 @@ initFullscreenToggle();
 initSidebar('asdc.dentist.sidebar.collapsed');
 initLogout('../auth/login.html');
 
-// User menu popover
+// =====================================================================
+// NOTIFICATIONS
+// =====================================================================
+initNotifications({
+  triggerId: 'notifBtn',
+  panelId: 'notifPanel',
+  listId: 'notifList',
+  badgeId: 'notifBadge',
+  markAllId: 'notifMarkAll',
+  emptyId: 'notifEmpty',
+  notifications: AdminMock.notifications,
+  storageKey: 'asdc.notif.dentist',
+  onSelect: n => {
+    showToast('Opening: ' + n.title + ' (mock)');
+  }
+});
+
+// =====================================================================
+// USER MENU POPOVER
+// =====================================================================
 const userChip = document.getElementById('userChip');
 const userMenu = document.getElementById('userMenu');
 if (userChip && userMenu){
   userChip.addEventListener('click', () => Popover.toggle(userChip, userMenu));
-  userMenu.querySelector('[data-action="logout"]')?.addEventListener('click', () => openLogoutConfirm());
+  const signOut = document.getElementById('menuSignOut');
+  if (signOut){
+    signOut.addEventListener('click', () => {
+      Popover.close(userMenu);
+      openLogoutConfirm(userChip);
+    });
+  }
 }
 
 // =====================================================================
@@ -104,6 +148,9 @@ function renderDashboardStats(stats){
 function renderQueue(queue){
   const tbody = document.getElementById('dashQueueBody');
   if (!tbody) return;
+  const inClinic = queue.filter(q => q.status === 'In chair' || q.status === 'Waiting').length;
+  const tag = document.getElementById('dashQueueTag');
+  if (tag) tag.textContent = inClinic + ' in clinic';
   if (!queue.length){
     tbody.innerHTML = '<tr><td colspan="3" class="empty-cell">No patients in the queue right now.</td></tr>';
     return;
@@ -111,6 +158,14 @@ function renderQueue(queue){
   tbody.innerHTML = queue.map(q =>
     `<tr><td>${nameCell(q.initials, q.name, q.sub)}</td><td>${q.time}</td><td>${statusTag(q)}</td></tr>`
   ).join('');
+}
+
+function renderDashboardWeek(week){
+  const grid = document.getElementById('dashWeekGrid');
+  if (!grid) return;
+  const label = document.getElementById('dashWeekLabel');
+  if (label && AdminMock.dashboard.weekLabel) label.textContent = AdminMock.dashboard.weekLabel;
+  renderWeekGrid('dashWeekGrid', week);
 }
 
 function renderPatients(patients){
@@ -121,7 +176,7 @@ function renderPatients(patients){
     return;
   }
   tbody.innerHTML = patients.map(p =>
-    `<tr><td>${nameCell(p.initials, p.name, p.id)}</td><td>${escapeHtml(p.plan)}</td><td>${escapeHtml(p.monthly)}</td><td>${escapeHtml(p.paid)}</td><td>${escapeHtml(p.balance)}</td><td>${statusTag(p)}</td></tr>`
+    `<tr><td>${nameCell(p.initials, p.name, p.id)}</td><td>${escapeHtml(p.plan || '')}</td><td>${escapeHtml(p.monthly || '')}</td><td>${escapeHtml(p.paid || '')}</td><td>${escapeHtml(p.balance)}</td><td>${statusTag(p)}</td></tr>`
   ).join('');
 }
 
@@ -133,7 +188,7 @@ function renderRecords(records){
     return;
   }
   tbody.innerHTML = records.map(r =>
-    `<tr><td>${escapeHtml(r.patient)}</td><td>${escapeHtml(r.category)}</td><td>${escapeHtml(r.details)}</td><td>${escapeHtml(r.date)}</td></tr>`
+    `<tr><td>${nameCell(r.initials || '', r.patient, r.dentist || '')}</td><td>${escapeHtml(r.category)}</td><td>${escapeHtml(r.procedure || r.details || '')}</td><td>${escapeHtml(r.date)}</td></tr>`
   ).join('');
 }
 
@@ -185,10 +240,16 @@ async function loadAppointmentWeek(){
     const res = await fetch('../backend/api/appointments/week.php');
     if (!res.ok) throw new Error('Failed to load');
     const data = await res.json();
-    if (data.success && data.week) renderWeekGrid('apptWeekGrid', data.week);
-    else renderWeekGrid('apptWeekGrid', AdminMock.dashboard.week);
+    if (data.success && data.week){
+      renderWeekGrid('apptWeekGrid', data.week);
+      renderDashboardWeek(data.week);
+    } else {
+      renderWeekGrid('apptWeekGrid', AdminMock.dashboard.week);
+      renderDashboardWeek(AdminMock.dashboard.week);
+    }
   } catch(e){
     renderWeekGrid('apptWeekGrid', AdminMock.dashboard.week);
+    renderDashboardWeek(AdminMock.dashboard.week);
   }
 }
 
