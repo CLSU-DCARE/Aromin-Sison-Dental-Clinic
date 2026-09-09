@@ -715,7 +715,6 @@ body.modal-open{overflow:hidden;}
   .side-brand{padding:20px 18px;gap:10px;justify-content:flex-start;border-bottom:1px solid rgba(250,250,247,0.1);}
   .side-brand img{height:40px;}
   .side-brand-text{max-width:160px;opacity:1;}
-  .notif-badge{top:-2px;right:12px;}
   .side-nav{
     flex-direction:column;align-items:stretch;gap:0;
     padding:16px 14px;
@@ -829,10 +828,6 @@ body.sidebar-open{overflow:hidden;}
 .tag-blue{
   background:#e8f0fe;
   color:#1a56db;
-}
-.tag-red{
-  background:#fde8e8;
-  color:#c81e1e;
 }
 
 /* Send Notification modal: textarea + hint */

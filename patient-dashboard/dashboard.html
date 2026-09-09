@@ -152,7 +152,7 @@
       <!-- ===== PROFILE ===== -->
       <section class="view" id="view-profile">
         <div class="page-head">
-          <div><div class="eyebrow">Account</div><h1 class="serif" style="font-size:24px;">My Profile</h1></div>
+          <div><div class="eyebrow">Account</div><h1 class="serif view-title">My Profile</h1></div>
           <button class="btn btn-outline" id="editProfileBtn">Edit Profile</button>
         </div>
         <div class="profile-grid">
@@ -161,8 +161,8 @@
             <h3 id="profileName">Miguel Ramos</h3>
             <div class="pid" id="profilePid">Patient ID #A-1042</div>
             <div style="text-align:left;">
-              <div class="field" style="margin-bottom:12px;"><label>Member Since</label><div class="val" style="border:none;padding:2px 0;" id="profileMemberSince">February 2026</div></div>
-              <div class="field"><label>Primary Dentist</label><div class="val" style="border:none;padding:2px 0;" id="profileDentist">Dr. Kathrine Sison</div></div>
+              <div class="field" style="margin-bottom:12px;"><label>Member Since</label><div class="val field-val" id="profileMemberSince">February 2026</div></div>
+              <div class="field"><label>Primary Dentist</label><div class="val field-val" id="profileDentist">Dr. Kathrine Sison</div></div>
             </div>
           </div>
           <div class="panel">
@@ -175,7 +175,7 @@
       <!-- ===== MY SCHEDULE ===== -->
       <section class="view" id="view-schedule">
         <div class="page-head">
-          <div><div class="eyebrow">Appointments</div><h1 class="serif" style="font-size:24px;">My Appointment Schedule</h1></div>
+          <div><div class="eyebrow">Appointments</div><h1 class="serif view-title">My Appointment Schedule</h1></div>
           <button class="btn btn-gold" onclick="switchView('book')">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
             Book Appointment
@@ -193,12 +193,12 @@
       <!-- ===== BOOK APPOINTMENT ===== -->
       <section class="view" id="view-book">
         <div class="page-head">
-          <div><div class="eyebrow">New Booking</div><h1 class="serif" style="font-size:24px;">Book an Appointment</h1><p>Choose a service, date, and available time slot.</p></div>
+          <div><div class="eyebrow">New Booking</div><h1 class="serif view-title">Book an Appointment</h1><p>Choose a service, date, and available time slot.</p></div>
         </div>
         <div class="book-grid">
           <div class="panel">
             <div class="panel-head"><h3>Appointment Details</h3></div>
-            <div style="padding:22px;">
+            <div class="panel-pad">
               <div class="form-group">
                 <label for="bookService">Service</label>
                 <select id="bookService"><option>Braces Adjustment</option><option>Cleaning &amp; Check-up</option><option>Consultation</option><option>Teeth Whitening</option></select>
@@ -215,7 +215,7 @@
           </div>
           <div class="panel">
             <div class="panel-head"><h3>Available Time Slots</h3></div>
-            <div style="padding:22px;">
+            <div class="panel-pad">
               <div class="slot-grid" id="slotGrid">
                 <button class="slot" data-slot="9:00 AM" aria-pressed="false">9:00 AM</button>
                 <button class="slot" data-slot="9:30 AM" aria-pressed="false">9:30 AM</button>
@@ -245,7 +245,7 @@
       <!-- ===== APPOINTMENT HISTORY ===== -->
       <section class="view" id="view-history">
         <div class="page-head">
-          <div><div class="eyebrow">Appointments</div><h1 class="serif" style="font-size:24px;">Appointment History</h1><p>All past visits at Aromin-Sison Dental Clinic.</p></div>
+          <div><div class="eyebrow">Appointments</div><h1 class="serif view-title">Appointment History</h1><p>All past visits at Aromin-Sison Dental Clinic.</p></div>
         </div>
         <div class="panel">
           <div class="table-scroll"><table>
@@ -258,7 +258,7 @@
       <!-- ===== TREATMENT HISTORY ===== -->
       <section class="view" id="view-treatment">
         <div class="page-head">
-          <div><div class="eyebrow">Records</div><h1 class="serif" style="font-size:24px;">Treatment History</h1><p>A record of the care you've received.</p></div>
+          <div><div class="eyebrow">Records</div><h1 class="serif view-title">Treatment History</h1><p>A record of the care you've received.</p></div>
         </div>
         <div class="panel">
           <div id="timelineList"></div>
@@ -268,9 +268,9 @@
       <!-- ===== BRACES PROGRESS ===== -->
       <section class="view" id="view-braces">
         <div class="page-head">
-          <div><div class="eyebrow">Orthodontics</div><h1 class="serif" style="font-size:24px;">Braces Treatment Progress</h1></div>
+          <div><div class="eyebrow">Orthodontics</div><h1 class="serif view-title">Braces Treatment Progress</h1></div>
         </div>
-        <div class="panel" style="margin-bottom:20px;">
+        <div class="panel panel-gap">
           <div class="progress-hero">
             <div class="ring-wrap">
               <svg width="140" height="140" viewBox="0 0 140 140">
@@ -298,21 +298,21 @@
       <!-- ===== MY CONTRACT ===== -->
       <section class="view" id="view-contract">
         <div class="page-head">
-          <div><div class="eyebrow">Orthodontics</div><h1 class="serif" style="font-size:24px;">My Braces Contract</h1></div>
+          <div><div class="eyebrow">Orthodontics</div><h1 class="serif view-title">My Braces Contract</h1></div>
           <button class="btn btn-outline" id="downloadContractBtn">Download Contract PDF</button>
         </div>
         <div class="contract-summary" id="contractSummary"></div>
-        <div class="panel" style="margin-bottom:20px;">
+        <div class="panel panel-gap">
           <div class="panel-head"><h3>Contract Progress</h3></div>
-          <div style="padding:22px;">
+          <div class="panel-pad">
             <div class="progress-track"><div class="progress-fill" id="contractFill" style="width:0%;"></div></div>
-            <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:12px;color:rgba(27,27,25,0.55);">
+            <div class="field-row">
               <span id="contractLeft">No active contract</span><span id="contractRight">0% Paid</span>
             </div>
           </div>
         </div>
 
-        <div class="panel" style="margin-bottom:20px;">
+        <div class="panel panel-gap">
           <div class="panel-head"><h3>Make a Payment</h3></div>
           <div class="pay-layout">
             <div class="pay-qr">
@@ -355,7 +355,7 @@
           </div>
         </div>
 
-        <div class="panel" style="margin-bottom:20px;">
+        <div class="panel panel-gap">
           <div class="panel-head"><h3>My Payment Submissions</h3><span class="tag tag-amber" id="payPendingTag">0 pending</span></div>
           <div class="pay-subs" id="paySubs"></div>
           <p class="pay-empty" id="paySubsEmpty" hidden>You haven't submitted any payments yet.</p>
@@ -373,7 +373,7 @@
       <!-- ===== ANNOUNCEMENTS ===== -->
       <section class="view" id="view-announcements">
         <div class="page-head">
-          <div><div class="eyebrow">Clinic</div><h1 class="serif" style="font-size:24px;">Announcements &amp; Promotions</h1></div>
+          <div><div class="eyebrow">Clinic</div><h1 class="serif view-title">Announcements &amp; Promotions</h1></div>
         </div>
         <div class="promo-grid" id="promoGrid"></div>
       </section>
@@ -500,9 +500,29 @@
   </div>
 </div>
 
-<script src="../shared/js/dashboard-core.js?v=6" defer></script>
+<script src="../shared/js/core/namespace.js?v=1" defer></script>
+<script src="../shared/js/core/Modal.js?v=1" defer></script>
+<script src="../shared/js/core/ToastManager.js?v=1" defer></script>
+<script src="../shared/js/core/Popover.js?v=1" defer></script>
+<script src="../shared/js/core/SidebarController.js?v=1" defer></script>
+<script src="../shared/js/core/HtmlHelpers.js?v=1" defer></script>
+<script src="../shared/js/core/api.js?v=1" defer></script>
+<script src="../shared/js/core/ViewRouter.js?v=1" defer></script>
+<script src="../shared/js/core/FilterChipGroup.js?v=1" defer></script>
+<script src="../shared/js/core/SessionGuard.js?v=1" defer></script>
+<script src="../shared/js/core/NotificationPanel.js?v=1" defer></script>
+<script src="../shared/js/core/LogoutManager.js?v=1" defer></script>
+<script src="../shared/js/core/FullscreenToggle.js?v=1" defer></script>
+<script src="../shared/js/core/ReportExporter.js?v=1" defer></script>
+<script src="../shared/js/dashboard-core.js?v=7" defer></script>
 <script src="../shared/js/mock-data/patient.js?v=9" defer></script>
-<script src="assets/js/patient.js?v=16" defer></script>
+<script src="assets/js/PatientAppointmentBooking.js?v=1" defer></script>
+<script src="assets/js/PatientRescheduleModal.js?v=1" defer></script>
+<script src="assets/js/PatientBracesProgress.js?v=1" defer></script>
+<script src="assets/js/PatientContractView.js?v=1" defer></script>
+<script src="assets/js/PatientProfileEditor.js?v=1" defer></script>
+<script src="assets/js/PatientPaymentSubmission.js?v=1" defer></script>
+<script src="assets/js/patient.js?v=17" defer></script>
 
 </body>
 </html>

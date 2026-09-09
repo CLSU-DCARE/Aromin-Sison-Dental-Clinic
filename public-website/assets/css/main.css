@@ -432,7 +432,7 @@ header.scrolled .nav-toggle:hover{border-color:var(--gold);background:var(--ivor
   overflow:hidden;
   background:
     linear-gradient(90deg, rgba(17,17,16,0.94) 0%, rgba(17,17,16,0.55) 45%, rgba(17,17,16,0.25) 100%),
-    url('../../../shared/images/hero welcome.JPG') center 30% / cover no-repeat;
+    url('../../../shared/images/hero welcome.jpg') center 30% / cover no-repeat;
 }
 .hero-texture{
   position:absolute;inset:0;
