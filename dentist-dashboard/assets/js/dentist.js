@@ -7,4 +7,5 @@
   'use strict';
   var dashboard = new ASDC.DentistDashboard();
   dashboard.init();
+  window.switchView = function(view){ dashboard._switchView(view); };
 })();

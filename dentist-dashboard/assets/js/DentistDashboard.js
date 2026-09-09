@@ -64,8 +64,8 @@ if (typeof window !== 'undefined') !window.ASDC && (window.ASDC = {});
       self.viewSections.forEach(function(s){ s.classList.remove('active', 'view-leave'); });
       target.classList.add('active');
       window.scrollTo({ top: 0, behavior: 'smooth' });
-      ASDC.SidebarController.close();
-      ASDC.ToastManager.show('Showing ' + meta.title);
+      ASDC._sidebar.close();
+      ASDC._toast.show('Showing ' + meta.title);
     };
     if (current && current !== target){
       current.classList.add('view-leave');
@@ -76,14 +76,13 @@ if (typeof window !== 'undefined') !window.ASDC && (window.ASDC = {});
   };
 
   DentistDashboard.prototype._initCore = function(){
-    ASDC.ToastManager.initTriggers();
-    ASDC.FullscreenToggle.init();
-    ASDC.SidebarController.init('asdc.dentist.sidebar.collapsed');
-    ASDC.LogoutManager.init('../auth/login.html');
+    ASDC._toast.initTriggers();
+    ASDC._sidebar.init('asdc.dentist.sidebar.collapsed');
+    ASDC._logout.init('../auth/login.html');
   };
 
   DentistDashboard.prototype._initNotifications = function(){
-    ASDC.NotificationPanel.init({
+    initNotifications({
       triggerId: 'notifBtn',
       panelId: 'notifPanel',
       listId: 'notifList',
@@ -93,7 +92,7 @@ if (typeof window !== 'undefined') !window.ASDC && (window.ASDC = {});
       notifications: AdminMock.notifications,
       storageKey: 'asdc.notif.dentist',
       onSelect: function(n){
-        ASDC.ToastManager.show('Opening: ' + n.title + ' (mock)');
+        ASDC._toast.show('Opening: ' + n.title + ' (mock)');
       }
     });
   };
@@ -102,12 +101,12 @@ if (typeof window !== 'undefined') !window.ASDC && (window.ASDC = {});
     var userChip = document.getElementById('userChip');
     var userMenu = document.getElementById('userMenu');
     if (!userChip || !userMenu) return;
-    userChip.addEventListener('click', function(){ ASDC.Popover.toggle(userChip, userMenu); });
+    userChip.addEventListener('click', function(){ ASDC._popover.toggle(userChip, userMenu); });
     var signOut = document.getElementById('menuSignOut');
     if (signOut){
       signOut.addEventListener('click', function(){
-        ASDC.Popover.close(userMenu);
-        ASDC.LogoutManager.confirm(userChip);
+        ASDC._popover.close(userMenu);
+        ASDC._logout.open(userChip);
       });
     }
   };
