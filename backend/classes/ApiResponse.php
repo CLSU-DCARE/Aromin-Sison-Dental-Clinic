@@ -51,13 +51,4 @@ class ApiResponse
         }
         return $method;
     }
-
-    public static function requireJson(): array
-    {
-        $body = json_decode(file_get_contents('php://input'), true);
-        if (!is_array($body)) {
-            self::error(400, 'invalid_json', 'A valid JSON request body is required.');
-        }
-        return $body;
-    }
 }
