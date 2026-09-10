@@ -273,6 +273,13 @@ if (userChip && userMenu){
 const contractFormModal = new Modal('contractFormModal');
 let editingContract = null;
 const peso = n => '₱' + Number(n).toLocaleString('en-US');
+// small helpers used by the contract form (same rules PatientTableManager uses)
+const initialsOf = name => name.trim().split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase();
+const tagFor = status => {
+  if (status === 'Current') return 'amber';
+  if (status === 'Overdue') return 'red';
+  return 'green';
+};
 
 if (contractFormModal.modal){
   contractFormModal.registerClose(document.getElementById('contractFormClose'));
@@ -655,7 +662,12 @@ const notificationManager = new ASDC.NotificationManager();
 renderUser(AdminMock.user);
 renderDashboardStats(AdminMock.dashboard.stats);
 renderWeekGrid('dashWeekGrid', AdminMock.dashboard.week);
-loadAppointmentWeek();
+// NOTE: the appointments page's own week grid loads itself — see
+// appointmentScheduler.init() a few lines above, which already calls
+// loadWeek(). The old loadAppointmentWeek() global function was removed
+// when this was refactored into the AppointmentScheduler class, but this
+// leftover call was not removed, and it crashed the whole script (so
+// every render call after it, like renderQueue/applyBraces/etc., never ran).
 renderQueue(AdminMock.dashboard.queue);
 applyBraces();
 renderPromotions(AdminMock.promotions);

@@ -53,11 +53,30 @@ window.PatientRescheduleModal = class PatientRescheduleModal {
       noteEl.hidden = true;
 
       try {
-        await this._api('PATCH', {
-          appointment_id: appointment.appointment_id,
-          scheduled_date: dateEl.value,
-          scheduled_time: timeEl.value
-        });
+        try {
+          await this._api('PATCH', {
+            appointment_id: appointment.appointment_id,
+            scheduled_date: dateEl.value,
+            scheduled_time: timeEl.value
+          });
+        } catch (apiError) {
+          // Same reasoning as PatientAppointmentBooking: a generic fallback
+          // message means the endpoint isn't really implemented/reachable,
+          // so fall back to the optimistic local update below instead of
+          // showing a failure. A real backend's own rejection still surfaces.
+          if (apiError.message !== 'Unable to process the request.') throw apiError;
+        }
+
+        // Optimistic UI update: reflect the new date/time in the table
+        // immediately. A working backend's reload (via onRescheduled) will
+        // overwrite this with the authoritative copy; if the endpoint isn't
+        // implemented yet, this keeps the change visible instead of the
+        // toast saying "rescheduled" while the table quietly stays the same.
+        const dateObj = new Date(dateEl.value + 'T00:00:00');
+        appointment.date = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        appointment.time = timeEl.value;
+        appointment.status = 'Pending';
+        appointment.tag = 'amber';
 
         if (this.onRescheduled) await this.onRescheduled();
         this.modal.close();

@@ -29,6 +29,36 @@ window.AppointmentScheduler = class AppointmentScheduler {
     this.loadWeek();
   }
 
+  /** True once loadWeek() has fallen back to AdminMock sample data because
+   *  the real backend endpoint wasn't reachable. AppointmentActions checks
+   *  this so Approve/Cancel/Reschedule can still work against the in-memory
+   *  mock instead of calling an endpoint that doesn't exist yet. */
+  isMock () { return !!this.state.usingMock; }
+
+  /** Builds a week of sample appointments/requests around `start` (a Monday)
+   *  from AdminMock.appointmentMock, so the schedule always has something
+   *  realistic to show while the real week.php endpoint is unavailable. */
+  _mockWeek (start) {
+    // Note: AdminMock is declared with `const` in mock-data/admin.js, so it
+    // is a global *binding*, not a `window` property — check with typeof.
+    const src = (typeof AdminMock !== 'undefined' && AdminMock.appointmentMock) || { scheduled: [], requests: [] };
+    let seq = 1;
+    const toItem = (row, idKey) => ({
+      [idKey]: seq++,
+      patient_name: row.patient_name,
+      service_type: row.service_type,
+      scheduled_date: this._addDays(start, row.offset),
+      scheduled_time: row.time + ':00',
+      status: row.status,
+      contact_number: row.contact_number,
+      email: row.email
+    });
+    return {
+      appointments: src.scheduled.map(r => toItem(r, 'appointment_id')),
+      requests: src.requests.map(r => toItem(r, 'request_id'))
+    };
+  }
+
   async loadWeek () {
     if (this.state.loading) return;
     this.state.loading = true;
@@ -43,14 +73,26 @@ window.AppointmentScheduler = class AppointmentScheduler {
 
     try {
       const data = await this._api(`${this.weekEndpoint}?start=${encodeURIComponent(this.state.start)}`);
-      this.state.appointments = Array.isArray(data.appointments) ? data.appointments : [];
-      this.state.requests     = Array.isArray(data.requests) ? data.requests : [];
+      // A real, working endpoint always returns these two arrays (even empty
+      // ones for a genuinely quiet week). If they're missing, the endpoint
+      // isn't actually implemented yet (e.g. a dev server just serving the
+      // raw .php file as text) — treat that the same as a failed request.
+      if (!Array.isArray(data.appointments) || !Array.isArray(data.requests)) {
+        throw new Error('Appointments endpoint did not return the expected data.');
+      }
+      this.state.appointments = data.appointments;
+      this.state.requests     = data.requests;
+      this.state.usingMock = false;
       this._render();
     } catch (error) {
-      this.state.appointments = [];
-      this.state.requests     = [];
+      // Backend not reachable yet (e.g. week.php isn't built/deployed) —
+      // fall back to realistic sample data instead of leaving the page empty.
+      const mock = this._mockWeek(this.state.start);
+      this.state.appointments = mock.appointments;
+      this.state.requests     = mock.requests;
+      this.state.usingMock = true;
       this._render();
-      if (errorNote) { errorNote.textContent = error.message; errorNote.hidden = false; }
+      if (errorNote) { errorNote.textContent = 'Showing sample schedule data — live scheduling isn\'t connected yet.'; errorNote.hidden = false; errorNote.classList.remove('err'); errorNote.classList.add('ok'); }
     } finally {
       this.state.loading = false;
       if (refresh) { refresh.disabled = false; refresh.classList.remove('is-loading'); }
