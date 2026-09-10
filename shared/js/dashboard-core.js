@@ -19,7 +19,7 @@
      openLogoutConfirm(el) - opens logout modal programmatically
      Popover               - anchored dropdown panels
      initNotifications(opts) - notification panel wiring
-     wirePublicSiteLinks() - destroy session before navigating
+     wirePublicSiteLinks() - reserved hook for "View Public Site" links
    ===================================================================== */
 
 // ---------- Core class imports (loaded via <script> tags before this file) ----------
@@ -123,13 +123,20 @@
   window.getLogoDataUrl = () => ASDC.ReportExporter.getLogoDataUrl();
 
   // Public site links
+  // "View Public Site" links (topbar button + user menu) should behave like
+  // an ordinary link: open the public marketing pages while the staff/
+  // patient session stays fully intact underneath, so coming back to the
+  // dashboard (or clicking browser Back) never forces a re-login. This used
+  // to call the same session-destroy routine as the real Sign Out button,
+  // which was the bug — logging people out just for viewing the public
+  // site. Real sign-out is still handled separately by LogoutManager, and
+  // is not affected by this.
   window.wirePublicSiteLinks = () => {
-    document.addEventListener('click', (e) => {
-      const link = e.target.closest('a[href*="public-website"]');
-      if (!link) return;
-      e.preventDefault();
-      destroySessionAndRedirect(link.getAttribute('href'));
-    });
+    // Intentionally a no-op: plain <a href="../public-website/..."> links
+    // already navigate normally and keep the session cookie, so nothing
+    // needs to be intercepted here. Kept as a named hook (rather than
+    // deleted outright) in case a future need — e.g. opening in a new tab —
+    // wants a single place to wire it up, without reintroducing a logout.
   };
 
   wirePublicSiteLinks();

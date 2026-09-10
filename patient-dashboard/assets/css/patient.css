@@ -253,7 +253,17 @@ button:active{transform:scale(.97);}
 /* Lets a wide table scroll sideways inside its card instead of being
    silently cut off: without this, some columns were invisible on
    phones with no way to reach them. */
-.table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+.table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;position:relative;}
+/* Subtle edge fade to hint there's more to scroll to, on narrow screens
+   where these tables are prone to overflowing their card. */
+@media (max-width:900px){
+  .table-scroll::after{
+    content:'';
+    position:absolute;top:0;right:0;bottom:0;width:28px;
+    pointer-events:none;
+    background:linear-gradient(to right, rgba(255,255,255,0), var(--glass-solid) 85%);
+  }
+}
 /* min-width keeps every column at a readable size; on a narrow phone
    the table then scrolls sideways (via .table-scroll above) instead of
    squeezing every word onto its own line. */
