@@ -123,9 +123,14 @@ if (typeof window !== 'undefined') !window.ASDC && (window.ASDC = {});
 
   DentistDashboard.prototype._applyRecords = function(){
     var records = AdminMock.records || [];
-    var filtered = this.recordsFilter === 'All'
+    // Chip labels are plural ("Treatments"/"Protocols") but record.category
+    // values are singular ("Treatment"/"Protocol") — map them, or every
+    // filter except "All" would always show zero results.
+    var categoryMap = { Treatments: 'Treatment', Protocols: 'Protocol' };
+    var category = categoryMap[this.recordsFilter] || this.recordsFilter;
+    var filtered = category === 'All'
       ? records
-      : records.filter(function(r){ return r.category === this.recordsFilter; }.bind(this));
+      : records.filter(function(r){ return r.category === category; });
     this._renderRecords(filtered);
   };
 
@@ -140,10 +145,15 @@ if (typeof window !== 'undefined') !window.ASDC && (window.ASDC = {});
   };
 
   DentistDashboard.prototype._applyPatients = function(){
-    var patients = AdminMock.patients || [];
-    var filtered = this.patientsFilter === 'All'
-      ? patients
-      : patients.filter(function(p){ return p.status === this.patientsFilter; }.bind(this));
+    // The Patients view here shows braces CONTRACTS (Treatment Plan / Monthly
+    // / Paid / Balance columns), so it must read AdminMock.braces — the
+    // general AdminMock.patients records don't carry those fields at all,
+    // which is why this table used to render blank.
+    var contracts = AdminMock.braces || [];
+    var filtered;
+    if (this.patientsFilter === 'All') filtered = contracts;
+    else if (this.patientsFilter === 'Active') filtered = contracts.filter(function(c){ return c.status !== 'Completed'; });
+    else filtered = contracts.filter(function(c){ return c.status === this.patientsFilter; }.bind(this));
     this._renderPatients(filtered);
   };
 
@@ -203,7 +213,7 @@ if (typeof window !== 'undefined') !window.ASDC && (window.ASDC = {});
       return;
     }
     tbody.innerHTML = records.map(function(r){
-      return '<tr><td>' + ASDC.HtmlHelpers.nameCell(r.initials || '', r.patient, r.dentist || '') + '</td><td>' + ASDC.HtmlHelpers.escapeHtml(r.category) + '</td><td>' + ASDC.HtmlHelpers.escapeHtml(r.procedure || r.details || '') + '</td><td>' + ASDC.HtmlHelpers.escapeHtml(r.date) + '</td></tr>';
+      return '<tr><td>' + ASDC.HtmlHelpers.nameCell(r.initials || '', r.name, r.dentist || '') + '</td><td>' + ASDC.HtmlHelpers.escapeHtml(r.category) + '</td><td>' + ASDC.HtmlHelpers.escapeHtml(r.procedure || r.details || '') + '</td><td>' + ASDC.HtmlHelpers.escapeHtml(r.date) + '</td></tr>';
     }).join('');
   };
 
@@ -225,11 +235,16 @@ if (typeof window !== 'undefined') !window.ASDC && (window.ASDC = {});
 
   DentistDashboard.prototype._loadAppointments = function(){
     var self = this;
+    var setLabel = function(text){
+      ['dashWeekLabel', 'apptWeekLabel'].forEach(function(id){
+        var el = document.getElementById(id);
+        if (el) el.textContent = text;
+      });
+    };
     var fallback = function(){
       self._renderWeekGrid('apptWeekGrid', AdminMock.dashboard.week);
       self._renderWeekGrid('dashWeekGrid', AdminMock.dashboard.week);
-      var label = document.getElementById('dashWeekLabel');
-      if (label && AdminMock.dashboard.weekLabel) label.textContent = AdminMock.dashboard.weekLabel;
+      setLabel(AdminMock.dashboard.weekLabel || 'This week');
     };
     fetch('../backend/api/appointments/week.php').then(function(res){
       if (!res.ok) throw new Error('Failed to load');
@@ -238,6 +253,7 @@ if (typeof window !== 'undefined') !window.ASDC && (window.ASDC = {});
       if (data.success && data.week){
         self._renderWeekGrid('apptWeekGrid', data.week);
         self._renderWeekGrid('dashWeekGrid', data.week);
+        setLabel(data.week.label || 'This week');
       } else { fallback(); }
     }).catch(function(){ fallback(); });
   };

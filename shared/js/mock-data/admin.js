@@ -158,6 +158,43 @@ const AdminMock = {
     ]
   },
 
+  // ---------- Appointment scheduling (used by AppointmentScheduler as a
+  // fallback when the real backend endpoint isn't reachable yet, so the
+  // Appointment Scheduling page always has something to show). Dates are
+  // generated relative to whichever Monday is being viewed — see
+  // AppointmentScheduler._mockWeek() — rather than fixed calendar dates,
+  // so the sample data still looks "current" no matter when this is opened. ----------
+  appointmentMock: {
+    // offset = days after the Monday being viewed; time is 24h "HH:MM"
+    scheduled: [
+      { offset: 0, time: '09:00', patient_name: 'Juan Reyes', service_type: 'Braces adjustment', status: 'confirmed' },
+      { offset: 1, time: '10:00', patient_name: 'Alyssa Ramos', service_type: 'Braces adjustment', status: 'confirmed' },
+      { offset: 3, time: '09:30', patient_name: 'Miguel Ramos', service_type: 'Braces adjustment', status: 'confirmed' },
+      { offset: 4, time: '10:30', patient_name: 'Patricia Villanueva', service_type: 'Braces adjustment', status: 'pending' },
+      { offset: 3, time: '13:00', patient_name: 'Miguel Ramos', service_type: 'Braces adjustment', status: 'confirmed' },
+      { offset: 4, time: '14:30', patient_name: 'Juan Reyes', service_type: 'Braces adjustment', status: 'completed' },
+      { offset: 5, time: '15:00', patient_name: 'Alyssa Ramos', service_type: 'Braces adjustment', status: 'confirmed' }
+    ],
+    requests: [
+      { offset: 5, time: '11:00', patient_name: 'Bea Cruz', service_type: 'New patient consultation', contact_number: '0918 222 7744', email: 'bea.cruz@example.com', status: 'pending' },
+      { offset: 6, time: '09:00', patient_name: 'Carlo Santos', service_type: 'Teeth cleaning', contact_number: '0927 888 1122', email: 'carlo.santos@example.com', status: 'pending' }
+    ]
+  },
+
+  // ---------- Notification log + templates (fallback for NotificationManager
+  // when ../backend/api/notifications/* isn't reachable yet) ----------
+  notificationTemplates: [
+    { template_key: 'appt-reminder', name: 'Appointment Reminder', channel: 'both', subject: 'Your appointment is coming up', body: 'Hi! This is a reminder of your upcoming appointment at Aromin-Sison Dental Clinic. See you soon!' },
+    { template_key: 'payment-received', name: 'Payment Received', channel: 'email', subject: 'We received your payment', body: 'Thank you for your payment. Your receipt has been recorded.' },
+    { template_key: 'contract-overdue', name: 'Contract Payment Overdue', channel: 'both', subject: 'Your braces payment is overdue', body: 'Your monthly braces payment is overdue. Please settle it at your earliest convenience.' }
+  ],
+  notificationLog: [
+    { patient_name: 'Juan Reyes', channel: 'sms', subject: null, status: 'sent', sent_at: '2026-08-14T09:05:00' },
+    { patient_name: 'Alyssa Ramos', channel: 'email', subject: 'Your braces payment is overdue', status: 'sent', sent_at: '2026-08-13T16:20:00' },
+    { patient_name: 'Patricia Villanueva', channel: 'email', subject: 'Your appointment is coming up', status: 'sent', sent_at: '2026-08-12T11:00:00' },
+    { patient_name: 'Miguel Ramos', channel: 'sms', subject: null, status: 'failed', sent_at: '2026-08-11T08:45:00' }
+  ],
+
   // ---------- Inventory ----------
   inventory: [
     { initials: 'GM', item: 'Gloves (box)', category: 'Consumable', stock: '14', width: '70', fill: 'var(--green)', status: 'OK', tag: 'green' },
