@@ -176,6 +176,8 @@
                   <th>Paid</th>
                   <th>Balance</th>
                   <th>Status</th>
+                  <th>Progress</th>
+                  <th></th>
                 </tr>
               </thead>
               <tbody id="patientsBody"></tbody>
@@ -257,6 +259,47 @@
   </div>
 </div>
 
+<!-- ===== UPDATE BRACES PROGRESS MODAL ===== -->
+<div class="modal-overlay" id="progressFormModal" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="progressFormTitle">
+    <button class="modal-close" id="progressFormClose" aria-label="Close dialog">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <h3 id="progressFormTitle">Update Treatment Progress</h3>
+    <p class="form-note ok" id="progressFormPatientLabel" style="margin-top:-4px;"></p>
+    <div class="form-group">
+      <label for="pfStage">Current Stage</label>
+      <select id="pfStage">
+        <option value="Consultation & Records">Consultation &amp; Records</option>
+        <option value="Braces Placement">Braces Placement</option>
+        <option value="Adjustment Phase">Adjustment Phase</option>
+        <option value="Retainer Fitting">Retainer Fitting</option>
+        <option value="Debonding & Retention">Debonding &amp; Retention</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label for="pfPercent">Progress (%)</label>
+      <input type="number" id="pfPercent" min="0" max="100" step="1" autocomplete="off" placeholder="e.g. 62">
+    </div>
+    <div class="form-group">
+      <label for="pfNote">Progress Note (shown to patient)</label>
+      <input type="text" id="pfNote" autocomplete="off" placeholder="e.g. Wires tightened, healing well">
+    </div>
+    <div class="form-group">
+      <label for="pfNext">Next Adjustment Note</label>
+      <input type="text" id="pfNext" autocomplete="off" placeholder="e.g. Next adjustment: Sep 15, 2026 at 10:00 AM">
+    </div>
+    <p class="form-note" id="progressFormNote" role="status" hidden></p>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-secondary" id="progressFormCancel">Cancel</button>
+      <button type="button" class="btn btn-gold" id="progressFormSave">
+        <span class="btn-spinner" aria-hidden="true"></span>
+        <span class="btn-label">Save Progress</span>
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- ===== NOTIFICATIONS POPOVER ===== -->
 <div class="popover" id="notifPanel" role="dialog" aria-label="Notifications">
   <div class="notif-head">
@@ -305,6 +348,8 @@
 <script src="../shared/js/core/ReportExporter.js?v=1" defer></script>
 <script src="../shared/js/dashboard-core.js?v=7" defer></script>
 <script src="../shared/js/mock-data/admin.js?v=4" defer></script>
+<script src="../shared/js/core/ContractStore.js?v=1" defer></script>
+<script src="../shared/js/core/PatientNotify.js?v=1" defer></script>
 <script src="assets/js/DentistDashboard.js?v=1" defer></script>
 <script src="assets/js/dentist.js?v=3" defer></script>
 

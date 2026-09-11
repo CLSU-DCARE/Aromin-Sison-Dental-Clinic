@@ -710,6 +710,13 @@
       <input type="number" id="cfMonthly" min="1" step="100" autocomplete="off" placeholder="e.g. 2000">
     </div>
     <div class="form-group">
+      <label for="cfDentist">Treating Dentist</label>
+      <select id="cfDentist">
+        <option>Dr. Kathrine Sison</option>
+        <option>Dr. Arsenia Aromin</option>
+      </select>
+    </div>
+    <div class="form-group">
       <label for="cfStatus">Status</label>
       <select id="cfStatus"><option>Current</option><option>Overdue</option><option>Completed</option></select>
     </div>
@@ -908,6 +915,8 @@
 <script src="../shared/js/core/ReportExporter.js?v=1" defer></script>
 <script src="../shared/js/dashboard-core.js?v=7" defer></script>
 <script src="../shared/js/mock-data/admin.js?v=4" defer></script>
+<script src="../shared/js/core/ContractStore.js?v=1" defer></script>
+<script src="../shared/js/core/PatientNotify.js?v=1" defer></script>
 <script src="assets/js/NotificationManager.js?v=1" defer></script>
 <script src="assets/js/AppointmentScheduler.js?v=1" defer></script>
 <script src="assets/js/AppointmentActions.js?v=1" defer></script>

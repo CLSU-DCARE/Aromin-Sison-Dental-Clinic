@@ -116,7 +116,16 @@ let bracesList = [];          // last filtered rows shown (used by Export)
 function applyBraces(){
   const tbody = document.getElementById('bracesBody');
   if (!tbody) return;
-  const list = bracesFilter ? AdminMock.braces.filter(c => c.status === bracesFilter) : AdminMock.braces;
+  // ContractStore is the shared source of truth (Admin/Dentist/Patient all
+  // read the same persisted records) — format its raw numbers for display
+  // the same way the table has always shown them.
+  const all = ContractStore.all().map(c => ({
+    id: c.id, initials: c.initials, name: c.name,
+    plan: c.plan, monthly: ContractStore.peso(c.monthly),
+    paid: ContractStore.peso(c.paid), balance: ContractStore.peso(c.balance),
+    status: c.status, tag: c.tag
+  }));
+  const list = bracesFilter ? all.filter(c => c.status === bracesFilter) : all;
   bracesList = list;
   if (!list.length){
     tbody.innerHTML = `<tr><td colspan="6" class="empty-cell">No contracts match this filter.</td></tr>`;
@@ -299,14 +308,9 @@ if (contractFormModal.modal){
     document.getElementById('contractFormTitle').textContent = contract ? 'Edit Contract' : 'New Braces Contract';
     contractSaveBtn.querySelector('.btn-label').textContent = contract ? 'Save Changes' : 'Create Contract';
     cfPatient.value = contract ? contract.name : (cfPatient.options[0] || {}).value;
-    if (contract){
-      const m = /(\d+)-month/.exec(contract.plan);
-      document.getElementById('cfMonths').value = m ? m[1] : 24;
-      document.getElementById('cfMonthly').value = Number(String(contract.monthly).replace(/[₱,]/g, '')) || 2000;
-    } else {
-      document.getElementById('cfMonths').value = '';
-      document.getElementById('cfMonthly').value = '';
-    }
+    document.getElementById('cfMonths').value = contract ? contract.months : '';
+    document.getElementById('cfMonthly').value = contract ? contract.monthly : '';
+    document.getElementById('cfDentist').value = contract ? contract.dentist : 'Dr. Kathrine Sison';
     document.getElementById('cfStatus').value = contract ? contract.status : 'Current';
     contractNote.hidden = true;
     contractFormModal.open();
@@ -317,7 +321,7 @@ if (contractFormModal.modal){
   document.getElementById('bracesBody').addEventListener('click', e => {
     const btn = e.target.closest('[data-action="edit-contract"]');
     if (!btn) return;
-    const contract = AdminMock.braces[Number(btn.dataset.index)];
+    const contract = ContractStore.byId(btn.dataset.contractId);
     if (contract) openContractForm(contract);
   });
 
@@ -337,24 +341,30 @@ if (contractFormModal.modal){
       return;
     }
     const patient = AdminMock.patients.find(p => p.name === cfPatient.value);
+    const dentist = document.getElementById('cfDentist').value;
     const status = document.getElementById('cfStatus').value;
     const total = months * monthly;
-    const data = {
+    const paid = editingContract ? editingContract.paid : 0;
+    const saved = ContractStore.upsert({
+      id: editingContract ? editingContract.id : null,
+      pid: editingContract ? editingContract.pid : (patient ? patient.id : null),
       initials: patient ? patient.initials : initialsOf(cfPatient.value),
       name: cfPatient.value,
-      id: '#B-' + (150 + AdminMock.braces.length),
+      dentist,
+      months, monthly,
       plan: months + '-month · ' + peso(monthly) + '/mo',
-      monthly: peso(monthly),
-      paid: editingContract ? editingContract.paid : '₱0',
-      balance: peso(total - (editingContract ? Number(String(editingContract.paid).replace(/[₱,]/g, '')) : 0)),
+      total,
+      paid,
+      balance: Math.max(0, total - paid),
+      monthsPaid: editingContract ? editingContract.monthsPaid : 0,
       status,
-      tag: tagFor(status)
-    };
-    if (editingContract){
-      Object.assign(editingContract, data);
-    } else {
-      AdminMock.braces.unshift(data);
-    }
+      tag: tagFor(status),
+      payments: editingContract ? editingContract.payments : [],
+      progress: editingContract ? editingContract.progress : undefined
+    });
+    // Keep the Patients table's own balance/status column in sync with the
+    // contract, since it displays the same number independently.
+    if (patient) { patient.balance = peso(saved.balance); patient.status = status; patient.tag = tagFor(status); }
     contractFormModal.close();
     applyBraces();
     showToast(editingContract ? 'Contract updated' : 'Contract created');
@@ -588,7 +598,7 @@ function renderQueue(queue){
 function renderBraces(contracts){
   const tbody = document.getElementById('bracesBody');
   if (!tbody) return;
-  tbody.innerHTML = contracts.map((c, i) =>
+  tbody.innerHTML = contracts.map(c =>
     `<tr>
       <td>${nameCell(c.initials, c.name, c.id)}</td>
       <td>${c.plan}</td>
@@ -596,7 +606,7 @@ function renderBraces(contracts){
       <td>${c.paid}</td>
       <td>${c.balance}</td>
       <td>${statusTag(c)}</td>
-      <td><button class="btn btn-outline btn-sm" data-action="edit-contract" data-index="${i}">Edit</button></td>
+      <td><button class="btn btn-outline btn-sm" data-action="edit-contract" data-contract-id="${c.id}">Edit</button></td>
     </tr>`
   ).join('');
 }

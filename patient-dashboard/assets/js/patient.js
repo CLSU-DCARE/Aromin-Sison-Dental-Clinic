@@ -201,12 +201,23 @@ function switchView(view) {
 
     closeSidebar();
 
+    if (view === 'contract' || view === 'braces') {
+      // Pick up any changes made on another dashboard (e.g. the
+      // receptionist approved a payment, or the dentist updated progress)
+      // since this page loaded, instead of only refreshing on a full reload.
+      applyContractStoreToPatientMock();
+    }
+
     if (view === 'contract') {
       renderContract(
         PatientMock.contract
       );
 
       renderPayments();
+    }
+
+    if (view === 'braces') {
+      renderBracesProgress(PatientMock.braces);
     }
 
     announce('Showing ' + meta.title);
@@ -240,6 +251,14 @@ const appointmentBooking = new PatientAppointmentBooking({
 appointmentBooking.init();
 
 // ---------- Notifications ----------
+// Merge in real, persisted notifications (payment approved/rejected,
+// dentist progress updates) pushed by other dashboards via PatientNotify,
+// ahead of the bundled sample ones, so they're what the patient sees first.
+if (typeof PatientNotify !== 'undefined') {
+  const live = PatientNotify.all(PatientMock.user.pid);
+  if (live.length) PatientMock.notifications = live.concat(PatientMock.notifications);
+}
+
 initNotifications({
   triggerId: 'notifBtn',
   panelId: 'notifPanel',
@@ -1118,6 +1137,61 @@ function applyPatientFeatureVisibility() {
   );
 }
 
+/** Pulls this patient's live contract/braces-progress record from the
+ *  shared ContractStore (the same store Admin's contract table and the
+ *  Dentist's "Update Progress" action write to) and maps it into the
+ *  shapes PatientContractView/PatientBracesProgress already expect.
+ *  Returns true if a matching contract was found and applied, false if
+ *  this patient has none yet (caller should keep whatever it already has).
+ */
+function applyContractStoreToPatientMock() {
+  if (typeof ContractStore === 'undefined') return false;
+  const contract = ContractStore.byPid(PatientMock.user.pid);
+  if (!contract) return false;
+
+  const peso = n => '₱' + Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const RING_CIRCUMFERENCE = 377; // matches the SVG ring's r used elsewhere in this view
+
+  const monthsPct = contract.months
+    ? Math.round((contract.monthsPaid || 0) / contract.months * 100)
+    : 0;
+
+  PatientMock.contract = {
+    active: true,
+    summary: [
+      { v: peso(contract.total).replace(/\.00$/, ''), l: 'Total Contract Value' },
+      { v: peso(contract.paid).replace(/\.00$/, ''), l: 'Total Paid' },
+      { v: peso(contract.balance).replace(/\.00$/, ''), l: 'Remaining Balance' }
+    ],
+    progress: {
+      width: monthsPct + '%',
+      left: (contract.monthsPaid || 0) + ' of ' + contract.months + ' months paid',
+      right: monthsPct + '% Paid'
+    },
+    payments: (contract.payments || []).map(p => ({
+      date: p.date, amount: peso(p.amount), method: p.method, or: p.or
+    }))
+  };
+
+  const progress = contract.progress || {};
+  const pct = progress.pct || 0;
+  PatientMock.braces = {
+    active: true,
+    pct: pct + '%',
+    monthLabel: progress.monthLabel || '',
+    ringOffset: String(Math.round(RING_CIRCUMFERENCE * (1 - pct / 100))),
+    heading: progress.heading || 'Your treatment is progressing well',
+    description: progress.description || '',
+    stages: progress.stages || [],
+    next: progress.next || ''
+  };
+
+  setDashboardStat('Braces Treatment Progress', pct + '%');
+  setDashboardStat('Outstanding Balance', peso(contract.balance));
+
+  return true;
+}
+
 async function loadPatientBraces() {
   try {
     const payload =
@@ -1180,9 +1254,12 @@ async function loadPatientBraces() {
 
     renderPayments();
   } catch (error) {
-    // Backend not reachable/implemented yet — show the bundled sample
-    // braces/contract data (PatientMock already has it) instead of
-    // wiping the dashboard blank.
+    // Backend not reachable/implemented yet. Prefer this patient's real,
+    // live contract from ContractStore (kept in sync with Admin/Dentist);
+    // only fall back to the bundled sample data if they have no contract
+    // on file at all there yet, so the dashboard still shows something.
+    applyContractStoreToPatientMock();
+
     PatientDashboardVisibility.braces = PatientMock.braces.active === true;
     PatientDashboardVisibility.contract = PatientMock.contract.active === true;
     PatientDashboardVisibility.balance = PatientMock.contract.active === true;
