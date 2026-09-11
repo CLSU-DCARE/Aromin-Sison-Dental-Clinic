@@ -32,6 +32,7 @@ if (typeof window !== 'undefined') !window.ASDC && (window.ASDC = {});
     this._initUserMenu();
     this._wireRecordsFilter();
     this._wirePatientsFilter();
+    this._bindProgressModal();
     this._renderAll();
     this._loadAppointments();
   };
@@ -144,12 +145,95 @@ if (typeof window !== 'undefined') !window.ASDC && (window.ASDC = {});
     });
   };
 
+  DentistDashboard.prototype._bindProgressModal = function(){
+    var self = this;
+    var modal = new ASDC.Modal('progressFormModal');
+    if (!modal.modal) return;
+    modal.registerClose(document.getElementById('progressFormClose'));
+    modal.registerClose(document.getElementById('progressFormCancel'));
+
+    var current = null; // { contractId, pid, name }
+
+    document.getElementById('patientsBody').addEventListener('click', function(e){
+      var btn = e.target.closest('[data-action="update-progress"]');
+      if (!btn) return;
+      var contract = ContractStore.byId(btn.dataset.contractId);
+      if (!contract) return;
+      current = { contractId: contract.id, pid: contract.pid, name: contract.name };
+      document.getElementById('progressFormPatientLabel').textContent = contract.name + ' · ' + contract.id;
+      var stageSelect = document.getElementById('pfStage');
+      var activeStage = (contract.progress && contract.progress.stages || []).find(function(s){ return s.kind === 'active'; });
+      stageSelect.value = activeStage ? activeStage.name : 'Consultation & Records';
+      document.getElementById('pfPercent').value = contract.progress ? contract.progress.pct : 0;
+      document.getElementById('pfNote').value = contract.progress ? contract.progress.description : '';
+      document.getElementById('pfNext').value = contract.progress ? contract.progress.next : '';
+      var note = document.getElementById('progressFormNote');
+      note.hidden = true;
+      modal.open(btn);
+    });
+
+    // The dentist's stage picker walks a fixed treatment sequence: every
+    // stage before the chosen one is "done", the chosen one is "active",
+    // everything after is "upcoming" — same convention Patient's Braces
+    // Progress view already renders.
+    var STAGE_ORDER = ['Consultation & Records', 'Braces Placement', 'Adjustment Phase', 'Retainer Fitting', 'Debonding & Retention'];
+
+    document.getElementById('progressFormSave').addEventListener('click', function(){
+      if (!current) return;
+      var note = document.getElementById('progressFormNote');
+      if (!current.pid) {
+        note.textContent = 'This patient isn\'t linked to a patient account yet, so this update won\'t be visible to them.';
+        note.classList.add('err'); note.classList.remove('ok');
+        note.hidden = false;
+      }
+      var stageName = document.getElementById('pfStage').value;
+      var pct = Math.max(0, Math.min(100, Number(document.getElementById('pfPercent').value) || 0));
+      var description = document.getElementById('pfNote').value.trim();
+      var next = document.getElementById('pfNext').value.trim();
+      var stageIdx = STAGE_ORDER.indexOf(stageName);
+      var stages = STAGE_ORDER.map(function(name, i){
+        var kind = i < stageIdx ? 'done' : (i === stageIdx ? 'active' : 'upcoming');
+        return { kind: kind, num: String(i + 1), name: name, date: kind === 'done' ? 'Complete' : (kind === 'active' ? 'Ongoing' : 'Upcoming') };
+      });
+
+      ContractStore.updateProgress(current.pid, {
+        pct: pct,
+        monthLabel: stageName,
+        heading: pct >= 100 ? 'Treatment complete' : 'Your treatment is progressing well',
+        description: description || 'Your dentist updated your treatment progress.',
+        next: next || 'Your dentist will confirm your next adjustment date at your next visit.',
+        stages: stages
+      });
+
+      if (current.pid) {
+        PatientNotify.push(current.pid, {
+          kind: 'contract',
+          title: 'Treatment progress updated',
+          desc: 'Dr. updated your braces progress: ' + stageName + ' (' + pct + '%).'
+        });
+      }
+
+      modal.close();
+      self._applyPatients();
+      showToast('Progress updated for ' + current.name);
+      current = null;
+    });
+  };
+
   DentistDashboard.prototype._applyPatients = function(){
     // The Patients view here shows braces CONTRACTS (Treatment Plan / Monthly
-    // / Paid / Balance columns), so it must read AdminMock.braces — the
-    // general AdminMock.patients records don't carry those fields at all,
-    // which is why this table used to render blank.
-    var contracts = AdminMock.braces || [];
+    // / Paid / Balance columns) — ContractStore is the shared source of
+    // truth for those, kept in sync with what Admin and the patient's own
+    // dashboard see, instead of a dentist-only copy of the numbers.
+    var contracts = ContractStore.all().map(function(c){
+      return {
+        id: c.id, pid: c.pid, initials: c.initials, name: c.name,
+        plan: c.plan, monthly: ContractStore.peso(c.monthly),
+        paid: ContractStore.peso(c.paid), balance: ContractStore.peso(c.balance),
+        status: c.status, tag: c.tag,
+        progressPct: c.progress ? c.progress.pct : 0
+      };
+    });
     var filtered;
     if (this.patientsFilter === 'All') filtered = contracts;
     else if (this.patientsFilter === 'Active') filtered = contracts.filter(function(c){ return c.status !== 'Completed'; });
@@ -197,11 +281,11 @@ if (typeof window !== 'undefined') !window.ASDC && (window.ASDC = {});
     var tbody = document.getElementById('patientsBody');
     if (!tbody) return;
     if (!patients.length){
-      tbody.innerHTML = '<tr><td colspan="6" class="empty-cell">No patients to display.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="8" class="empty-cell">No patients to display.</td></tr>';
       return;
     }
     tbody.innerHTML = patients.map(function(p){
-      return '<tr><td>' + ASDC.HtmlHelpers.nameCell(p.initials, p.name, p.id) + '</td><td>' + ASDC.HtmlHelpers.escapeHtml(p.plan || '') + '</td><td>' + ASDC.HtmlHelpers.escapeHtml(p.monthly || '') + '</td><td>' + ASDC.HtmlHelpers.escapeHtml(p.paid || '') + '</td><td>' + ASDC.HtmlHelpers.escapeHtml(p.balance) + '</td><td>' + ASDC.HtmlHelpers.statusTag(p) + '</td></tr>';
+      return '<tr><td>' + ASDC.HtmlHelpers.nameCell(p.initials, p.name, p.id) + '</td><td>' + ASDC.HtmlHelpers.escapeHtml(p.plan || '') + '</td><td>' + ASDC.HtmlHelpers.escapeHtml(p.monthly || '') + '</td><td>' + ASDC.HtmlHelpers.escapeHtml(p.paid || '') + '</td><td>' + ASDC.HtmlHelpers.escapeHtml(p.balance) + '</td><td>' + ASDC.HtmlHelpers.statusTag(p) + '</td><td>' + (p.progressPct || 0) + '%</td><td><button class="btn btn-outline btn-sm" data-action="update-progress" data-contract-id="' + p.id + '" data-pid="' + (p.pid || '') + '">Update Progress</button></td></tr>';
     }).join('');
   };
 

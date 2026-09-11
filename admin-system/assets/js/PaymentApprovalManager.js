@@ -139,11 +139,35 @@ window.PaymentApprovalManager = class PaymentApprovalManager {
   _approve (s) {
     const now = new Date().toLocaleString('en-US', { dateStyle: 'long', timeStyle: 'short' });
     const seq = String(100 + this._all().filter(x => x.status === 'approved').length);
+    const orNumber = 'OR-' + new Date().toISOString().slice(0, 10).replace(/-/g, '') + '-' + seq;
     this._commit(Object.assign({}, s, {
       status: 'approved',
       reviewedAt: now,
-      orNumber: 'OR-' + new Date().toISOString().slice(0, 10).replace(/-/g, '') + '-' + seq
+      orNumber
     }));
+
+    // Reflect the approved payment on the patient's actual braces contract
+    // (balance/paid/history) instead of only flipping this row's status —
+    // this is what makes the patient's own Contract view show the update.
+    if (typeof ContractStore !== 'undefined' && s.pid) {
+      const amountNum = ContractStore.parsePeso(s.amount);
+      const updated = ContractStore.recordPayment(s.pid, {
+        amount: amountNum,
+        method: s.method,
+        or: orNumber,
+        date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+      });
+      if (updated && typeof PatientNotify !== 'undefined') {
+        PatientNotify.push(s.pid, {
+          kind: 'pay',
+          title: 'Payment approved',
+          desc: 'Your payment of ' + s.amount + ' was approved (' + orNumber + ').'
+        });
+      }
+      if (typeof applyBraces === 'function') applyBraces();
+      if (typeof patientMgr !== 'undefined' && patientMgr.render) patientMgr.render();
+    }
+
     if (this._receiptModal.modal) this._receiptModal.close();
     showToast('Payment of ' + s.amount + ' approved for ' + s.patient);
   }
@@ -151,6 +175,13 @@ window.PaymentApprovalManager = class PaymentApprovalManager {
   _reject (s) {
     const now = new Date().toLocaleString('en-US', { dateStyle: 'long', timeStyle: 'short' });
     this._commit(Object.assign({}, s, { status: 'rejected', reviewedAt: now, orNumber: null }));
+    if (typeof PatientNotify !== 'undefined' && s.pid) {
+      PatientNotify.push(s.pid, {
+        kind: 'pay',
+        title: 'Payment rejected',
+        desc: 'Your payment submission of ' + s.amount + ' was rejected. Please check your receipt and resubmit.'
+      });
+    }
     if (this._receiptModal.modal) this._receiptModal.close();
     showToast('Payment of ' + s.amount + ' rejected for ' + s.patient, 'error');
   }
