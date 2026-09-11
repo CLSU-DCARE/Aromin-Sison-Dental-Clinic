@@ -133,6 +133,42 @@ window.ContractStore = (() => {
     return all().find(c => c.pid === pid) || null;
   }
 
+  /** Returns this patient's contract, auto-creating a fresh starter one if
+   *  they don't have one yet. This is what makes the feature work for
+   *  ANY patient account (not just the one hand-authored demo persona) —
+   *  a brand-new real patient logging in for the first time still gets a
+   *  contract to see instead of Braces Progress/My Contract just staying
+   *  hidden. Once real backend data exists for a patient, that always
+   *  takes priority over this (see patient.js's loadPatientBraces) — this
+   *  only fills the gap while the backend endpoint isn't there yet. */
+  function ensureForPatient(pid, name) {
+    if (!pid) return null;
+    const existing = byPid(pid);
+    if (existing) return existing;
+    const initials = (name || 'Patient').trim().split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase();
+    return upsert({
+      pid, name: name || 'Patient', initials,
+      dentist: 'Dr. Kathrine Sison',
+      months: 24, monthly: 2000, plan: '24-month · ₱2,000/mo',
+      total: 48000, paid: 0, balance: 48000, monthsPaid: 0,
+      status: 'Current', tag: 'amber',
+      payments: [],
+      progress: {
+        pct: 5,
+        monthLabel: 'Month 1 of 24',
+        heading: 'Treatment just started',
+        description: 'Your dentist will update your treatment stage and progress here after each visit.',
+        next: 'Your dentist will confirm your next adjustment date at your next visit.',
+        stages: [
+          { kind: 'active', num: '1', name: 'Consultation & Records', date: 'Ongoing' },
+          { kind: 'upcoming', num: '2', name: 'Braces Placement', date: 'Upcoming' },
+          { kind: 'upcoming', num: '3', name: 'Adjustment Phase', date: 'Upcoming' },
+          { kind: 'upcoming', num: '4', name: 'Retainer Fitting', date: 'Upcoming' }
+        ]
+      }
+    });
+  }
+
   /** Create (no id) or update (matching id) a contract record. Returns the
    *  saved record (with its id filled in if it was newly created). */
   function upsert(record) {
@@ -198,5 +234,5 @@ window.ContractStore = (() => {
     return c;
   }
 
-  return { all, byId, byPid, upsert, recordPayment, updateProgress, peso, parsePeso };
+  return { all, byId, byPid, ensureForPatient, upsert, recordPayment, updateProgress, peso, parsePeso };
 })();

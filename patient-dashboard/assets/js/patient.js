@@ -1146,7 +1146,7 @@ function applyPatientFeatureVisibility() {
  */
 function applyContractStoreToPatientMock() {
   if (typeof ContractStore === 'undefined') return false;
-  const contract = ContractStore.byPid(PatientMock.user.pid);
+  const contract = ContractStore.ensureForPatient(PatientMock.user.pid, PatientMock.user.name);
   if (!contract) return false;
 
   const peso = n => '₱' + Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
