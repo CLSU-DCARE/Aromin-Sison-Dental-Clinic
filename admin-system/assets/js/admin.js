@@ -113,18 +113,31 @@ recordMgr.init();
 let bracesFilter = 'Current'; // SCOPE: default to current/delinquent contracts only
 let bracesList = [];          // last filtered rows shown (used by Export)
 
-function applyBraces(){
+async function applyBraces(){
   const tbody = document.getElementById('bracesBody');
   if (!tbody) return;
-  // ContractStore is the shared source of truth (Admin/Dentist/Patient all
-  // read the same persisted records) — format its raw numbers for display
-  // the same way the table has always shown them.
-  const all = ContractStore.all().map(c => ({
+
+  let raw;
+  try {
+    const data = await apiFetch('../backend/api/contracts/contracts.php');
+    if (!Array.isArray(data.contracts)) throw new Error('not_implemented');
+    raw = data.contracts;
+    bracesAreReal = true;
+  } catch (error) {
+    // Backend not reachable/implemented yet — fall back to the shared
+    // local mock so the table still shows something realistic.
+    raw = ContractStore.all();
+    bracesAreReal = false;
+  }
+  bracesRaw = raw;
+
+  const all = raw.map(c => ({
     id: c.id, initials: c.initials, name: c.name,
     plan: c.plan, monthly: ContractStore.peso(c.monthly),
     paid: ContractStore.peso(c.paid), balance: ContractStore.peso(c.balance),
     status: c.status, tag: c.tag
   }));
+
   const list = bracesFilter ? all.filter(c => c.status === bracesFilter) : all;
   bracesList = list;
   if (!list.length){
@@ -277,10 +290,12 @@ if (userChip && userMenu){
 // =====================================================================
 
 // =====================================================================
-// BRACES CONTRACTS: add + edit status (functional mock)
+// BRACES CONTRACTS: add + edit status (real backend, mock fallback)
 // =====================================================================
 const contractFormModal = new Modal('contractFormModal');
 let editingContract = null;
+let bracesRaw = [];       // raw contract objects (real or ContractStore-shaped), for Edit lookups
+let bracesAreReal = false; // whether the last successful fetch was real backend data
 const peso = n => '₱' + Number(n).toLocaleString('en-US');
 // small helpers used by the contract form (same rules PatientTableManager uses)
 const initialsOf = name => name.trim().split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase();
@@ -295,22 +310,59 @@ if (contractFormModal.modal){
   contractFormModal.registerClose(document.getElementById('contractFormCancel'));
 
   const cfPatient = document.getElementById('cfPatient');
-  const fillPatients = () => {
-    cfPatient.innerHTML = AdminMock.patients
-      .map(p => `<option value="${p.name}">${p.name} (${p.id})</option>`).join('');
+  const cfDentist = document.getElementById('cfDentist');
+  let patientsAreReal = false;
+
+  const fillPatients = async () => {
+    try {
+      const data = await apiFetch('../backend/api/patients/list.php');
+      if (!Array.isArray(data.patients) || !data.patients.length) throw new Error('empty');
+      patientsAreReal = true;
+      cfPatient.innerHTML = data.patients.map(p =>
+        `<option value="${p.patient_id}">${p.first_name} ${p.last_name} (#P-${p.patient_id})</option>`
+      ).join('');
+    } catch (e) {
+      patientsAreReal = false;
+      cfPatient.innerHTML = AdminMock.patients
+        .map(p => `<option value="${p.name}">${p.name} (${p.id})</option>`).join('');
+    }
   };
-  fillPatients();
+
+  // Only tried when patients turned out to be real — a real dentist
+  // picker only makes sense alongside real patient_id-based contracts;
+  // in mock mode the two hardcoded <option>s already in the HTML stay.
+  const fillDentists = async () => {
+    if (!patientsAreReal) return;
+    try {
+      const data = await apiFetch('../backend/api/contracts/dentists.php');
+      if (!Array.isArray(data.dentists) || !data.dentists.length) throw new Error('empty');
+      // Real mode needs the numeric user_id (what the backend expects for
+      // dentist_id) — the display name alone isn't enough to save it.
+      cfDentist.innerHTML = data.dentists.map(d => `<option value="${d.user_id}">${d.full_name}</option>`).join('');
+    } catch (e) { /* keep the hardcoded fallback options already in the HTML */ }
+  };
+
+  fillPatients().then(fillDentists);
+
   const contractNote = document.getElementById('contractFormNote');
   const contractSaveBtn = document.getElementById('contractFormSave');
 
   function openContractForm(contract){
     editingContract = contract || null;
-    document.getElementById('contractFormTitle').textContent = contract ? 'Edit Contract' : 'New Braces Contract';
+    document.getElementById('contractFormTitle').textContent = contract
+      ? 'Edit Contract — ' + contract.name
+      : 'New Braces Contract';
     contractSaveBtn.querySelector('.btn-label').textContent = contract ? 'Save Changes' : 'Create Contract';
-    cfPatient.value = contract ? contract.name : (cfPatient.options[0] || {}).value;
+    // Editing doesn't reassign which patient the contract belongs to, so
+    // lock the picker instead of trying to re-select a value that may not
+    // even be in the (possibly real, possibly mock) options list.
+    cfPatient.disabled = !!contract;
+    if (!contract) cfPatient.value = (cfPatient.options[0] || {}).value;
     document.getElementById('cfMonths').value = contract ? contract.months : '';
     document.getElementById('cfMonthly').value = contract ? contract.monthly : '';
-    document.getElementById('cfDentist').value = contract ? contract.dentist : 'Dr. Kathrine Sison';
+    document.getElementById('cfDentist').value = contract
+      ? (patientsAreReal ? (contract.dentist_id ?? '') : (contract.dentist || 'Dr. Kathrine Sison'))
+      : (cfDentist.options[0] || {}).value;
     document.getElementById('cfStatus').value = contract ? contract.status : 'Current';
     contractNote.hidden = true;
     contractFormModal.open();
@@ -321,11 +373,11 @@ if (contractFormModal.modal){
   document.getElementById('bracesBody').addEventListener('click', e => {
     const btn = e.target.closest('[data-action="edit-contract"]');
     if (!btn) return;
-    const contract = ContractStore.byId(btn.dataset.contractId);
+    const contract = bracesRaw.find(c => c.id === btn.dataset.contractId);
     if (contract) openContractForm(contract);
   });
 
-  contractSaveBtn.addEventListener('click', () => {
+  contractSaveBtn.addEventListener('click', async () => {
     const months = Number(document.getElementById('cfMonths').value);
     const monthly = Number(document.getElementById('cfMonthly').value);
     if (!months || months < 1){
@@ -340,34 +392,73 @@ if (contractFormModal.modal){
       contractNote.hidden = false;
       return;
     }
-    const patient = AdminMock.patients.find(p => p.name === cfPatient.value);
-    const dentist = document.getElementById('cfDentist').value;
+    const dentist = document.getElementById('cfDentist').value; // mock mode: dentist's name; real mode: numeric user_id
     const status = document.getElementById('cfStatus').value;
-    const total = months * monthly;
-    const paid = editingContract ? editingContract.paid : 0;
-    const saved = ContractStore.upsert({
-      id: editingContract ? editingContract.id : null,
-      pid: editingContract ? editingContract.pid : (patient ? patient.id : null),
-      initials: patient ? patient.initials : initialsOf(cfPatient.value),
-      name: cfPatient.value,
-      dentist,
-      months, monthly,
-      plan: months + '-month · ' + peso(monthly) + '/mo',
-      total,
-      paid,
-      balance: Math.max(0, total - paid),
-      monthsPaid: editingContract ? editingContract.monthsPaid : 0,
-      status,
-      tag: tagFor(status),
-      payments: editingContract ? editingContract.payments : [],
-      progress: editingContract ? editingContract.progress : undefined
-    });
-    // Keep the Patients table's own balance/status column in sync with the
-    // contract, since it displays the same number independently.
-    if (patient) { patient.balance = peso(saved.balance); patient.status = status; patient.tag = tagFor(status); }
-    contractFormModal.close();
-    applyBraces();
-    showToast(editingContract ? 'Contract updated' : 'Contract created');
+    contractSaveBtn.classList.add('loading');
+    contractSaveBtn.disabled = true;
+
+    try {
+      if (editingContract) {
+        const contractId = Number((editingContract.contract_id) || editingContract.id.replace('#B-', ''));
+        if (bracesAreReal) {
+          await apiFetch('../backend/api/contracts/contracts.php', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contract_id: contractId, dentist_id: dentist ? Number(dentist) : null,
+              total_amount: months * monthly,
+              monthly_payment: monthly, duration_months: months, status
+            })
+          });
+        } else {
+          const patient = AdminMock.patients.find(p => p.name === editingContract.name);
+          const saved = ContractStore.upsert({
+            id: editingContract.id, pid: editingContract.pid,
+            initials: editingContract.initials, name: editingContract.name,
+            dentist, months, monthly,
+            plan: months + '-month · ' + peso(monthly) + '/mo',
+            total: months * monthly, paid: editingContract.paid,
+            balance: Math.max(0, months * monthly - editingContract.paid),
+            monthsPaid: editingContract.monthsPaid, status, tag: tagFor(status),
+            payments: editingContract.payments, progress: editingContract.progress
+          });
+          if (patient) { patient.balance = peso(saved.balance); patient.status = status; patient.tag = tagFor(status); }
+        }
+      } else {
+        if (patientsAreReal) {
+          await apiFetch('../backend/api/contracts/contracts.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              patient_id: Number(cfPatient.value), dentist_id: dentist ? Number(dentist) : null,
+              total_amount: months * monthly,
+              monthly_payment: monthly, duration_months: months, status
+            })
+          });
+        } else {
+          const patient = AdminMock.patients.find(p => p.name === cfPatient.value);
+          const saved = ContractStore.upsert({
+            id: null, pid: patient ? patient.id : null,
+            initials: patient ? patient.initials : initialsOf(cfPatient.value),
+            name: cfPatient.value, dentist, months, monthly,
+            plan: months + '-month · ' + peso(monthly) + '/mo',
+            total: months * monthly, paid: 0, balance: months * monthly,
+            monthsPaid: 0, status, tag: tagFor(status), payments: []
+          });
+          if (patient) { patient.balance = peso(saved.balance); patient.status = status; patient.tag = tagFor(status); }
+        }
+      }
+      contractFormModal.close();
+      await applyBraces();
+      showToast(editingContract ? 'Contract updated' : 'Contract created');
+    } catch (error) {
+      contractNote.textContent = error.message;
+      contractNote.classList.add('err'); contractNote.classList.remove('ok');
+      contractNote.hidden = false;
+    } finally {
+      contractSaveBtn.classList.remove('loading');
+      contractSaveBtn.disabled = false;
+    }
   });
 }
 

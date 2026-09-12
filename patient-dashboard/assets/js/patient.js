@@ -204,20 +204,12 @@ function switchView(view) {
     if (view === 'contract' || view === 'braces') {
       // Pick up any changes made on another dashboard (e.g. the
       // receptionist approved a payment, or the dentist updated progress)
-      // since this page loaded, instead of only refreshing on a full reload.
-      applyContractStoreToPatientMock();
-    }
-
-    if (view === 'contract') {
-      renderContract(
-        PatientMock.contract
-      );
-
-      renderPayments();
-    }
-
-    if (view === 'braces') {
-      renderBracesProgress(PatientMock.braces);
+      // since this page loaded, instead of only refreshing on a full
+      // reload. Goes through the real endpoint first (same as the initial
+      // page load) — loadPatientBraces() already re-renders both the
+      // contract and braces-progress views once it resolves, so nothing
+      // else needs to happen here.
+      loadPatientBraces();
     }
 
     announce('Showing ' + meta.title);
