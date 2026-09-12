@@ -1,20 +1,22 @@
 /**
  * PatientPaymentSubmission – Payment receipt upload and submission logic.
  *
- * Encapsulates PaymentStore, receipt image reading, payment form, and submission history.
- * Replaces lines 1848-2366 of patient.js.
+ * Tries the real backend (backend/api/patients/payments.php, a real
+ * multipart file upload) first; falls back to the local localStorage mock
+ * only when that endpoint isn't reachable/implemented yet.
  *
  * Usage:
  *   const payment = new PatientPaymentSubmission({ mock: PatientMock });
  *   payment.init();
  *   payment.render();
  */
-/* global showToast, escapeHtml */
+/* global showToast, escapeHtml, apiFetch */
 window.PatientPaymentSubmission = class PatientPaymentSubmission {
   constructor ({ mock, paymentMethod = 'Online (QR)', storageKey = 'asdc.payments' } = {}) {
     this.mock          = mock;
     this.paymentMethod = paymentMethod;
-    this._receiptData  = null;
+    this._receiptData  = null; // base64 preview thumbnail (both paths)
+    this._receiptFile   = null; // original File object (real upload only)
     this._store        = { key: storageKey };
   }
 
@@ -24,7 +26,7 @@ window.PatientPaymentSubmission = class PatientPaymentSubmission {
   }
 
   /* ------------------------------------------------------------------
-   *  PaymentStore (localStorage)
+   *  Local mock store (fallback only)
    * ----------------------------------------------------------------*/
 
   storeAll () {
@@ -47,8 +49,16 @@ window.PatientPaymentSubmission = class PatientPaymentSubmission {
    *  Render submission history
    * ----------------------------------------------------------------*/
 
-  render () {
-    const submissions = this.storeByPatient(this.mock.user.pid).slice().reverse();
+  async render () {
+    let submissions;
+    try {
+      const data = await apiFetch('../backend/api/patients/payments.php');
+      if (!Array.isArray(data.submissions)) throw new Error('not_implemented');
+      submissions = data.submissions;
+    } catch (error) {
+      submissions = this.storeByPatient(this.mock.user.pid).slice().reverse();
+    }
+
     const list  = document.getElementById('paySubs');
     const empty = document.getElementById('paySubsEmpty');
     const tag   = document.getElementById('payPendingTag');
@@ -99,6 +109,7 @@ window.PatientPaymentSubmission = class PatientPaymentSubmission {
       try {
         const result = await this._readImage(file);
         this._receiptData = result.dataUrl;
+        this._receiptFile = file;
         drop?.classList.add('has-file');
         if (txt) txt.textContent = 'Receipt ready: ' + result.name;
         if (preview) preview.hidden = false;
@@ -112,6 +123,7 @@ window.PatientPaymentSubmission = class PatientPaymentSubmission {
 
     removeBtn?.addEventListener('click', () => {
       this._receiptData = null;
+      this._receiptFile = null;
       input.value = '';
       drop?.classList.remove('has-file');
       if (txt) txt.textContent = 'Click to upload a screenshot of your payment';
@@ -124,7 +136,7 @@ window.PatientPaymentSubmission = class PatientPaymentSubmission {
     const submitBtn = document.getElementById('submitPaymentBtn');
     if (!submitBtn) return;
 
-    submitBtn.addEventListener('click', () => {
+    submitBtn.addEventListener('click', async () => {
       const amountEl = document.getElementById('payAmount');
       const noteEl   = document.getElementById('payNote');
       const amount   = amountEl ? amountEl.value : '';
@@ -133,26 +145,55 @@ window.PatientPaymentSubmission = class PatientPaymentSubmission {
       if (!this._receiptData) { showToast('Please upload your payment receipt first.', 'error'); return; }
       if (!amount || !amount.trim()) { showToast('Please enter the amount you paid.', 'error'); return; }
 
-      const submission = {
-        id: 'pay-' + Date.now(),
-        pid: this.mock.user.pid,
-        patient: this.mock.user.name,
-        amount: amount.trim(),
-        method: this.paymentMethod,
-        note: (note || '').trim(),
-        receiptDataUrl: this._receiptData,
-        status: 'pending',
-        submittedAt: new Date().toLocaleString('en-US', { dateStyle: 'long', timeStyle: 'short' }),
-        reviewedAt: null,
-        orNumber: null
-      };
+      submitBtn.classList.add('loading');
+      submitBtn.disabled = true;
 
-      const all = this.storeAll();
-      all.push(submission);
-      this.storeSave(all);
+      let usedReal = false;
+      if (this._receiptFile) {
+        try {
+          const form = new FormData();
+          form.append('amount', amount.trim());
+          form.append('method', this.paymentMethod);
+          form.append('note', (note || '').trim());
+          form.append('receipt', this._receiptFile);
+          await apiFetch('../backend/api/patients/payments.php', { method: 'POST', body: form });
+          usedReal = true;
+        } catch (error) {
+          // Generic fallback message means the endpoint isn't really
+          // implemented/reachable yet — fall back to the local mock below.
+          // A real backend's own rejection (e.g. bad file type) still
+          // surfaces as an error instead of silently "succeeding" locally.
+          if (error.message !== 'Unable to process the request.') {
+            showToast(error.message, 'error');
+            submitBtn.classList.remove('loading');
+            submitBtn.disabled = false;
+            return;
+          }
+        }
+      }
+
+      if (!usedReal) {
+        const submission = {
+          id: 'pay-' + Date.now(),
+          pid: this.mock.user.pid,
+          patient: this.mock.user.name,
+          amount: amount.trim(),
+          method: this.paymentMethod,
+          note: (note || '').trim(),
+          receiptDataUrl: this._receiptData,
+          status: 'pending',
+          submittedAt: new Date().toLocaleString('en-US', { dateStyle: 'long', timeStyle: 'short' }),
+          reviewedAt: null,
+          orNumber: null
+        };
+        const all = this.storeAll();
+        all.push(submission);
+        this.storeSave(all);
+      }
 
       // Reset form
       this._receiptData = null;
+      this._receiptFile = null;
       const input = document.getElementById('payReceipt');
       if (input) input.value = '';
       document.getElementById('payDrop')?.classList.remove('has-file');
@@ -162,7 +203,10 @@ window.PatientPaymentSubmission = class PatientPaymentSubmission {
       document.getElementById('payPreviewImg').src = '';
       if (noteEl) noteEl.value = '';
 
-      this.render();
+      submitBtn.classList.remove('loading');
+      submitBtn.disabled = false;
+
+      await this.render();
       showToast('Payment submitted — awaiting confirmation.');
     });
   }

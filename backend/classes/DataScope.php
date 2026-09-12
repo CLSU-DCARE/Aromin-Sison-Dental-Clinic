@@ -114,6 +114,37 @@ class DataScope
     }
 
     /**
+     * SQL fragment to scope braces contracts to the current dentist (only
+     * contracts assigned to them). Returns '1=1' for non-dentist roles —
+     * receptionists manage/see all contracts.
+     *
+     * @return array{sql: string, params: array}
+     */
+    public function contractFilter(): array
+    {
+        if (!$this->isDentist() || !$this->userId) {
+            return ['1=1', []];
+        }
+        return ['c.dentist_id = ?', [$this->userId]];
+    }
+
+    /**
+     * Check if the current user may update a specific contract's treatment
+     * progress. Receptionists can always manage contracts; a dentist may
+     * only update progress on a contract assigned to them.
+     */
+    public function canUpdateContractProgress(array $contract): bool
+    {
+        if ($this->hasFullAccess()) {
+            return true;
+        }
+        if ($this->isDentist()) {
+            return (int) ($contract['dentist_id'] ?? 0) === $this->userId;
+        }
+        return false;
+    }
+
+    /**
      * Check if the current user can access a specific appointment.
      */
     public function canAccessAppointment(array $appointment): bool

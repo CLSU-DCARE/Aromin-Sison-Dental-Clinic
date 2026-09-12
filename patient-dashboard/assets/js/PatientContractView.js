@@ -45,9 +45,12 @@ window.PatientContractView = class PatientContractView {
         }))
       : [];
 
-    const existing = contract.payments.map(p => ({
-      date: p.date, amount: p.amount, method: p.method, or: p.or
-    }));
+    const existing = contract.payments
+      // Payment History is the settled ledger; anything still pending or
+      // rejected already has its own status badge in "My Payment
+      // Submissions" above, so don't duplicate it here.
+      .filter(p => !p.status || p.status === 'approved')
+      .map(p => ({ date: p.date, amount: p.amount, method: p.method, or: p.or }));
 
     const all = approved.concat(existing);
 

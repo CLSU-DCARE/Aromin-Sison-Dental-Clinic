@@ -74,11 +74,15 @@ class BracesService
 
         // Contract
         $stmt = $pdo->prepare(
-            "SELECT contract_id, total_amount, balance_amount, duration_months,
-                    start_date, estimated_completion_date, status
-             FROM braces_contracts
-             WHERE patient_id = ? AND status <> 'cancelled'
-             ORDER BY (status = 'active') DESC, contract_id DESC
+            "SELECT c.contract_id, c.total_amount, c.balance_amount, c.duration_months,
+                    c.start_date, c.estimated_completion_date, c.status,
+                    c.dentist_id, c.current_stage, c.progress_pct, c.progress_note,
+                    c.next_note, c.progress_updated_at,
+                    du.full_name AS dentist_name
+             FROM braces_contracts c
+             LEFT JOIN users du ON du.user_id = c.dentist_id
+             WHERE c.patient_id = ? AND c.status <> 'cancelled'
+             ORDER BY (c.status = 'active') DESC, c.contract_id DESC
              LIMIT 1"
         );
         $stmt->execute([$patientId]);
@@ -89,7 +93,13 @@ class BracesService
         $balance = $contractRow ? max(0, (float) $contractRow['balance_amount']) : 0;
         $hasOutstandingBalance = $balance > 0;
 
-        // Progress calculation
+        // Progress calculation. A dentist's own update (once they've ever
+        // used "Update Progress") always takes priority over the plain
+        // elapsed-time estimate below — that estimate only exists so a
+        // brand new contract still shows *something* reasonable before any
+        // dentist has actually touched it.
+        $dentistSet = $contractRow && !empty($contractRow['progress_updated_at']);
+
         $bracesProgress = 0;
         $elapsedMonths  = 0;
         $durationMonths = 0;
@@ -109,8 +119,16 @@ class BracesService
             $bracesProgress = min(100, max(0, $bracesProgress));
         }
 
+        if ($dentistSet) {
+            $bracesProgress = (int) $contractRow['progress_pct'];
+        }
+
         // Braces heading/description/label
-        if ($contractRow) {
+        if ($dentistSet) {
+            $bracesHeading     = $bracesProgress >= 100 ? 'Treatment complete' : 'Your treatment is progressing well';
+            $bracesDescription = $contractRow['progress_note'] ?: 'Your dentist updated your treatment progress.';
+            $monthLabel        = $contractRow['current_stage'];
+        } elseif ($contractRow) {
             $bracesHeading     = $contractRow['status'] === 'active'
                 ? 'Your braces treatment is in progress'
                 : 'Your braces treatment is ' . ucfirst($contractRow['status']);
@@ -128,9 +146,23 @@ class BracesService
             $monthLabel        = 'NOT STARTED';
         }
 
-        // Stages
+        // Stages: once a dentist has set a stage, show the full named
+        // sequence (done/active/upcoming) they're actually walking the
+        // patient through; otherwise fall back to a single generic entry.
         $stages = [];
-        if ($contractRow) {
+        if ($dentistSet) {
+            $stageIdx = array_search($contractRow['current_stage'], ContractService::STAGE_ORDER, true);
+            if ($stageIdx === false) $stageIdx = 0;
+            foreach (ContractService::STAGE_ORDER as $i => $name) {
+                $kind = $i < $stageIdx ? 'done' : ($i === $stageIdx ? 'active' : 'upcoming');
+                $stages[] = [
+                    'kind' => $kind,
+                    'num'  => (string) ($i + 1),
+                    'name' => $name,
+                    'date' => $kind === 'done' ? 'Complete' : ($kind === 'active' ? 'Ongoing' : 'Upcoming'),
+                ];
+            }
+        } elseif ($contractRow) {
             $stages[] = [
                 'kind' => $contractRow['status'] === 'active' ? 'current' : 'done',
                 'num'  => $contractRow['status'] === 'active' ? (string) max(1, $elapsedMonths) : null,
@@ -141,13 +173,17 @@ class BracesService
             ];
         }
 
-        // Next label
+        // Next label — a dentist's own note takes priority over the
+        // system's next-scheduled-appointment guess.
         $nextLabel = 'No upcoming braces appointment.';
         if ($nextAppointment) {
             $nextLabel = 'Next braces appointment: '
                 . self::fmtDate($nextAppointment['scheduled_date'])
                 . ' at '
                 . self::fmtTime($nextAppointment['scheduled_time']);
+        }
+        if ($dentistSet && $contractRow['next_note']) {
+            $nextLabel = $contractRow['next_note'];
         }
 
         // Contract + payments
@@ -165,30 +201,39 @@ class BracesService
             $pct    = $total > 0 ? (int) round(($paid / $total) * 100) : 0;
             $pct    = min(100, max(0, $pct));
 
+            // Includes pending/rejected submissions too (not just approved
+            // ones) so the patient can see "Pending Confirmation" for a
+            // receipt they just submitted, not just settled payments.
             $payStmt = $pdo->prepare(
-                "SELECT payment_date, amount_paid, payment_method, or_number
+                "SELECT payment_date, amount_paid, payment_method, or_number, status, created_at
                  FROM contract_payments
                  WHERE contract_id = ?
-                 ORDER BY payment_date DESC, payment_id DESC"
+                 ORDER BY created_at DESC, payment_id DESC"
             );
             $payStmt->execute([(int) $contractRow['contract_id']]);
 
             foreach ($payStmt->fetchAll() as $pay) {
                 $payments[] = [
-                    'date'   => self::fmtDate($pay['payment_date']),
+                    'date'   => $pay['status'] === 'pending' ? self::fmtDate(substr($pay['created_at'], 0, 10)) : self::fmtDate($pay['payment_date']),
                     'amount' => self::fmtMoney((float) $pay['amount_paid']),
                     'method' => ucwords(str_replace('_', ' ', $pay['payment_method'])),
                     'or'     => $pay['or_number'] ?: '—',
+                    'status' => $pay['status'],
                 ];
+            }
+
+            $summary = [
+                ['v' => self::fmtMoney($total), 'l' => 'Total Contract Amount'],
+                ['v' => self::fmtMoney($balance), 'l' => 'Remaining Balance'],
+                ['v' => self::fmtDate($contractRow['start_date']), 'l' => 'Contract Start Date'],
+            ];
+            if (!empty($contractRow['dentist_name'])) {
+                $summary[] = ['v' => $contractRow['dentist_name'], 'l' => 'Treating Dentist'];
             }
 
             $contract = [
                 'active'  => true,
-                'summary' => [
-                    ['v' => self::fmtMoney($total), 'l' => 'Total Contract Amount'],
-                    ['v' => self::fmtMoney($balance), 'l' => 'Remaining Balance'],
-                    ['v' => self::fmtDate($contractRow['start_date']), 'l' => 'Contract Start Date'],
-                ],
+                'summary' => $summary,
                 'progress' => [
                     'width' => $pct . '%',
                     'left'  => self::fmtMoney($paid) . ' paid',

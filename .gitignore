@@ -11,3 +11,7 @@ dist/
 *~
 .idea/
 .vscode/
+
+# uploaded payment receipts
+backend/uploads/receipts/*
+!backend/uploads/receipts/.gitignore

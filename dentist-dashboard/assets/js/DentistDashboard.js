@@ -152,21 +152,30 @@ if (typeof window !== 'undefined') !window.ASDC && (window.ASDC = {});
     modal.registerClose(document.getElementById('progressFormClose'));
     modal.registerClose(document.getElementById('progressFormCancel'));
 
-    var current = null; // { contractId, pid, name }
+    var current = null; // { contractId, contractNumericId, pid, name }
 
     document.getElementById('patientsBody').addEventListener('click', function(e){
       var btn = e.target.closest('[data-action="update-progress"]');
       if (!btn) return;
-      var contract = ContractStore.byId(btn.dataset.contractId);
+      var contract = (self._contractsRaw || []).filter(function(c){ return c.id === btn.dataset.contractId; })[0];
       if (!contract) return;
-      current = { contractId: contract.id, pid: contract.pid, name: contract.name };
+      current = {
+        contractId: contract.id,
+        contractNumericId: contract.contract_id || Number(contract.id.replace('#B-', '')),
+        pid: contract.pid, name: contract.name
+      };
       document.getElementById('progressFormPatientLabel').textContent = contract.name + ' · ' + contract.id;
       var stageSelect = document.getElementById('pfStage');
-      var activeStage = (contract.progress && contract.progress.stages || []).find(function(s){ return s.kind === 'active'; });
-      stageSelect.value = activeStage ? activeStage.name : 'Consultation & Records';
-      document.getElementById('pfPercent').value = contract.progress ? contract.progress.pct : 0;
-      document.getElementById('pfNote').value = contract.progress ? contract.progress.description : '';
-      document.getElementById('pfNext').value = contract.progress ? contract.progress.next : '';
+      var progress = contract.progress || {};
+      // Real contracts store the stage directly; the local mock instead
+      // derives it from whichever stage in the array is "active".
+      var currentStageName = progress.stage
+        || ((progress.stages || []).filter(function(s){ return s.kind === 'active'; })[0] || {}).name
+        || 'Consultation & Records';
+      stageSelect.value = currentStageName;
+      document.getElementById('pfPercent').value = progress.pct || 0;
+      document.getElementById('pfNote').value = progress.note || progress.description || '';
+      document.getElementById('pfNext').value = progress.next || '';
       var note = document.getElementById('progressFormNote');
       note.hidden = true;
       modal.open(btn);
@@ -181,15 +190,49 @@ if (typeof window !== 'undefined') !window.ASDC && (window.ASDC = {});
     document.getElementById('progressFormSave').addEventListener('click', function(){
       if (!current) return;
       var note = document.getElementById('progressFormNote');
+      var stageName = document.getElementById('pfStage').value;
+      var pct = Math.max(0, Math.min(100, Number(document.getElementById('pfPercent').value) || 0));
+      var description = document.getElementById('pfNote').value.trim();
+      var next = document.getElementById('pfNext').value.trim();
+      var saveBtn = document.getElementById('progressFormSave');
+      saveBtn.classList.add('loading');
+      saveBtn.disabled = true;
+
+      var afterSave = function(){
+        modal.close();
+        self._applyPatients();
+        showToast('Progress updated for ' + current.name);
+        current = null;
+        saveBtn.classList.remove('loading');
+        saveBtn.disabled = false;
+      };
+
+      if (self._contractsAreReal) {
+        apiFetch('../backend/api/contracts/progress.php', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contract_id: current.contractNumericId,
+            current_stage: stageName,
+            progress_pct: pct,
+            progress_note: description,
+            next_note: next
+          })
+        }).then(afterSave).catch(function(error){
+          note.textContent = error.message;
+          note.classList.add('err'); note.classList.remove('ok');
+          note.hidden = false;
+          saveBtn.classList.remove('loading');
+          saveBtn.disabled = false;
+        });
+        return;
+      }
+
       if (!current.pid) {
         note.textContent = 'This patient isn\'t linked to a patient account yet, so this update won\'t be visible to them.';
         note.classList.add('err'); note.classList.remove('ok');
         note.hidden = false;
       }
-      var stageName = document.getElementById('pfStage').value;
-      var pct = Math.max(0, Math.min(100, Number(document.getElementById('pfPercent').value) || 0));
-      var description = document.getElementById('pfNote').value.trim();
-      var next = document.getElementById('pfNext').value.trim();
       var stageIdx = STAGE_ORDER.indexOf(stageName);
       var stages = STAGE_ORDER.map(function(name, i){
         var kind = i < stageIdx ? 'done' : (i === stageIdx ? 'active' : 'upcoming');
@@ -213,32 +256,39 @@ if (typeof window !== 'undefined') !window.ASDC && (window.ASDC = {});
         });
       }
 
-      modal.close();
-      self._applyPatients();
-      showToast('Progress updated for ' + current.name);
-      current = null;
+      afterSave();
     });
   };
 
   DentistDashboard.prototype._applyPatients = function(){
+    var self = this;
     // The Patients view here shows braces CONTRACTS (Treatment Plan / Monthly
-    // / Paid / Balance columns) — ContractStore is the shared source of
-    // truth for those, kept in sync with what Admin and the patient's own
-    // dashboard see, instead of a dentist-only copy of the numbers.
-    var contracts = ContractStore.all().map(function(c){
-      return {
-        id: c.id, pid: c.pid, initials: c.initials, name: c.name,
-        plan: c.plan, monthly: ContractStore.peso(c.monthly),
-        paid: ContractStore.peso(c.paid), balance: ContractStore.peso(c.balance),
-        status: c.status, tag: c.tag,
-        progressPct: c.progress ? c.progress.pct : 0
-      };
+    // / Paid / Balance columns). Tries the real backend first (shared with
+    // Admin/Patient); falls back to the local ContractStore mock only when
+    // that endpoint isn't reachable/implemented yet.
+    apiFetch('../backend/api/contracts/contracts.php').then(function(data){
+      if (!Array.isArray(data.contracts)) throw new Error('not_implemented');
+      self._contractsRaw = data.contracts;
+      self._contractsAreReal = true;
+    }).catch(function(){
+      self._contractsRaw = ContractStore.all();
+      self._contractsAreReal = false;
+    }).then(function(){
+      var contracts = self._contractsRaw.map(function(c){
+        return {
+          id: c.id, pid: c.pid, initials: c.initials, name: c.name,
+          plan: c.plan, monthly: ContractStore.peso(c.monthly),
+          paid: ContractStore.peso(c.paid), balance: ContractStore.peso(c.balance),
+          status: c.status, tag: c.tag,
+          progressPct: c.progress ? c.progress.pct : 0
+        };
+      });
+      var filtered;
+      if (self.patientsFilter === 'All') filtered = contracts;
+      else if (self.patientsFilter === 'Active') filtered = contracts.filter(function(c){ return c.status !== 'Completed'; });
+      else filtered = contracts.filter(function(c){ return c.status === self.patientsFilter; });
+      self._renderPatients(filtered);
     });
-    var filtered;
-    if (this.patientsFilter === 'All') filtered = contracts;
-    else if (this.patientsFilter === 'Active') filtered = contracts.filter(function(c){ return c.status !== 'Completed'; });
-    else filtered = contracts.filter(function(c){ return c.status === this.patientsFilter; }.bind(this));
-    this._renderPatients(filtered);
   };
 
   DentistDashboard.prototype._renderAll = function(){
