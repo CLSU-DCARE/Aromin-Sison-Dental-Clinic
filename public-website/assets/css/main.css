@@ -1852,6 +1852,10 @@ header.scrolled .nav-toggle:hover{border-color:var(--gold);background:var(--ivor
 .team-body .role{font-family:var(--font-ui);font-size:11px;letter-spacing:0.06em;text-transform:uppercase;color:var(--gold-text);margin:6px 0 14px;}
 .team-body p{font-size:14.5px;color:rgba(18,32,28,0.62);line-height:1.6;}
 
+/* Receptionists section reuses .team-card/.team-photo/etc. as-is; this
+   just widens the grid to 3 columns for 3 people instead of 2. */
+.team-grid.recep-grid{grid-template-columns:repeat(3,1fr);}
+
 .commitment-quote{
   max-width:800px;margin:56px auto 0;text-align:center;
   font-family:'Fraunces',serif;font-style:italic;font-size:clamp(22px,2.6vw,30px);
@@ -2129,6 +2133,7 @@ footer{
   .mvv-grid{grid-template-columns:repeat(2,1fr);}
   .values-list{grid-template-columns:repeat(2,1fr);}
   .team-grid{grid-template-columns:repeat(2,1fr);}
+  .team-grid.recep-grid{grid-template-columns:repeat(2,1fr);}
   .foot-grid{grid-template-columns:1fr 1fr;gap:40px;}
   .hero-meta{flex-direction:column;align-items:flex-start;}
   /* Carousel on tablet: featured + two sides, no edge peeks. Ratio
@@ -2148,6 +2153,7 @@ footer{
   .foot-bottom{flex-direction:column;}
   .visit-card{padding:32px 26px;}
   .gallery-grid,.mvv-grid,.values-list,.team-grid{grid-template-columns:1fr;}
+  .team-grid.recep-grid{grid-template-columns:1fr;}
   .tooth-item{width:190px;}
   .cta-form-card{padding:30px 24px;}
   .cta-form-fields{grid-template-columns:1fr;column-gap:0;}
