@@ -47,7 +47,7 @@ asdc_v2/
 │   │   └── panels.css        Dashboard popover panels (notifications, account menu, search)
 │   ├── js/
 │   │   ├── dashboard-core.js Shared dashboard utilities (Modal, toast, sidebar, fullscreen, logout)
-│   │   └── mock-data/        Centralized sample data for both dashboards (admin.js, patient.js)
+│   │   └── state/        Empty initial state for both dashboards (admin.js, patient.js)
 │   └── images/               Shared photography & logos (see below)
 │
 ├── backend/                  PHP API / server code
@@ -246,14 +246,18 @@ and restart Apache so PHP inherits the updated environment. If Apache is
 installed as a Windows service, System variables are required because User
 variables may not be visible to the service.
 
-- **SMS**: simulated (logged only) by default. For real SMS, install the Twilio SDK
-  (`composer require twilio/sdk`) and uncomment the Twilio section with your
-  account SID, auth token, and Twilio phone number.
+- **SMS**: delivery is unavailable until an SMS provider is implemented. Attempts are recorded as failed.
+
+## Dashboard data
+
+Appointments, contracts, patients, and payments use authenticated PHP endpoints. Request failures are shown as errors; no browser data is used to fabricate successful actions or records. Old browser payment, contract, and profile data is no longer read.
+
+Treatment record editing, inventory, promotions, attendance reports, profile editing, and notification inboxes remain unavailable until their server implementations are provided. Unsupported write controls are disabled or explain that the action is unavailable.
+
+Test-account seed scripts have been removed. Existing database records are unchanged. Integration tests retain isolated fixtures.
 
 ## Next steps
 
 1. Install XAMPP, import `database/schema.sql`, confirm `backend/api/patients/list.php` returns JSON
-2. Wire the `auth/` pages to `backend/api/auth/` for real login — see `docs/backend-integration-checklist.md` for every `TODO(backend)` marker
-3. Update `admin-system/dashboard.html`'s JS to `fetch()` real data from `backend/api/` endpoints instead of the hardcoded sample rows
-4. Build out the rest of `backend/api/` (appointments, braces contracts, promotions, inventory) following the `patients/list.php` pattern
-5. Build the Patient Dashboard frontend (same pattern as admin-system)
+2. Configure email delivery and clinic staff accounts.
+3. Implement the remaining unavailable modules with authenticated server endpoints.

@@ -3,6 +3,7 @@ const PATIENT_APPOINTMENTS_ENDPOINT =
   '../backend/api/patients/appointments.php';
 const PATIENT_BRACES_ENDPOINT =
   '../backend/api/patients/braces.php';
+let appointmentsLoaded = false;
 
 const PatientDashboardVisibility = {
   braces: false,
@@ -74,7 +75,7 @@ async function patientBracesRequest() {
 
   if (!response.ok) {
     throw new Error(
-      payload.error ||
+      (payload.error && (payload.error.message || payload.error)) ||
       'Unable to load braces information.'
     );
   }
@@ -85,8 +86,7 @@ async function patientBracesRequest() {
 // PATIENT DASHBOARD: page-specific logic
 // Shared utilities (Modal, toast, sidebar, fullscreen, logout) live in
 // ../shared/js/dashboard-core.js and are loaded before this file.
-// Sample data lives in ../shared/js/mock-data/patient.js and is rendered
-// here; swap `PatientMock.<section>` for a fetch() response later.
+// Dashboard records are loaded from authenticated APIs.
 // =====================================================================
 
 const views = {
@@ -236,41 +236,16 @@ document
 
 // ---------- Book appointment (delegated to PatientAppointmentBooking) ----------
 const appointmentBooking = new PatientAppointmentBooking({
-  mock: PatientMock,
+  state: PatientState,
   appointmentsEndpoint: PATIENT_APPOINTMENTS_ENDPOINT,
   onBooked: () => loadPatientAppointments().then(() => loadPatientBraces())
 });
 appointmentBooking.init();
 
 // ---------- Notifications ----------
-// Merge in real, persisted notifications (payment approved/rejected,
-// dentist progress updates) pushed by other dashboards via PatientNotify,
-// ahead of the bundled sample ones, so they're what the patient sees first.
-if (typeof PatientNotify !== 'undefined') {
-  const live = PatientNotify.all(PatientMock.user.pid);
-  if (live.length) PatientMock.notifications = live.concat(PatientMock.notifications);
-}
-
-fetch('../backend/api/notifications/list.php')
-.then(res => res.json())
-.then(data => {
-
-    initNotifications({
-        triggerId: 'notifBtn',
-        panelId: 'notifPanel',
-        listId: 'notifList',
-        badgeId: 'notifBadge',
-        markAllId: 'notifMarkAll',
-        emptyId: 'notifEmpty',
-
-        notifications:
-            data.notifications || [],
-
-        storageKey:
-            'asdc.notif.patient'
-    });
-
-});
+initNotifications({ triggerId: 'notifBtn', panelId: 'notifPanel', listId: 'notifList', badgeId: 'notifBadge', markAllId: 'notifMarkAll', emptyId: 'notifEmpty', notifications: [], storageKey: 'asdc.notif.patient' });
+const inboxEmpty = document.getElementById('notifEmpty');
+if (inboxEmpty) inboxEmpty.textContent = 'Notifications are unavailable.';
 
 // ---------- Account menu ----------
 const userChip =
@@ -355,7 +330,7 @@ const searchResults =
 
 function appointmentSources() {
   return [
-    ...PatientMock.schedule.map(
+    ...PatientState.schedule.map(
       row => ({
         src: 'schedule',
         title:
@@ -371,7 +346,7 @@ function appointmentSources() {
       })
     ),
 
-    ...PatientMock.history.map(
+    ...PatientState.history.map(
       row => ({
         src: 'history',
         title: row.date,
@@ -539,67 +514,8 @@ if (searchBtn && searchPanel) {
   }
 }
 
-// ---------- Local profile persistence ----------
-// (Declared here, before PatientProfileEditor is constructed below, since
-// it's referenced immediately — it used to live near the bottom of this
-// file, which threw "Cannot access 'PatientStore' before initialization"
-// and halted the entire script before anything else could run.)
-const PatientStore = {
-  key: 'asdc.patient.mock',
-
-  load() {
-    try {
-      const raw =
-        localStorage.getItem(
-          this.key
-        );
-
-      if (!raw) {
-        return;
-      }
-
-      const saved =
-        JSON.parse(raw);
-
-      if (!saved) {
-        return;
-      }
-
-      if (saved.user) {
-        Object.assign(
-          PatientMock.user,
-          saved.user
-        );
-      }
-
-      if (saved.profile) {
-        Object.assign(
-          PatientMock.profile,
-          saved.profile
-        );
-      }
-    } catch (error) {
-      // Ignore corrupt storage.
-    }
-  },
-
-  save() {
-    try {
-      localStorage.setItem(
-        this.key,
-        JSON.stringify({
-          user: PatientMock.user,
-          profile: PatientMock.profile
-        })
-      );
-    } catch (error) {
-      // Ignore storage errors.
-    }
-  }
-};
-
 // ---------- Edit Profile (delegated to PatientProfileEditor) ----------
-const profileEditor = new PatientProfileEditor({ mock: PatientMock, store: PatientStore });
+const profileEditor = new PatientProfileEditor({ state: PatientState });
 profileEditor.init();
 
 // ---------- Shared dashboard core ----------
@@ -703,7 +619,7 @@ function renderDashboardStats(stats) {
   }
 
   const upcomingCount =
-    PatientMock.dashboard.upcoming
+    PatientState.dashboard.upcoming
       .filter(item => {
         return item.status !==
           'Completed';
@@ -748,7 +664,7 @@ function renderDashboardStats(stats) {
       const number =
         stat.label ===
         'Upcoming Appointment'
-          ? String(upcomingCount)
+          ? (appointmentsLoaded ? String(upcomingCount) : '—')
           : stat.num;
 
       return (
@@ -947,7 +863,7 @@ function renderSchedule(rows) {
 
 // ---------- Reschedule appointment (delegated to PatientRescheduleModal) ----------
 const rescheduleModal = new PatientRescheduleModal({
-  mock: PatientMock,
+  state: PatientState,
   appointmentsEndpoint: PATIENT_APPOINTMENTS_ENDPOINT,
   onRescheduled: () => loadPatientAppointments().then(() => loadPatientBraces())
 });
@@ -1030,13 +946,12 @@ const bracesProgressView = new PatientBracesProgress();
 const renderBracesProgress = (braces) => bracesProgressView.render(braces);
 
 // ---------- Payment submissions (delegated to PatientPaymentSubmission) ----------
-const paymentSubmission = new PatientPaymentSubmission({ mock: PatientMock });
+const paymentSubmission = new PatientPaymentSubmission({ state: PatientState });
 paymentSubmission.init();
-const PaymentStore = { all: () => paymentSubmission.storeAll(), save: (l) => paymentSubmission.storeSave(l), byPatient: (p) => paymentSubmission.storeByPatient(p) };
 const renderPayments = () => paymentSubmission.render();
 
 // ---------- Contract (delegated to PatientContractView) ----------
-const contractView = new PatientContractView({ mock: PatientMock, paymentStore: PaymentStore });
+const contractView = new PatientContractView({ state: PatientState });
 contractView.init();
 const renderContract = (contract) => contractView.render(contract);
 
@@ -1052,7 +967,7 @@ function renderPromoCards(cards) {
 
   if (!cards.length) {
     grid.innerHTML = emptyState(
-      'No announcements right now. Check back soon for clinic updates.'
+      'Announcements are unavailable.'
     );
 
     return;
@@ -1074,9 +989,6 @@ function renderPromoCards(cards) {
     }).join('');
 }
 
-// ---------- Local profile persistence: PatientStore is declared earlier
-// in this file (right before PatientProfileEditor uses it) ----------
-
 const fmtDate = date => {
   return date.toLocaleDateString(
     'en-US',
@@ -1093,7 +1005,7 @@ function setDashboardStat(
   value
 ) {
   const stat =
-    PatientMock.dashboard.stats
+    PatientState.dashboard.stats
       .find(item => {
         return item.label === label;
       });
@@ -1130,70 +1042,12 @@ function applyPatientFeatureVisibility() {
   );
 }
 
-/** Pulls this patient's live contract/braces-progress record from the
- *  shared ContractStore (the same store Admin's contract table and the
- *  Dentist's "Update Progress" action write to) and maps it into the
- *  shapes PatientContractView/PatientBracesProgress already expect.
- *  Returns true if a matching contract was found and applied, false if
- *  this patient has none yet (caller should keep whatever it already has).
- */
-function applyContractStoreToPatientMock() {
-  if (typeof ContractStore === 'undefined') return false;
-  const contract = ContractStore.ensureForPatient(PatientMock.user.pid, PatientMock.user.name);
-  if (!contract) return false;
-
-  const peso = n => '₱' + Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  const RING_CIRCUMFERENCE = 377; // matches the SVG ring's r used elsewhere in this view
-
-  const monthsPct = contract.months
-    ? Math.round((contract.monthsPaid || 0) / contract.months * 100)
-    : 0;
-
-  PatientMock.contract = {
-    active: true,
-    summary: [
-      { v: peso(contract.total).replace(/\.00$/, ''), l: 'Total Contract Value' },
-      { v: peso(contract.paid).replace(/\.00$/, ''), l: 'Total Paid' },
-      { v: peso(contract.balance).replace(/\.00$/, ''), l: 'Remaining Balance' }
-    ],
-    progress: {
-      width: monthsPct + '%',
-      left: (contract.monthsPaid || 0) + ' of ' + contract.months + ' months paid',
-      right: monthsPct + '% Paid'
-    },
-    payments: (contract.payments || []).map(p => ({
-      date: p.date, amount: peso(p.amount), method: p.method, or: p.or
-    }))
-  };
-
-  const progress = contract.progress || {};
-  const pct = progress.pct || 0;
-  PatientMock.braces = {
-    active: true,
-    pct: pct + '%',
-    monthLabel: progress.monthLabel || '',
-    ringOffset: String(Math.round(RING_CIRCUMFERENCE * (1 - pct / 100))),
-    heading: progress.heading || 'Your treatment is progressing well',
-    description: progress.description || '',
-    stages: progress.stages || [],
-    next: progress.next || ''
-  };
-
-  setDashboardStat('Braces Treatment Progress', pct + '%');
-  setDashboardStat('Outstanding Balance', peso(contract.balance));
-
-  return true;
-}
-
 async function loadPatientBraces() {
   try {
     const payload =
       await patientBracesRequest();
 
-    // A working endpoint always returns these boolean flags. If they're
-    // missing, the endpoint isn't actually implemented yet (e.g. a dev
-    // server just serving the raw .php file as text) — fall back to the
-    // bundled sample data instead of showing a blank dashboard.
+    // Reject malformed responses.
     if (typeof payload.has_braces_treatment !== 'boolean') {
       throw new Error('not_implemented');
     }
@@ -1207,11 +1061,11 @@ async function loadPatientBraces() {
     PatientDashboardVisibility.balance =
       payload.has_outstanding_balance === true;
 
-    PatientMock.braces =
-      payload.braces || PatientMock.braces;
+    PatientState.braces =
+      payload.braces || PatientState.braces;
 
-    PatientMock.contract =
-      payload.contract || PatientMock.contract;
+    PatientState.contract =
+      payload.contract || PatientState.contract;
 
     setDashboardStat(
       'Braces Treatment Progress',
@@ -1236,36 +1090,24 @@ async function loadPatientBraces() {
     applyPatientFeatureVisibility();
 
     renderDashboardStats(
-      PatientMock.dashboard.stats
+      PatientState.dashboard.stats
     );
 
-    renderBracesProgress(PatientMock.braces);
+    renderBracesProgress(PatientState.braces);
 
     renderContract(
-      PatientMock.contract
+      PatientState.contract
     );
 
     renderPayments();
   } catch (error) {
-    // Backend not reachable/implemented yet. Prefer this patient's real,
-    // live contract from ContractStore (kept in sync with Admin/Dentist);
-    // only fall back to the bundled sample data if they have no contract
-    // on file at all there yet, so the dashboard still shows something.
-    applyContractStoreToPatientMock();
-
-    PatientDashboardVisibility.braces = PatientMock.braces.active === true;
-    PatientDashboardVisibility.contract = PatientMock.contract.active === true;
-    PatientDashboardVisibility.balance = PatientMock.contract.active === true;
-
+    PatientState.braces.active = false;
+    PatientState.contract.active = false;
+    PatientDashboardVisibility.braces = false;
+    PatientDashboardVisibility.contract = false;
+    PatientDashboardVisibility.balance = false;
     applyPatientFeatureVisibility();
-
-    renderDashboardStats(
-      PatientMock.dashboard.stats
-    );
-
-    renderBracesProgress(PatientMock.braces);
-    renderContract(PatientMock.contract);
-    renderPayments();
+    showToast('Unable to load braces information. Please try again.', 'error');
   }
 }
 
@@ -1274,10 +1116,7 @@ async function loadPatientAppointments() {
     const payload =
       await patientAppointmentRequest();
 
-    // A working endpoint always returns these three arrays (even empty
-    // ones for a patient with no history yet). If none of them are
-    // present, the endpoint isn't actually implemented yet — fall back
-    // to sample data instead of leaving every list empty.
+    // Reject malformed responses.
     if (
       !Array.isArray(payload.schedule) &&
       !Array.isArray(payload.upcoming) &&
@@ -1286,29 +1125,31 @@ async function loadPatientAppointments() {
       throw new Error('not_implemented');
     }
 
-    PatientMock.schedule =
+    PatientState.schedule =
       Array.isArray(
         payload.schedule
       )
         ? payload.schedule
         : [];
 
-    PatientMock.dashboard.upcoming =
+    PatientState.dashboard.upcoming =
       Array.isArray(
         payload.upcoming
       )
         ? payload.upcoming
         : [];
 
-    PatientMock.history =
+    PatientState.history =
       Array.isArray(
         payload.history
       )
         ? payload.history
         : [];
 
+    appointmentsLoaded = true;
+
     const first =
-      PatientMock.schedule[0];
+      PatientState.schedule[0];
 
     const welcomeText =
       document.getElementById(
@@ -1323,102 +1164,110 @@ async function loadPatientAppointments() {
     }
 
     renderDashboardStats(
-      PatientMock.dashboard.stats
+      PatientState.dashboard.stats
     );
 
     renderUpcoming(
-      PatientMock.dashboard.upcoming
+      PatientState.dashboard.upcoming
     );
 
     renderSchedule(
-      PatientMock.schedule
+      PatientState.schedule
     );
 
     renderHistory(
-      PatientMock.history
+      PatientState.history
     );
   } catch (error) {
-    // Backend not reachable/implemented yet — PatientMock already has
-    // realistic sample schedule/history data, so just render that
-    // instead of clearing everything to empty.
-    const welcomeText =
-      document.getElementById('welcomeText');
-    const first = PatientMock.schedule[0];
-    if (welcomeText) {
-      welcomeText.textContent =
-        first
-          ? `Your next visit is on ${first.date} at ${first.time} for ${first.svc}.`
-          : 'You have no upcoming appointments.';
-    }
-
-    renderDashboardStats(
-      PatientMock.dashboard.stats
-    );
-
-    renderUpcoming(
-      PatientMock.dashboard.upcoming
-    );
-
-    renderSchedule(
-      PatientMock.schedule
-    );
-
-    renderHistory(
-      PatientMock.history
-    );
+    appointmentsLoaded = false;
+    PatientState.schedule = [];
+    PatientState.dashboard.upcoming = [];
+    PatientState.history = [];
+    renderUpcoming([]);
+    renderSchedule([]);
+    renderHistory([]);
+    renderDashboardStats(PatientState.dashboard.stats);
+    const welcomeText = document.getElementById('welcomeText');
+    if (welcomeText) welcomeText.textContent = 'Unable to load appointments. Please try again.';
+    showToast('Unable to load appointments. Please try again.', 'error');
   }
 }
 
 // ---------- Initial rendering ----------
-PatientStore.load();
+
 
 renderUser(
-  PatientMock.user
+  PatientState.user
 );
 
 renderDashboardStats(
-  PatientMock.dashboard.stats
+  PatientState.dashboard.stats
 );
 
 renderUpcoming(
-  PatientMock.dashboard.upcoming
+  PatientState.dashboard.upcoming
 );
 
 renderAnnouncementMinis(
-  PatientMock.dashboard.announcements
+  PatientState.dashboard.announcements
 );
 
 renderProfile(
-  PatientMock.profile
+  PatientState.profile
 );
 
 renderSchedule(
-  PatientMock.schedule
+  PatientState.schedule
 );
 
 renderHistory(
-  PatientMock.history
+  PatientState.history
 );
 
 renderTreatments(
-  PatientMock.treatments
+  PatientState.treatments
 );
 
 renderBracesProgress(
-  PatientMock.braces
+  PatientState.braces
 );
 
 renderContract(
-  PatientMock.contract
+  PatientState.contract
 );
 
 renderPayments();
 
 renderPromoCards(
-  PatientMock.promoCards
+  PatientState.promoCards
 );
 
 applyPatientFeatureVisibility();
 
 loadPatientAppointments();
 loadPatientBraces();
+
+async function loadPatientProfile(user) {
+  PatientState.user.name = user.full_name;
+  PatientState.user.initials = user.full_name.trim().split(/\s+/).map(n => n[0]).slice(0, 2).join('');
+  try {
+    const data = await apiFetch('../backend/api/patients/list.php');
+    const profile = data.patients && data.patients[0];
+    if (!profile) throw new Error('Patient profile unavailable.');
+    PatientState.user.pid = '#P-' + profile.patient_id;
+    PatientState.profile = {
+      memberSince: profile.registered_at ? new Date(profile.registered_at.replace(' ', 'T')).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : '—',
+      primaryDentist: '—',
+      info: [
+        { label: 'Full Name', value: profile.first_name + ' ' + profile.last_name },
+        { label: 'Patient ID', value: PatientState.user.pid },
+        { label: 'Contact Number', value: profile.contact_number || '—' },
+        { label: 'Email Address', value: profile.email || user.email }
+      ]
+    };
+    renderProfile(PatientState.profile);
+    document.getElementById('profilePid').textContent = PatientState.user.pid;
+  } catch (error) { showToast('Unable to load your profile. Please try again.', 'error'); }
+}
+window.addEventListener('asdc:authenticated', event => loadPatientProfile(event.detail));
+if (window.ASDCAuthUser) loadPatientProfile(window.ASDCAuthUser);

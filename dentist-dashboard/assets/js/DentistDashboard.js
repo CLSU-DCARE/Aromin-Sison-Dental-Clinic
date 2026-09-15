@@ -83,37 +83,10 @@ if (typeof window !== 'undefined') !window.ASDC && (window.ASDC = {});
   };
 
   DentistDashboard.prototype._initNotifications = function(){
-
-    fetch('../backend/api/notifications/list.php')
-    .then(res => res.json())
-    .then(data => {
-
-        initNotifications({
-            triggerId: 'notifBtn',
-            panelId: 'notifPanel',
-            listId: 'notifList',
-            badgeId: 'notifBadge',
-            markAllId: 'notifMarkAll',
-            emptyId: 'notifEmpty',
-
-            notifications: data.notifications || [],
-
-            storageKey: 'asdc.notif.dentist',
-
-            onSelect: function(n){
-                ASDC._toast.show(n.title);
-            }
-        });
-
-    })
-    .catch(error => {
-        console.error(
-            "Notification loading failed:",
-            error
-        );
-    });
-
-};
+initNotifications({ triggerId: 'notifBtn', panelId: 'notifPanel', listId: 'notifList', badgeId: 'notifBadge', markAllId: 'notifMarkAll', emptyId: 'notifEmpty', notifications: [], storageKey: 'asdc.notif.dentist' });
+const inboxEmpty = document.getElementById('notifEmpty');
+if (inboxEmpty) inboxEmpty.textContent = 'Notifications are unavailable.';
+  };
 
   DentistDashboard.prototype._initUserMenu = function(){
     var userChip = document.getElementById('userChip');
@@ -140,7 +113,7 @@ if (typeof window !== 'undefined') !window.ASDC && (window.ASDC = {});
   };
 
   DentistDashboard.prototype._applyRecords = function(){
-    var records = AdminMock.records || [];
+    var records = AdminState.records || [];
     // Chip labels are plural ("Treatments"/"Protocols") but record.category
     // values are singular ("Treatment"/"Protocol") — map them, or every
     // filter except "All" would always show zero results.
@@ -184,8 +157,6 @@ if (typeof window !== 'undefined') !window.ASDC && (window.ASDC = {});
       document.getElementById('progressFormPatientLabel').textContent = contract.name + ' · ' + contract.id;
       var stageSelect = document.getElementById('pfStage');
       var progress = contract.progress || {};
-      // Real contracts store the stage directly; the local mock instead
-      // derives it from whichever stage in the array is "active".
       var currentStageName = progress.stage
         || ((progress.stages || []).filter(function(s){ return s.kind === 'active'; })[0] || {}).name
         || 'Consultation & Records';
@@ -197,12 +168,6 @@ if (typeof window !== 'undefined') !window.ASDC && (window.ASDC = {});
       note.hidden = true;
       modal.open(btn);
     });
-
-    // The dentist's stage picker walks a fixed treatment sequence: every
-    // stage before the chosen one is "done", the chosen one is "active",
-    // everything after is "upcoming" — same convention Patient's Braces
-    // Progress view already renders.
-    var STAGE_ORDER = ['Consultation & Records', 'Braces Placement', 'Adjustment Phase', 'Retainer Fitting', 'Debonding & Retention'];
 
     document.getElementById('progressFormSave').addEventListener('click', function(){
       if (!current) return;
@@ -224,7 +189,6 @@ if (typeof window !== 'undefined') !window.ASDC && (window.ASDC = {});
         saveBtn.disabled = false;
       };
 
-      if (self._contractsAreReal) {
         apiFetch('../backend/api/contracts/progress.php', {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
@@ -242,60 +206,24 @@ if (typeof window !== 'undefined') !window.ASDC && (window.ASDC = {});
           saveBtn.classList.remove('loading');
           saveBtn.disabled = false;
         });
-        return;
-      }
-
-      if (!current.pid) {
-        note.textContent = 'This patient isn\'t linked to a patient account yet, so this update won\'t be visible to them.';
-        note.classList.add('err'); note.classList.remove('ok');
-        note.hidden = false;
-      }
-      var stageIdx = STAGE_ORDER.indexOf(stageName);
-      var stages = STAGE_ORDER.map(function(name, i){
-        var kind = i < stageIdx ? 'done' : (i === stageIdx ? 'active' : 'upcoming');
-        return { kind: kind, num: String(i + 1), name: name, date: kind === 'done' ? 'Complete' : (kind === 'active' ? 'Ongoing' : 'Upcoming') };
-      });
-
-      ContractStore.updateProgress(current.pid, {
-        pct: pct,
-        monthLabel: stageName,
-        heading: pct >= 100 ? 'Treatment complete' : 'Your treatment is progressing well',
-        description: description || 'Your dentist updated your treatment progress.',
-        next: next || 'Your dentist will confirm your next adjustment date at your next visit.',
-        stages: stages
-      });
-
-      if (current.pid) {
-        PatientNotify.push(current.pid, {
-          kind: 'contract',
-          title: 'Treatment progress updated',
-          desc: 'Dr. updated your braces progress: ' + stageName + ' (' + pct + '%).'
-        });
-      }
-
-      afterSave();
     });
   };
 
   DentistDashboard.prototype._applyPatients = function(){
     var self = this;
-    // The Patients view here shows braces CONTRACTS (Treatment Plan / Monthly
-    // / Paid / Balance columns). Tries the real backend first (shared with
-    // Admin/Patient); falls back to the local ContractStore mock only when
-    // that endpoint isn't reachable/implemented yet.
+    // Load contracts scoped to the signed-in dentist.
     apiFetch('../backend/api/contracts/contracts.php').then(function(data){
       if (!Array.isArray(data.contracts)) throw new Error('not_implemented');
       self._contractsRaw = data.contracts;
-      self._contractsAreReal = true;
     }).catch(function(){
-      self._contractsRaw = ContractStore.all();
-      self._contractsAreReal = false;
+      self._contractsRaw = [];
+      showToast('Unable to load contracts. Please try again.', 'error');
     }).then(function(){
       var contracts = self._contractsRaw.map(function(c){
         return {
           id: c.id, pid: c.pid, initials: c.initials, name: c.name,
-          plan: c.plan, monthly: ContractStore.peso(c.monthly),
-          paid: ContractStore.peso(c.paid), balance: ContractStore.peso(c.balance),
+          plan: c.plan, monthly: ContractFormat.peso(c.monthly),
+          paid: ContractFormat.peso(c.paid), balance: ContractFormat.peso(c.balance),
           status: c.status, tag: c.tag,
           progressPct: c.progress ? c.progress.pct : 0
         };
@@ -309,7 +237,7 @@ if (typeof window !== 'undefined') !window.ASDC && (window.ASDC = {});
   };
 
   DentistDashboard.prototype._renderAll = function(){
-    var user = AdminMock.user;
+    var user = AdminState.user;
     this._set = function(id, value){ var el = document.getElementById(id); if (el) el.textContent = value; };
     this._set('sideFootAvatar', user.initials);
     this._set('sideFootName', user.name);
@@ -322,9 +250,9 @@ if (typeof window !== 'undefined') !window.ASDC && (window.ASDC = {});
     this._set('greetingSubtext', user.name + ' · Dentist');
 
     var statsGrid = document.getElementById('dashStats');
-    if (statsGrid) statsGrid.innerHTML = AdminMock.dashboard.stats.map(ASDC.HtmlHelpers.statCard).join('');
+    if (statsGrid) statsGrid.innerHTML = AdminState.dashboard.stats.map(ASDC.HtmlHelpers.statCard).join('');
 
-    this._renderQueue(AdminMock.dashboard.queue);
+    this._renderQueue(AdminState.dashboard.queue);
     this._applyPatients();
     this._applyRecords();
   };
@@ -332,9 +260,9 @@ if (typeof window !== 'undefined') !window.ASDC && (window.ASDC = {});
   DentistDashboard.prototype._renderQueue = function(queue){
     var tbody = document.getElementById('dashQueueBody');
     if (!tbody) return;
-    var inClinic = queue.filter(function(q){ return q.status === 'In chair' || q.status === 'Waiting'; }).length;
+    var inClinic = queue.length;
     var tag = document.getElementById('dashQueueTag');
-    if (tag) tag.textContent = inClinic + ' in clinic';
+    if (tag) tag.textContent = inClinic + ' today';
     if (!queue.length){
       tbody.innerHTML = '<tr><td colspan="3" class="empty-cell">No patients in the queue right now.</td></tr>';
       return;
@@ -360,7 +288,7 @@ if (typeof window !== 'undefined') !window.ASDC && (window.ASDC = {});
     var tbody = document.getElementById('recordsBody');
     if (!tbody) return;
     if (!records.length){
-      tbody.innerHTML = '<tr><td colspan="4" class="empty-cell">No treatment records found.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="4" class="empty-cell">Treatment records are unavailable.</td></tr>';
       return;
     }
     tbody.innerHTML = records.map(function(r){
@@ -392,21 +320,20 @@ if (typeof window !== 'undefined') !window.ASDC && (window.ASDC = {});
         if (el) el.textContent = text;
       });
     };
-    var fallback = function(){
-      self._renderWeekGrid('apptWeekGrid', AdminMock.dashboard.week);
-      self._renderWeekGrid('dashWeekGrid', AdminMock.dashboard.week);
-      setLabel(AdminMock.dashboard.weekLabel || 'This week');
-    };
-    fetch('../backend/api/appointments/week.php').then(function(res){
-      if (!res.ok) throw new Error('Failed to load');
-      return res.json();
-    }).then(function(data){
-      if (data.success && data.week){
-        self._renderWeekGrid('apptWeekGrid', data.week);
-        self._renderWeekGrid('dashWeekGrid', data.week);
-        setLabel(data.week.label || 'This week');
-      } else { fallback(); }
-    }).catch(function(){ fallback(); });
+    apiFetch('../backend/api/appointments/week.php').then(function(data) {
+      if (!Array.isArray(data.appointments) || !data.week_start) throw new Error('Invalid appointment response.');
+      var week = ASDC.ScheduleView.week(data.week_start, data.appointments);
+      self._renderWeekGrid('apptWeekGrid', week);
+      self._renderWeekGrid('dashWeekGrid', week);
+      self._renderQueue(ASDC.ScheduleView.queue(data.appointments));
+      setLabel(week.label);
+    }).catch(function() {
+      ['apptWeekGrid', 'dashWeekGrid'].forEach(function(id) {
+        var grid = document.getElementById(id);
+        if (grid) grid.textContent = 'Unable to load appointments. Please try again.';
+      });
+      setLabel('Unavailable');
+    });
   };
 
   ns.DentistDashboard = DentistDashboard;

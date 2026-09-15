@@ -4,13 +4,13 @@
  * Replaces lines 258-348 and 685-750 of admin.js.
  *
  * Usage:
- *   const recordMgr = new RecordTableManager({ mock: AdminMock });
+ *   const recordMgr = new RecordTableManager({ state: AdminState });
  *   recordMgr.init();
  */
 /* global Modal, showToast, escapeHtml, nameCell, statusTag, eyeIcon, wireChips */
 window.RecordTableManager = class RecordTableManager {
-  constructor ({ mock } = {}) {
-    this.mock            = mock;
+  constructor ({ state } = {}) {
+    this.state            = state;
     this.filter          = null;
     this.recordsList     = [];
     this.selectedRecords = new Set();
@@ -39,12 +39,12 @@ window.RecordTableManager = class RecordTableManager {
   apply () {
     const tbody = document.getElementById('recordsBody');
     if (!tbody) return;
-    const contractNames = new Set(this.mock.patients.filter(p => p.contract).map(p => p.name));
-    const list = (this.filter ? this.mock.records.filter(r => r.category === this.filter) : this.mock.records)
+    const contractNames = new Set(this.state.patients.filter(p => p.contract).map(p => p.name));
+    const list = (this.filter ? this.state.records.filter(r => r.category === this.filter) : this.state.records)
       .filter(r => contractNames.has(r.name));
     this.recordsList = list;
     if (!list.length) {
-      tbody.innerHTML = '<tr><td colspan="7" class="empty-cell">No records in this category yet.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="7" class="empty-cell">Treatment records are unavailable.</td></tr>';
       this._syncSelectAll();
       return;
     }
@@ -150,59 +150,7 @@ window.RecordTableManager = class RecordTableManager {
    * ----------------------------------------------------------------*/
 
   _bindFormModal () {
-    this._formModal = new Modal('recordFormModal');
-    if (!this._formModal.modal) return;
-    this._formModal.registerClose(document.getElementById('recordFormClose'));
-    this._formModal.registerClose(document.getElementById('recordFormCancel'));
-
-    const patientList = document.getElementById('patientList');
-    if (patientList) {
-      patientList.innerHTML = this.mock.patients.map(p => `<option value="${p.name}">`).join('');
-    }
-
-    document.getElementById('addRecordBtn')?.addEventListener('click', () => {
-      document.getElementById('recordFormTitle').textContent = 'Add Treatment Record';
-      document.getElementById('recordFormSave').querySelector('.btn-label').textContent = 'Add Record';
-      document.getElementById('rfPatient').value   = '';
-      document.getElementById('rfProcedure').value = '';
-      document.getElementById('rfDate').value      = '';
-      document.getElementById('recordFormNote').hidden = true;
-      this._formModal.open();
-    });
-
-    document.getElementById('recordFormSave')?.addEventListener('click', () => {
-      const name      = document.getElementById('rfPatient').value.trim();
-      const procedure = document.getElementById('rfProcedure').value.trim();
-      const date      = document.getElementById('rfDate').value;
-      const noteEl    = document.getElementById('recordFormNote');
-
-      if (!name || !procedure) {
-        noteEl.textContent = 'Patient name and procedure are required.';
-        noteEl.classList.add('err'); noteEl.classList.remove('ok'); noteEl.hidden = false;
-        return;
-      }
-      if (!date) {
-        noteEl.textContent = 'Please choose a date.';
-        noteEl.classList.add('err'); noteEl.classList.remove('ok'); noteEl.hidden = false;
-        return;
-      }
-
-      const category = document.getElementById('rfCategory').value;
-      const status   = document.getElementById('rfStatus').value;
-      const initials = name.trim().split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase();
-
-      this.mock.records.unshift({
-        initials, name, procedure,
-        date: new Date(date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-        dentist: document.getElementById('rfDentist').value,
-        status,
-        tag: status === 'In progress' ? 'amber' : 'green',
-        category
-      });
-
-      this._formModal.close();
-      this.apply();
-      showToast('Record added');
-    });
+    const button = document.getElementById('addRecordBtn');
+    if (button) { button.disabled = true; button.title = 'Treatment records management is unavailable.'; }
   }
 };

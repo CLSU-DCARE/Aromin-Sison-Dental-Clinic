@@ -160,7 +160,7 @@
           <div class="panel">
             <div class="panel-head">
               <h3>This Week: Schedule</h3>
-              <span class="tag tag-amber">Aug 10 – 15</span>
+              <span class="tag tag-amber" id="dashWeekLabel">Loading…</span>
             </div>
             <div class="week-scroll">
               <div class="week-grid" id="dashWeekGrid"></div>
@@ -170,7 +170,7 @@
           <div class="panel">
             <div class="panel-head">
               <h3>Today's Queue</h3>
-              <span class="tag tag-green">2 in clinic</span>
+              <span class="tag tag-green" id="dashQueueTag">Today</span>
             </div>
             <div class="table-scroll">
               <table>
@@ -422,7 +422,7 @@
         <div class="panel">
           <div class="panel-head">
             <h3 id="reportHeading">Attendance: This Week</h3>
-            <span class="tag tag-green">5 staff</span>
+            <span class="tag">Unavailable</span>
           </div>
           <div class="bar-chart" id="reportBars"></div>
         </div>
@@ -711,10 +711,7 @@
     </div>
     <div class="form-group">
       <label for="cfDentist">Treating Dentist</label>
-      <select id="cfDentist">
-        <option>Dr. Kathrine Sison</option>
-        <option>Dr. Arsenia Aromin</option>
-      </select>
+      <select id="cfDentist"></select>
     </div>
     <div class="form-group">
       <label for="cfStatus">Status</label>
@@ -899,32 +896,32 @@
 <!-- ===== TOAST ===== -->
 <div class="app-toast" id="appToast" role="status" aria-live="polite"></div>
 
-<script src="../shared/js/core/namespace.js?v=1" defer></script>
-<script src="../shared/js/core/Modal.js?v=1" defer></script>
-<script src="../shared/js/core/ToastManager.js?v=1" defer></script>
-<script src="../shared/js/core/Popover.js?v=1" defer></script>
-<script src="../shared/js/core/SidebarController.js?v=1" defer></script>
-<script src="../shared/js/core/HtmlHelpers.js?v=1" defer></script>
-<script src="../shared/js/core/api.js?v=1" defer></script>
-<script src="../shared/js/core/ViewRouter.js?v=1" defer></script>
-<script src="../shared/js/core/FilterChipGroup.js?v=1" defer></script>
-<script src="../shared/js/core/SessionGuard.js?v=1" defer></script>
-<script src="../shared/js/core/NotificationPanel.js?v=1" defer></script>
-<script src="../shared/js/core/LogoutManager.js?v=1" defer></script>
-<script src="../shared/js/core/FullscreenToggle.js?v=1" defer></script>
-<script src="../shared/js/core/ReportExporter.js?v=1" defer></script>
-<script src="../shared/js/dashboard-core.js?v=7" defer></script>
-<script src="../shared/js/mock-data/admin.js?v=4" defer></script>
-<script src="../shared/js/core/ContractStore.js?v=1" defer></script>
-<script src="../shared/js/core/PatientNotify.js?v=1" defer></script>
-<script src="assets/js/NotificationManager.js?v=1" defer></script>
-<script src="assets/js/AppointmentScheduler.js?v=1" defer></script>
-<script src="assets/js/AppointmentActions.js?v=1" defer></script>
-<script src="assets/js/PaymentApprovalManager.js?v=1" defer></script>
-<script src="assets/js/PatientTableManager.js?v=1" defer></script>
-<script src="assets/js/RecordTableManager.js?v=1" defer></script>
-<script src="assets/js/InventoryTableManager.js?v=1" defer></script>
-<script src="assets/js/admin.js?v=16" defer></script>
+<script src="../shared/js/core/namespace.js?v=20260915" defer></script>
+<script src="../shared/js/core/Modal.js?v=20260915" defer></script>
+<script src="../shared/js/core/ToastManager.js?v=20260915" defer></script>
+<script src="../shared/js/core/Popover.js?v=20260915" defer></script>
+<script src="../shared/js/core/SidebarController.js?v=20260915" defer></script>
+<script src="../shared/js/core/HtmlHelpers.js?v=20260915" defer></script>
+<script src="../shared/js/core/ScheduleView.js?v=20260915" defer></script>
+<script src="../shared/js/core/api.js?v=20260915" defer></script>
+<script src="../shared/js/core/ViewRouter.js?v=20260915" defer></script>
+<script src="../shared/js/core/FilterChipGroup.js?v=20260915" defer></script>
+<script src="../shared/js/core/SessionGuard.js?v=20260915" defer></script>
+<script src="../shared/js/core/NotificationPanel.js?v=20260915" defer></script>
+<script src="../shared/js/core/LogoutManager.js?v=20260915" defer></script>
+<script src="../shared/js/core/FullscreenToggle.js?v=20260915" defer></script>
+<script src="../shared/js/core/ReportExporter.js?v=20260915" defer></script>
+<script src="../shared/js/dashboard-core.js?v=20260915" defer></script>
+<script src="../shared/js/state/admin.js?v=20260915" defer></script>
+<script src="../shared/js/core/ContractFormat.js?v=20260915" defer></script>
+<script src="assets/js/NotificationManager.js?v=20260915" defer></script>
+<script src="assets/js/AppointmentScheduler.js?v=20260915" defer></script>
+<script src="assets/js/AppointmentActions.js?v=20260915" defer></script>
+<script src="assets/js/PaymentApprovalManager.js?v=20260915" defer></script>
+<script src="assets/js/PatientTableManager.js?v=20260915" defer></script>
+<script src="assets/js/RecordTableManager.js?v=20260915" defer></script>
+<script src="assets/js/InventoryTableManager.js?v=20260915" defer></script>
+<script src="assets/js/admin.js?v=20260915" defer></script>
 
 </body>
 </html>

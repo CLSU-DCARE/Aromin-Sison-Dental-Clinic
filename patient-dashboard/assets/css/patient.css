@@ -413,7 +413,7 @@ tbody tr:hover{background:rgba(241,237,227,0.5);}
 .empty-state .es-action{margin-top:14px;}
 
 /* ===== TOAST ===== */
-/* Brief feedback pill for mock actions: slides up from the bottom edge. */
+/* Brief feedback pill for state actions: slides up from the bottom edge. */
 .app-toast{
   position:fixed;left:50%;bottom:calc(28px + env(safe-area-inset-bottom));
   transform:translate(-50%,14px);

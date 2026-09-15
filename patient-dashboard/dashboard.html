@@ -80,7 +80,7 @@
       <button class="logout-link" id="logoutBtn" title="Log Out" aria-label="Log Out">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
       </button>
-      <!-- TODO(backend): clear session server-side before redirecting -->
+      <!-- Sign out through the shared logout handler. -->
     </div>
   </aside>
 
@@ -214,18 +214,18 @@
             </div>
           </div>
           <div class="panel">
-            <div class="panel-head"><h3>Available Time Slots</h3></div>
+            <div class="panel-head"><h3>Preferred Time</h3></div>
             <div class="panel-pad">
               <div class="slot-grid" id="slotGrid">
                 <button class="slot" data-slot="9:00 AM" aria-pressed="false">9:00 AM</button>
                 <button class="slot" data-slot="9:30 AM" aria-pressed="false">9:30 AM</button>
-                <button class="slot unavailable" disabled>10:00 AM</button>
+                <button class="slot" data-slot="10:00 AM" aria-pressed="false">10:00 AM</button>
                 <button class="slot" data-slot="10:30 AM" aria-pressed="false">10:30 AM</button>
-                <button class="slot unavailable" disabled>11:00 AM</button>
+                <button class="slot" data-slot="11:00 AM" aria-pressed="false">11:00 AM</button>
                 <button class="slot" data-slot="1:00 PM" aria-pressed="false">1:00 PM</button>
                 <button class="slot" data-slot="1:30 PM" aria-pressed="false">1:30 PM</button>
                 <button class="slot" data-slot="2:00 PM" aria-pressed="false">2:00 PM</button>
-                <button class="slot unavailable" disabled>2:30 PM</button>
+                <button class="slot" data-slot="2:30 PM" aria-pressed="false">2:30 PM</button>
               </div>
               <div class="booking-summary">
                 <div class="row"><span>Service</span><span id="summaryService">Braces Adjustment</span></div>
@@ -500,31 +500,31 @@
   </div>
 </div>
 
-<script src="../shared/js/core/namespace.js?v=1" defer></script>
-<script src="../shared/js/core/Modal.js?v=1" defer></script>
-<script src="../shared/js/core/ToastManager.js?v=1" defer></script>
-<script src="../shared/js/core/Popover.js?v=1" defer></script>
-<script src="../shared/js/core/SidebarController.js?v=1" defer></script>
-<script src="../shared/js/core/HtmlHelpers.js?v=1" defer></script>
-<script src="../shared/js/core/api.js?v=1" defer></script>
-<script src="../shared/js/core/ViewRouter.js?v=1" defer></script>
-<script src="../shared/js/core/FilterChipGroup.js?v=1" defer></script>
-<script src="../shared/js/core/SessionGuard.js?v=1" defer></script>
-<script src="../shared/js/core/NotificationPanel.js?v=1" defer></script>
-<script src="../shared/js/core/LogoutManager.js?v=1" defer></script>
-<script src="../shared/js/core/FullscreenToggle.js?v=1" defer></script>
-<script src="../shared/js/core/ReportExporter.js?v=1" defer></script>
-<script src="../shared/js/dashboard-core.js?v=7" defer></script>
-<script src="../shared/js/mock-data/patient.js?v=9" defer></script>
-<script src="../shared/js/core/ContractStore.js?v=1" defer></script>
-<script src="../shared/js/core/PatientNotify.js?v=1" defer></script>
-<script src="assets/js/PatientAppointmentBooking.js?v=1" defer></script>
-<script src="assets/js/PatientRescheduleModal.js?v=1" defer></script>
-<script src="assets/js/PatientBracesProgress.js?v=1" defer></script>
-<script src="assets/js/PatientContractView.js?v=1" defer></script>
-<script src="assets/js/PatientProfileEditor.js?v=1" defer></script>
-<script src="assets/js/PatientPaymentSubmission.js?v=1" defer></script>
-<script src="assets/js/patient.js?v=17" defer></script>
+<script src="../shared/js/core/namespace.js?v=20260915" defer></script>
+<script src="../shared/js/core/Modal.js?v=20260915" defer></script>
+<script src="../shared/js/core/ToastManager.js?v=20260915" defer></script>
+<script src="../shared/js/core/Popover.js?v=20260915" defer></script>
+<script src="../shared/js/core/SidebarController.js?v=20260915" defer></script>
+<script src="../shared/js/core/HtmlHelpers.js?v=20260915" defer></script>
+<script src="../shared/js/core/ScheduleView.js?v=20260915" defer></script>
+<script src="../shared/js/core/api.js?v=20260915" defer></script>
+<script src="../shared/js/core/ViewRouter.js?v=20260915" defer></script>
+<script src="../shared/js/core/FilterChipGroup.js?v=20260915" defer></script>
+<script src="../shared/js/core/SessionGuard.js?v=20260915" defer></script>
+<script src="../shared/js/core/NotificationPanel.js?v=20260915" defer></script>
+<script src="../shared/js/core/LogoutManager.js?v=20260915" defer></script>
+<script src="../shared/js/core/FullscreenToggle.js?v=20260915" defer></script>
+<script src="../shared/js/core/ReportExporter.js?v=20260915" defer></script>
+<script src="../shared/js/dashboard-core.js?v=20260915" defer></script>
+<script src="../shared/js/state/patient.js?v=20260915" defer></script>
+<script src="../shared/js/core/ContractFormat.js?v=20260915" defer></script>
+<script src="assets/js/PatientAppointmentBooking.js?v=20260915" defer></script>
+<script src="assets/js/PatientRescheduleModal.js?v=20260915" defer></script>
+<script src="assets/js/PatientBracesProgress.js?v=20260915" defer></script>
+<script src="assets/js/PatientContractView.js?v=20260915" defer></script>
+<script src="assets/js/PatientProfileEditor.js?v=20260915" defer></script>
+<script src="assets/js/PatientPaymentSubmission.js?v=20260915" defer></script>
+<script src="assets/js/patient.js?v=20260915" defer></script>
 
 </body>
 </html>

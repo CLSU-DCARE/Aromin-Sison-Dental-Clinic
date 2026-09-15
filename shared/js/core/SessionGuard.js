@@ -50,6 +50,7 @@
 
           window.ASDCAuthUser = user;
           this._populateUserUI(user);
+          window.dispatchEvent(new CustomEvent('asdc:authenticated', { detail: user }));
           document.documentElement.style.visibility = '';
         })
         .catch(() =>

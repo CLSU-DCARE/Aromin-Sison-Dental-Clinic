@@ -4,15 +4,14 @@
  * Replaces renderContract() and downloadContractPDF() from patient.js.
  *
  * Usage:
- *   const contractView = new PatientContractView({ mock: PatientMock });
+ *   const contractView = new PatientContractView({ state: PatientState });
  *   contractView.init();
- *   contractView.render(PatientMock.contract);
+ *   contractView.render(PatientState.contract);
  */
 /* global escapeHtml, showToast, PaymentStore */
 window.PatientContractView = class PatientContractView {
-  constructor ({ mock, paymentStore = null } = {}) {
-    this.mock         = mock;
-    this.paymentStore = paymentStore;
+  constructor ({ state } = {}) {
+    this.state         = state;
     this._logoDataUrl = null;
   }
 
@@ -39,12 +38,6 @@ window.PatientContractView = class PatientContractView {
     const tbody = document.getElementById('paymentsBody');
     if (!tbody) return;
 
-    const approved = this.paymentStore
-      ? this.paymentStore.all().filter(s => s.status === 'approved').map(s => ({
-          date: s.reviewedAt, amount: s.amount, method: 'Online (QR)', or: s.orNumber
-        }))
-      : [];
-
     const existing = contract.payments
       // Payment History is the settled ledger; anything still pending or
       // rejected already has its own status badge in "My Payment
@@ -52,7 +45,7 @@ window.PatientContractView = class PatientContractView {
       .filter(p => !p.status || p.status === 'approved')
       .map(p => ({ date: p.date, amount: p.amount, method: p.method, or: p.or }));
 
-    const all = approved.concat(existing);
+    const all = existing;
 
     tbody.innerHTML = all.map(p =>
       `<tr><td>${escapeHtml(p.date)}</td><td>${escapeHtml(p.amount)}</td><td>${escapeHtml(p.method)}</td><td>${escapeHtml(p.or)}</td></tr>`
@@ -66,8 +59,8 @@ window.PatientContractView = class PatientContractView {
       return;
     }
 
-    const user     = this.mock.user || {};
-    const contract = this.mock.contract || { summary: [], progress: {}, payments: [] };
+    const user     = this.state.user || {};
+    const contract = this.state.contract || { summary: [], progress: {}, payments: [] };
     const genDate  = new Date().toLocaleString('en-US', { dateStyle: 'long', timeStyle: 'short' });
     const logo     = await this._getLogo();
 

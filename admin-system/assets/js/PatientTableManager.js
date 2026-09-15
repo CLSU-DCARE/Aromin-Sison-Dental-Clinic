@@ -1,18 +1,18 @@
 /**
- * PatientTableManager – Patient search, filter, and mock CRUD.
+ * PatientTableManager – Search and filter patients returned by the server.
  *
  * Encapsulates patient search, status filter, mobile search popover,
  * and view/edit/delete/add modals.
  * Replaces lines 100-683 of admin.js (patient table + modals).
  *
  * Usage:
- *   const patientMgr = new PatientTableManager({ mock: AdminMock });
+ *   const patientMgr = new PatientTableManager({ state: AdminState });
  *   patientMgr.init();
  */
 /* global Modal, showToast, escapeHtml, nameCell, statusTag, eyeIcon, pencilIcon, trashIcon, wireChips, setChipGroup, Popover */
 window.PatientTableManager = class PatientTableManager {
-  constructor ({ mock, onSwitchView = null } = {}) {
-    this.mock        = mock;
+  constructor ({ state, onSwitchView = null } = {}) {
+    this.state        = state;
     this.onSwitchView = onSwitchView;
     this.query       = '';
     this.status      = 'All';
@@ -31,7 +31,33 @@ window.PatientTableManager = class PatientTableManager {
     this._bindDetailModal();
     this._bindFormModal();
     this._bindDeleteModal();
-    this.apply();
+    this.load();
+  }
+
+  async load () {
+    try {
+      const [patients, contracts] = await Promise.all([
+        apiFetch('../backend/api/patients/list.php'), apiFetch('../backend/api/contracts/contracts.php')
+      ]);
+      if (!Array.isArray(patients.patients) || !Array.isArray(contracts.contracts)) throw new Error('Invalid patient response.');
+      this.state.patients = patients.patients.map(p => {
+        const contract = contracts.contracts.find(c => Number(c.patient_id) === Number(p.patient_id) && ['Current', 'Overdue'].includes(c.status));
+        const name = p.first_name + ' ' + p.last_name;
+        return {
+          id: '#P-' + p.patient_id, pid: p.patient_id, name, initials: this._initialsOf(name),
+          contact: p.contact_number || '—', lastVisit: '—',
+          contract: contract ? contract.id : null,
+          balance: contract ? ContractFormat.peso(contract.balance) : '—',
+          status: contract ? contract.status : '', tag: contract ? contract.tag : ''
+        };
+      });
+      this.apply();
+    } catch (error) {
+      this.state.patients = [];
+      this.patientsList = [];
+      const tbody = document.getElementById('patientsBody');
+      if (tbody) tbody.innerHTML = '<tr><td colspan="6" class="empty-cell">Unable to load patients. Please try again.</td></tr>';
+    }
   }
 
   /* ------------------------------------------------------------------
@@ -113,7 +139,7 @@ window.PatientTableManager = class PatientTableManager {
       container.innerHTML = '<p class="search-hint">Start typing to search patients by name, ID, or contact.</p>';
       return;
     }
-    const matches = this.mock.patients.filter(p =>
+    const matches = this.state.patients.filter(p =>
       p.contract && [p.name, p.id, p.contact].some(v => String(v).toLowerCase().includes(q))
     );
     if (!matches.length) {
@@ -134,7 +160,7 @@ window.PatientTableManager = class PatientTableManager {
         if (search) search.value = this.query;
         this.apply();
         this.onSwitchView?.('patients');
-        Popover.close(panel);
+        Popover.close(document.getElementById('mobileSearchPanel'));
       });
     });
   }
@@ -156,7 +182,7 @@ window.PatientTableManager = class PatientTableManager {
     const tbody = document.getElementById('patientsBody');
     if (!tbody) return;
     const q = this.query.trim().toLowerCase();
-    const list = this.mock.patients.filter(p => {
+    const list = this.state.patients.filter(p => {
       const okContract = !!p.contract;
       const okStatus   = this.status === 'All' || p.status === this.status;
       const okQuery    = !q || [p.name, p.id, p.contact].some(v => String(v).toLowerCase().includes(q));
@@ -177,14 +203,14 @@ window.PatientTableManager = class PatientTableManager {
     tbody.innerHTML = patients.map(p =>
       `<tr>
         <td>${nameCell(p.initials, p.name, p.id)}</td>
-        <td>${p.contact}</td>
-        <td>${p.lastVisit}</td>
-        <td>${p.balance}</td>
+        <td>${escapeHtml(p.contact)}</td>
+        <td>${escapeHtml(p.lastVisit)}</td>
+        <td>${escapeHtml(p.balance)}</td>
         <td>${statusTag(p)}</td>
         <td><div class="row-actions">
-          <button class="icon-btn" data-action="view" data-id="${p.id}" aria-label="View ${p.name}">${eyeIcon}</button>
-          <button class="icon-btn" data-action="edit" data-id="${p.id}" aria-label="Edit ${p.name}">${pencilIcon}</button>
-          <button class="icon-btn" data-action="delete" data-id="${p.id}" aria-label="Delete ${p.name}">${trashIcon}</button>
+          <button class="icon-btn" data-action="view" data-id="${p.id}" aria-label="View ${escapeHtml(p.name)}">${eyeIcon}</button>
+          <button class="icon-btn" data-action="edit" data-id="${p.id}" aria-label="Edit ${escapeHtml(p.name)}" disabled title="Patient editing is unavailable.">${pencilIcon}</button>
+          <button class="icon-btn" data-action="delete" data-id="${p.id}" aria-label="Delete ${escapeHtml(p.name)}" disabled title="Patient deletion is unavailable.">${trashIcon}</button>
         </div></td>
       </tr>`
     ).join('');
@@ -194,7 +220,7 @@ window.PatientTableManager = class PatientTableManager {
     document.getElementById('patientsBody')?.addEventListener('click', e => {
       const btn = e.target.closest('[data-action]');
       if (!btn) return;
-      const patient = this.mock.patients.find(p => p.id === btn.dataset.id);
+      const patient = this.state.patients.find(p => p.id === btn.dataset.id);
       if (!patient) return;
       if (btn.dataset.action === 'view')   this._openDetail(patient);
       else if (btn.dataset.action === 'edit') this._openForm(patient);
@@ -221,11 +247,11 @@ window.PatientTableManager = class PatientTableManager {
     if (!this._detailModal.modal) return;
     document.getElementById('detailTitle').textContent = 'Patient Details';
     document.getElementById('detailRows').innerHTML = [
-      ['Patient ID', p.id], ['Contract', p.contract || '—'], ['Contact', p.contact],
+      ['Patient ID', p.id], ['Contract', p.contract || '—'], ['Contact', escapeHtml(p.contact)],
       ['Last Visit', p.lastVisit], ['Balance', p.balance],
       ['Status', `<span class="tag tag-${p.tag}">${p.status}</span>`]
     ].map(([label, value]) => `<div class="row"><span>${label}</span><span>${value}</span></div>`).join('');
-    document.getElementById('detailEditBtn').hidden = false;
+    document.getElementById('detailEditBtn').hidden = true;
     this._detailModal.open();
   }
 
@@ -234,71 +260,11 @@ window.PatientTableManager = class PatientTableManager {
    * ----------------------------------------------------------------*/
 
   _bindFormModal () {
-    this._formModal = new Modal('patientFormModal');
-    if (!this._formModal.modal) return;
-    this._formModal.registerClose(document.getElementById('patientFormClose'));
-    this._formModal.registerClose(document.getElementById('patientFormCancel'));
-
-    document.getElementById('addPatientBtn')?.addEventListener('click', () => this._openForm(null));
-
-    const saveBtn = document.getElementById('patientFormSave');
-    saveBtn?.addEventListener('click', () => {
-      const name    = document.getElementById('pfName').value.trim();
-      const contact = document.getElementById('pfContact').value.trim();
-      if (!name || !contact) {
-        this._showFormNote('Name and contact number are required.', true);
-        return;
-      }
-      saveBtn.classList.add('is-loading');
-      setTimeout(() => {
-        saveBtn.classList.remove('is-loading');
-        if (this._editingPatient) {
-          Object.assign(this._editingPatient, {
-            name, contact,
-            lastVisit: document.getElementById('pfLastVisit').value.trim() || this._editingPatient.lastVisit,
-            balance: document.getElementById('pfBalance').value.trim() || this._editingPatient.balance,
-            status: document.getElementById('pfStatus').value,
-            initials: this._initialsOf(name),
-            tag: this._tagFor(document.getElementById('pfStatus').value)
-          });
-        } else {
-          this.mock.patients.unshift({
-            initials: this._initialsOf(name), name,
-            id: '#P-10' + (1070 + this.mock.patients.length),
-            contact,
-            lastVisit: document.getElementById('pfLastVisit').value.trim() || '—',
-            balance: document.getElementById('pfBalance').value.trim() || '₱0.00',
-            status: document.getElementById('pfStatus').value,
-            tag: this._tagFor(document.getElementById('pfStatus').value),
-            contract: '#B-' + (350 + this.mock.patients.length)
-          });
-          this.status = 'All';
-          const group = document.querySelector('[aria-label="Filter patients"]');
-          setChipGroup(group, 'All');
-        }
-        this._formModal.close();
-        this.apply();
-        showToast(this._editingPatient ? 'Patient updated' : 'Patient added');
-      }, 500);
-    });
-
-    this._formModal.modal.addEventListener('keydown', e => {
-      if (e.key === 'Enter' && e.target.matches('input')) { e.preventDefault(); saveBtn?.click(); }
-    });
+    const button = document.getElementById('addPatientBtn');
+    if (button) { button.disabled = true; button.title = 'Patient editing is unavailable.'; }
   }
 
-  _openForm (patient) {
-    this._editingPatient = patient || null;
-    document.getElementById('patientFormTitle').textContent = patient ? 'Edit Patient' : 'Add Patient';
-    document.getElementById('patientFormSave').querySelector('.btn-label').textContent = patient ? 'Save Changes' : 'Add Patient';
-    document.getElementById('pfName').value     = patient ? patient.name : '';
-    document.getElementById('pfContact').value  = patient ? patient.contact : '';
-    document.getElementById('pfLastVisit').value = patient ? patient.lastVisit : '';
-    document.getElementById('pfBalance').value   = patient ? patient.balance : '';
-    document.getElementById('pfStatus').value    = patient ? patient.status : 'Current';
-    document.getElementById('patientFormNote').hidden = true;
-    this._formModal.open();
-  }
+  _openForm () { showToast('Patient editing is unavailable. Please contact the clinic.', 'error'); }
 
   _showFormNote (msg, isError) {
     const el = document.getElementById('patientFormNote');
@@ -313,27 +279,8 @@ window.PatientTableManager = class PatientTableManager {
    *  Private – delete confirm modal
    * ----------------------------------------------------------------*/
 
-  _bindDeleteModal () {
-    this._deleteModal = new Modal('deleteModal');
-    if (!this._deleteModal.modal) return;
-    this._deleteModal.registerClose(document.getElementById('deleteClose'));
-    this._deleteModal.registerClose(document.getElementById('deleteCancelBtn'));
-    document.getElementById('deleteConfirmBtn')?.addEventListener('click', () => {
-      if (!this._deletingPatient) return;
-      const removed = this._deletingPatient;
-      this.mock.patients = this.mock.patients.filter(p => p !== removed);
-      this._deleteModal.close();
-      this._deletingPatient = null;
-      this.apply();
-      showToast(removed.name + ' deleted (mock)');
-    });
-  }
-
-  _openDelete (patient) {
-    this._deletingPatient = patient;
-    document.getElementById('deleteText').textContent = `Delete ${patient.name} (${patient.id})? This action can't be undone.`;
-    this._deleteModal.open();
-  }
+  _bindDeleteModal () {}
+  _openDelete () { showToast('Patient deletion is unavailable.', 'error'); }
 
   /* ------------------------------------------------------------------
    *  Private – helpers

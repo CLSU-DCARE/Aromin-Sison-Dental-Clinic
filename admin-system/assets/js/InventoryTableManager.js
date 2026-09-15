@@ -4,13 +4,13 @@
  * Replaces lines 375-400 and 921-971 of admin.js.
  *
  * Usage:
- *   const invMgr = new InventoryTableManager({ mock: AdminMock });
+ *   const invMgr = new InventoryTableManager({ state: AdminState });
  *   invMgr.init();
  */
 /* global Modal, showToast, escapeHtml, nameCell, statusTag, wireChips */
 window.InventoryTableManager = class InventoryTableManager {
-  constructor ({ mock } = {}) {
-    this.mock         = mock;
+  constructor ({ state } = {}) {
+    this.state         = state;
     this.filter       = 'All';
     this.inventoryList = [];
   }
@@ -30,13 +30,13 @@ window.InventoryTableManager = class InventoryTableManager {
   apply () {
     const tbody = document.getElementById('inventoryBody');
     if (!tbody) return;
-    let list = this.mock.inventory;
+    let list = this.state.inventory;
     if (this.filter === 'Low stock')     list = list.filter(i => i.status === 'Low' || i.status === 'Reorder');
     else if (this.filter === 'Consumables') list = list.filter(i => i.category === 'Consumable');
     else if (this.filter === 'Equipment')   list = list.filter(i => i.category === 'Equipment');
     this.inventoryList = list;
     if (!list.length) {
-      tbody.innerHTML = '<tr><td colspan="5" class="empty-cell">No inventory items match this filter.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="5" class="empty-cell">Inventory is unavailable.</td></tr>';
       return;
     }
     this._renderTable(list);
@@ -70,49 +70,7 @@ window.InventoryTableManager = class InventoryTableManager {
    * ----------------------------------------------------------------*/
 
   _bindFormModal () {
-    const modal = new Modal('inventoryFormModal');
-    if (!modal.modal) return;
-    modal.registerClose(document.getElementById('inventoryFormClose'));
-    modal.registerClose(document.getElementById('inventoryFormCancel'));
-
-    const noteEl  = document.getElementById('inventoryFormNote');
-    const saveBtn = document.getElementById('inventoryFormSave');
-
-    document.getElementById('addInventoryBtn')?.addEventListener('click', () => {
-      document.getElementById('ivName').value     = '';
-      document.getElementById('ivStock').value    = '';
-      document.getElementById('ivCategory').value = 'Consumable';
-      noteEl.hidden = true;
-      modal.open();
-    });
-
-    saveBtn?.addEventListener('click', () => {
-      const name  = document.getElementById('ivName').value.trim();
-      const stock = Number(document.getElementById('ivStock').value);
-      if (!name) {
-        noteEl.textContent = 'Item name is required.';
-        noteEl.classList.add('err'); noteEl.classList.remove('ok'); noteEl.hidden = false;
-        return;
-      }
-      if (!Number.isFinite(stock) || stock < 0) {
-        noteEl.textContent = 'Enter a valid stock quantity.';
-        noteEl.classList.add('err'); noteEl.classList.remove('ok'); noteEl.hidden = false;
-        return;
-      }
-      const status = stock <= 5 ? 'Reorder' : (stock <= 10 ? 'Low' : 'OK');
-      const tag    = status === 'Reorder' ? 'red' : (status === 'Low' ? 'amber' : 'green');
-      this.mock.inventory.unshift({
-        initials: name.replace(/[^A-Za-z ]/g, '').trim().split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase(),
-        item: name,
-        category: document.getElementById('ivCategory').value,
-        stock: String(stock),
-        width: String(Math.min(Math.max(stock * 5, 8), 100)),
-        fill: tag === 'red' ? 'var(--red)' : (tag === 'amber' ? 'var(--amber)' : 'var(--green)'),
-        status, tag
-      });
-      modal.close();
-      this.apply();
-      showToast('Inventory item added');
-    });
+    const button = document.getElementById('addInventoryBtn');
+    if (button) { button.disabled = true; button.title = 'Inventory management is unavailable.'; }
   }
 };

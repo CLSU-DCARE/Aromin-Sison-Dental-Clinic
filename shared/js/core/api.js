@@ -48,7 +48,7 @@
 
     var response = await fetch(url, merged);
     var payload = {};
-    try { payload = await response.json(); } catch (e) { /* empty */ }
+    try { payload = await response.json(); } catch (e) { throw new Error('The server returned an invalid response. Please try again.'); }
 
     if (response.status === 403 && csrfToken && method !== 'GET') {
       await fetchCsrfToken();
@@ -60,7 +60,10 @@
       }
     }
 
-    if (!response.ok) {
+    if (!payload || typeof payload !== 'object' || Array.isArray(payload) || !Object.keys(payload).length) {
+      throw new Error('The server returned an invalid response. Please try again.');
+    }
+    if (!response.ok || payload.success === false) {
       var msg = (payload.error && (payload.error.message || payload.error)) || 'Unable to process the request.';
       var error = new Error(msg);
       error.code = (payload.error && payload.error.code) || 'request_failed';

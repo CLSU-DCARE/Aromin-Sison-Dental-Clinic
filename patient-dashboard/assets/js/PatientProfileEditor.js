@@ -4,14 +4,13 @@
  * Replaces the Edit Profile section from patient.js (lines 868-1070).
  *
  * Usage:
- *   const profileEditor = new PatientProfileEditor({ mock: PatientMock, store: PatientStore });
+ *   const profileEditor = new PatientProfileEditor({ state: PatientState });
  *   profileEditor.init();
  */
 /* global Modal, showToast */
 window.PatientProfileEditor = class PatientProfileEditor {
-  constructor ({ mock, store = null } = {}) {
-    this.mock  = mock;
-    this.store = store;
+  constructor ({ state } = {}) {
+    this.state  = state;
     this.modal = new Modal('profileModal');
     this._noteEl = null;
   }
@@ -39,13 +38,13 @@ window.PatientProfileEditor = class PatientProfileEditor {
   }
 
   _open () {
-    const info = this.mock.profile.info;
+    const info = this.state.profile.info;
     const getVal = label => {
       const f = info.find(item => item.label === label);
       return f ? f.value : '';
     };
 
-    document.getElementById('epName').value    = this.mock.user.name;
+    document.getElementById('epName').value    = this.state.user.name;
     document.getElementById('epContact').value = getVal('Contact Number');
     document.getElementById('epEmail').value   = getVal('Email Address');
     this._noteEl.hidden = true;
@@ -53,42 +52,7 @@ window.PatientProfileEditor = class PatientProfileEditor {
   }
 
   _save () {
-    const name    = document.getElementById('epName').value.trim();
-    const contact = document.getElementById('epContact').value.trim();
-
-    if (!name || !contact) {
-      this._showNote('Name and contact number are required.', true);
-      return;
-    }
-
-    const saveBtn = document.getElementById('profileSaveBtn');
-    saveBtn.classList.add('is-loading');
-
-    setTimeout(() => {
-      saveBtn.classList.remove('is-loading');
-
-      const info   = this.mock.profile.info;
-      const setVal = (label, value) => {
-        const f = info.find(item => item.label === label);
-        if (f) f.value = value;
-      };
-
-      this.mock.user.name     = name;
-      this.mock.user.initials = name.trim().split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase();
-
-      setVal('Full Name', name);
-      setVal('Contact Number', contact);
-      setVal('Email Address', document.getElementById('epEmail').value.trim());
-
-      if (this.store) this.store.save();
-
-      // Re-render user/profile via globals (will be refactored later)
-      if (typeof renderUser === 'function') renderUser(this.mock.user);
-      if (typeof renderProfile === 'function') renderProfile(this.mock.profile);
-
-      this.modal.close();
-      showToast('Profile updated');
-    }, 500);
+    this._showNote('Profile editing is unavailable. Please contact the clinic to update your details.', true);
   }
 
   _showNote (message, isError) {

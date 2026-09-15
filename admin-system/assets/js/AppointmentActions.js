@@ -28,13 +28,6 @@ window.AppointmentActions = class AppointmentActions {
    * ----------------------------------------------------------------*/
 
   async run (action, resourceType, resourceId, extra = {}, refresh = true) {
-    // Demo/offline mode: the real actions.php endpoint isn't reachable, so
-    // mutate the in-memory sample data directly instead of failing forever.
-    if (this.scheduler.isMock()) {
-      this._runMock(action, resourceType, resourceId, extra);
-      if (refresh) this.scheduler._render();
-      return { mock: true };
-    }
     const idKey = resourceType === 'request' ? 'request_id' : 'appointment_id';
     const data  = await this._api(this.actionEndpoint, {
       method: action === 'reschedule' ? 'PATCH' : 'POST',
@@ -43,27 +36,6 @@ window.AppointmentActions = class AppointmentActions {
     });
     if (refresh) await this.scheduler.loadWeek();
     return data;
-  }
-
-  /** Mutates scheduler.state directly for the sample-data (offline) case. */
-  _runMock (action, resourceType, resourceId, extra) {
-    const state = this.scheduler.state;
-    const list  = resourceType === 'request' ? state.requests : state.appointments;
-    const idKey = resourceType === 'request' ? 'request_id' : 'appointment_id';
-    const item  = list.find(i => Number(i[idKey]) === Number(resourceId));
-    if (!item) return;
-
-    if (action === 'approve' && resourceType === 'request') {
-      // Move the request into the confirmed appointments list.
-      state.requests = state.requests.filter(r => r !== item);
-      state.appointments.push(Object.assign({}, item, { appointment_id: item.request_id, status: 'confirmed' }));
-    } else if (action === 'cancel') {
-      if (resourceType === 'request') state.requests = state.requests.filter(r => r !== item);
-      else item.status = 'cancelled';
-    } else if (action === 'reschedule') {
-      item.scheduled_date = extra.scheduled_date;
-      item.scheduled_time = extra.scheduled_time + ':00';
-    }
   }
 
   /* ------------------------------------------------------------------
@@ -174,11 +146,7 @@ window.AppointmentActions = class AppointmentActions {
         }, false);
         this.rescheduleModal.close();
         showToast(this._reschedulingResource.type === 'request' ? 'Booking request rescheduled' : 'Appointment rescheduled');
-        // In mock/offline mode the mutation already happened in-memory —
-        // calling loadWeek() again would just regenerate fresh sample data
-        // and throw the change away, so only re-fetch for the real API.
-        if (this.scheduler.isMock()) this.scheduler._render();
-        else await this.scheduler.loadWeek();
+        await this.scheduler.loadWeek();
       } catch (error) {
         note.textContent = error.code === 'slot_unavailable' ? 'That date and time are already booked. Choose another slot.' : error.message;
         note.classList.add('err');

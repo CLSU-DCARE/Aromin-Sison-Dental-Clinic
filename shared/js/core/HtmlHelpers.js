@@ -10,7 +10,9 @@
     String(s)
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;');
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
 
   const nameCell = (initials, name, sub) =>
     `<div class="cell-name"><div class="mini-avatar">${escapeHtml(initials)}</div><div class="name-block">` +

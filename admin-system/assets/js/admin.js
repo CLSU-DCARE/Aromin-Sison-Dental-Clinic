@@ -2,16 +2,14 @@
 // ADMIN DASHBOARD: page-specific logic
 // Shared utilities (Modal, toast, sidebar, fullscreen, logout, Popover,
 // notifications) live in ../shared/js/dashboard-core.js and are loaded
-// before this file. Sample data lives in ../shared/js/mock-data/admin.js
-// and is rendered here; swap `AdminMock.<section>` for a fetch() response
-// later.
+// before this file. Dashboard state starts empty and loads from the API.
 //
 // Interactive controls wired here:
 //   - sidebar nav (switchView)          - filter chips per table
 //   - topbar search (patients, live)    - appointment Week/Day/List
 //   - mobile search popover             - report period chips
 //   - notifications popover             - user chip / account menu
-//   - patient table: view / edit / add / delete (mock modals)
+//   - patient table: view / edit / add / delete (state modals)
 // =====================================================================
 
 // =====================================================================
@@ -98,13 +96,13 @@ function setChipGroup(group, label){
 }
 
 // ---------- Patient table (delegated to PatientTableManager) ----------
-const patientMgr = new PatientTableManager({ mock: AdminMock, onSwitchView: switchView });
+const patientMgr = new PatientTableManager({ state: AdminState, onSwitchView: switchView });
 patientMgr.init();
 
 // =====================================================================
 // RECORDS TABLE: category filter + view details (delegated to RecordTableManager)
 // =====================================================================
-const recordMgr = new RecordTableManager({ mock: AdminMock });
+const recordMgr = new RecordTableManager({ state: AdminState });
 recordMgr.init();
 
 // =====================================================================
@@ -122,19 +120,18 @@ async function applyBraces(){
     const data = await apiFetch('../backend/api/contracts/contracts.php');
     if (!Array.isArray(data.contracts)) throw new Error('not_implemented');
     raw = data.contracts;
-    bracesAreReal = true;
   } catch (error) {
-    // Backend not reachable/implemented yet — fall back to the shared
-    // local mock so the table still shows something realistic.
-    raw = ContractStore.all();
-    bracesAreReal = false;
+    bracesRaw = [];
+    bracesList = [];
+    tbody.innerHTML = '<tr><td colspan="6" class="empty-cell">Unable to load contracts. Please try again.</td></tr>';
+    return;
   }
   bracesRaw = raw;
 
   const all = raw.map(c => ({
     id: c.id, initials: c.initials, name: c.name,
-    plan: c.plan, monthly: ContractStore.peso(c.monthly),
-    paid: ContractStore.peso(c.paid), balance: ContractStore.peso(c.balance),
+    plan: c.plan, monthly: ContractFormat.peso(c.monthly),
+    paid: ContractFormat.peso(c.paid), balance: ContractFormat.peso(c.balance),
     status: c.status, tag: c.tag
   }));
 
@@ -157,62 +154,27 @@ setChipGroup(bracesGroup, 'Current');
 // =====================================================================
 // INVENTORY TABLE: category / stock-level filter (delegated to InventoryTableManager)
 // =====================================================================
-const inventoryMgr = new InventoryTableManager({ mock: AdminMock });
+const inventoryMgr = new InventoryTableManager({ state: AdminState });
 inventoryMgr.init();
 
 // =====================================================================
 // APPOINTMENTS: Week / Day / List view modes
 // =====================================================================
-function renderApptMode(mode){
-  const grid = document.getElementById('apptWeekGrid');
-  const listView = document.getElementById('apptListView');
-  const tag = document.getElementById('apptModeTag');
-  const week = AdminMock.dashboard.week;
-
-  if (mode === 'Day'){
-    if (grid) grid.hidden = false;
-    if (listView) listView.hidden = true;
-    const header = ['', 'Mon 10'].map((d, i) => `<div class="cell${i ? ' head' : ''}">${d}</div>`).join('');
-    const body = week.rows.map(row =>
-      `<div class="cell time">${row.time}</div>` +
-      (row.appts[0]
-        ? `<div class="cell"><div class="appt-block">${row.appts[0].name} <span class="t">${row.appts[0].t}</span></div></div>`
-        : '<div class="cell"></div>')
-    ).join('');
-    grid.innerHTML = header + body;
-    if (tag) tag.textContent = 'Mon 10 · Day view';
-    return;
-  }
-
-  if (mode === 'List'){
-    if (grid) grid.hidden = true;
-    if (listView) listView.hidden = false;
-    const tbody = document.getElementById('apptListBody');
-    if (tbody){
-      const rows = [];
-      week.rows.forEach(r => {
-        r.appts.forEach((a, di) => {
-          if (!a) return;
-          const parts = String(a.t).split('·');
-          rows.push({ day: week.days[di], time: r.time, name: a.name, svc: (parts[1] || '').trim() });
-        });
-      });
-      tbody.innerHTML = rows.map(r =>
-        `<tr><td>${r.day}</td><td>${r.time}</td><td>${r.name}</td><td>${r.svc}</td></tr>`
-      ).join('');
+const appointmentScheduler = new AppointmentScheduler({
+  apiBase: '../backend/api/appointments',
+  onLoaded: state => {
+    if (state.error) {
+      document.getElementById('dashWeekGrid').textContent = 'Unable to load appointments. Please try again.';
+      document.getElementById('dashWeekLabel').textContent = 'Unavailable';
+      document.getElementById('dashQueueBody').innerHTML = '<tr><td colspan="3" class="empty-cell">Unable to load appointments.</td></tr>';
+      return;
     }
-    if (tag) tag.textContent = 'Aug 10 – 15, 2026 · List view';
-    return;
+    const week = ASDC.ScheduleView.week(state.start, state.appointments);
+    renderWeekGrid('dashWeekGrid', week);
+    document.getElementById('dashWeekLabel').textContent = week.label;
+    renderQueue(ASDC.ScheduleView.queue(state.appointments));
   }
-
-  // Week (default)
-  if (grid) grid.hidden = false;
-  if (listView) listView.hidden = true;
-  renderWeekGrid('apptWeekGrid', week);
-  if (tag) tag.textContent = 'Aug 10 – 15, 2026';
-}
-
-const appointmentScheduler = new AppointmentScheduler({ apiBase: '../backend/api/appointments' });
+});
 const appointmentActions  = new AppointmentActions({ scheduler: appointmentScheduler });
 appointmentScheduler.init();
 appointmentActions.init();
@@ -220,7 +182,7 @@ const apptGroup = document.querySelector('[aria-label="Filter schedule"]');
 wireChips(apptGroup, label => appointmentScheduler.setMode(label));
 
 // =====================================================================
-// REPORTS: period chips update the panel heading (mock period switch)
+// REPORTS: period chips update the panel heading (state period switch)
 // =====================================================================
 const reportGroup = document.querySelector('[aria-label="Report period"]');
 wireChips(reportGroup, label => {
@@ -231,42 +193,9 @@ wireChips(reportGroup, label => {
 // =====================================================================
 // NOTIFICATIONS + ACCOUNT MENU
 // =====================================================================
-// Prepend a live "payment awaiting approval" notification whenever the
-// shared submissions store has pending receipts, so staff never miss them.
-const adminNotifList = (function(){
-  let pending = [];
-  try {
-    const raw = localStorage.getItem('asdc.payments');
-    const list = raw ? JSON.parse(raw) : [];
-    pending = Array.isArray(list) ? list.filter(s => s.status === 'pending') : [];
-  } catch (e){}
-  if (!pending.length) return AdminMock.notifications;
-  const names = [...new Set(pending.map(s => s.patient))];
-  const count = pending.length;
-  return [{
-    id: 'pay-pending',
-    kind: 'pay',
-    title: count + (count === 1 ? ' payment' : ' payments') + ' awaiting approval',
-    desc: 'New receipt' + (count === 1 ? '' : 's') + ' from ' + names.join(', ') + ' ready to review.',
-    time: 'Just now',
-    unread: true
-  }].concat(AdminMock.notifications);
-})();
-
-initNotifications({
-  triggerId: 'notifBtn',
-  panelId: 'notifPanel',
-  listId: 'notifList',
-  badgeId: 'notifBadge',
-  markAllId: 'notifMarkAll',
-  emptyId: 'notifEmpty',
-  notifications: adminNotifList,
-  storageKey: 'asdc.notif.receptionist',
-  onSelect: n => {
-    if (n.id === 'pay-pending'){ switchView('payments'); Popover.close(document.getElementById('notifPanel')); }
-    else showToast('Opening: ' + n.title + ' (mock)');
-  }
-});
+initNotifications({ triggerId: 'notifBtn', panelId: 'notifPanel', listId: 'notifList', badgeId: 'notifBadge', markAllId: 'notifMarkAll', emptyId: 'notifEmpty', notifications: [], storageKey: 'asdc.notif.receptionist' });
+const inboxEmpty = document.getElementById('notifEmpty');
+if (inboxEmpty) inboxEmpty.textContent = 'Notifications are unavailable.';
 
 const userChip = document.getElementById('userChip');
 const userMenu = document.getElementById('userMenu');
@@ -290,12 +219,11 @@ if (userChip && userMenu){
 // =====================================================================
 
 // =====================================================================
-// BRACES CONTRACTS: add + edit status (real backend, mock fallback)
+// BRACES CONTRACTS: create and update through the server
 // =====================================================================
 const contractFormModal = new Modal('contractFormModal');
 let editingContract = null;
-let bracesRaw = [];       // raw contract objects (real or ContractStore-shaped), for Edit lookups
-let bracesAreReal = false; // whether the last successful fetch was real backend data
+let bracesRaw = []; // Last loaded contracts, used by the edit form.
 const peso = n => '₱' + Number(n).toLocaleString('en-US');
 // small helpers used by the contract form (same rules PatientTableManager uses)
 const initialsOf = name => name.trim().split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase();
@@ -311,38 +239,32 @@ if (contractFormModal.modal){
 
   const cfPatient = document.getElementById('cfPatient');
   const cfDentist = document.getElementById('cfDentist');
-  let patientsAreReal = false;
 
   const fillPatients = async () => {
     try {
       const data = await apiFetch('../backend/api/patients/list.php');
       if (!Array.isArray(data.patients) || !data.patients.length) throw new Error('empty');
-      patientsAreReal = true;
       cfPatient.innerHTML = data.patients.map(p =>
         `<option value="${p.patient_id}">${p.first_name} ${p.last_name} (#P-${p.patient_id})</option>`
       ).join('');
     } catch (e) {
-      patientsAreReal = false;
-      cfPatient.innerHTML = AdminMock.patients
-        .map(p => `<option value="${p.name}">${p.name} (${p.id})</option>`).join('');
+      cfPatient.innerHTML = '';
+      showToast('Unable to load patients.', 'error');
     }
   };
 
-  // Only tried when patients turned out to be real — a real dentist
-  // picker only makes sense alongside real patient_id-based contracts;
-  // in mock mode the two hardcoded <option>s already in the HTML stay.
   const fillDentists = async () => {
-    if (!patientsAreReal) return;
     try {
       const data = await apiFetch('../backend/api/contracts/dentists.php');
       if (!Array.isArray(data.dentists) || !data.dentists.length) throw new Error('empty');
       // Real mode needs the numeric user_id (what the backend expects for
       // dentist_id) — the display name alone isn't enough to save it.
       cfDentist.innerHTML = data.dentists.map(d => `<option value="${d.user_id}">${d.full_name}</option>`).join('');
-    } catch (e) { /* keep the hardcoded fallback options already in the HTML */ }
+    } catch (e) { cfDentist.innerHTML = ''; showToast('Unable to load dentists.', 'error'); }
   };
 
-  fillPatients().then(fillDentists);
+  fillPatients();
+  fillDentists();
 
   const contractNote = document.getElementById('contractFormNote');
   const contractSaveBtn = document.getElementById('contractFormSave');
@@ -355,13 +277,13 @@ if (contractFormModal.modal){
     contractSaveBtn.querySelector('.btn-label').textContent = contract ? 'Save Changes' : 'Create Contract';
     // Editing doesn't reassign which patient the contract belongs to, so
     // lock the picker instead of trying to re-select a value that may not
-    // even be in the (possibly real, possibly mock) options list.
+    // even be in the (possibly real, possibly state) options list.
     cfPatient.disabled = !!contract;
     if (!contract) cfPatient.value = (cfPatient.options[0] || {}).value;
     document.getElementById('cfMonths').value = contract ? contract.months : '';
     document.getElementById('cfMonthly').value = contract ? contract.monthly : '';
     document.getElementById('cfDentist').value = contract
-      ? (patientsAreReal ? (contract.dentist_id ?? '') : (contract.dentist || 'Dr. Kathrine Sison'))
+      ? (contract.dentist_id ?? '')
       : (cfDentist.options[0] || {}).value;
     document.getElementById('cfStatus').value = contract ? contract.status : 'Current';
     contractNote.hidden = true;
@@ -392,64 +314,25 @@ if (contractFormModal.modal){
       contractNote.hidden = false;
       return;
     }
-    const dentist = document.getElementById('cfDentist').value; // mock mode: dentist's name; real mode: numeric user_id
-    const status = document.getElementById('cfStatus').value;
+    const dentist = document.getElementById('cfDentist').value;
+    const status = { Current: 'active', Overdue: 'defaulted', Completed: 'completed' }[document.getElementById('cfStatus').value];
     contractSaveBtn.classList.add('loading');
     contractSaveBtn.disabled = true;
 
     try {
-      if (editingContract) {
-        const contractId = Number((editingContract.contract_id) || editingContract.id.replace('#B-', ''));
-        if (bracesAreReal) {
-          await apiFetch('../backend/api/contracts/contracts.php', {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              contract_id: contractId, dentist_id: dentist ? Number(dentist) : null,
-              total_amount: months * monthly,
-              monthly_payment: monthly, duration_months: months, status
-            })
-          });
-        } else {
-          const patient = AdminMock.patients.find(p => p.name === editingContract.name);
-          const saved = ContractStore.upsert({
-            id: editingContract.id, pid: editingContract.pid,
-            initials: editingContract.initials, name: editingContract.name,
-            dentist, months, monthly,
-            plan: months + '-month · ' + peso(monthly) + '/mo',
-            total: months * monthly, paid: editingContract.paid,
-            balance: Math.max(0, months * monthly - editingContract.paid),
-            monthsPaid: editingContract.monthsPaid, status, tag: tagFor(status),
-            payments: editingContract.payments, progress: editingContract.progress
-          });
-          if (patient) { patient.balance = peso(saved.balance); patient.status = status; patient.tag = tagFor(status); }
-        }
-      } else {
-        if (patientsAreReal) {
-          await apiFetch('../backend/api/contracts/contracts.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              patient_id: Number(cfPatient.value), dentist_id: dentist ? Number(dentist) : null,
-              total_amount: months * monthly,
-              monthly_payment: monthly, duration_months: months, status
-            })
-          });
-        } else {
-          const patient = AdminMock.patients.find(p => p.name === cfPatient.value);
-          const saved = ContractStore.upsert({
-            id: null, pid: patient ? patient.id : null,
-            initials: patient ? patient.initials : initialsOf(cfPatient.value),
-            name: cfPatient.value, dentist, months, monthly,
-            plan: months + '-month · ' + peso(monthly) + '/mo',
-            total: months * monthly, paid: 0, balance: months * monthly,
-            monthsPaid: 0, status, tag: tagFor(status), payments: []
-          });
-          if (patient) { patient.balance = peso(saved.balance); patient.status = status; patient.tag = tagFor(status); }
-        }
-      }
+      if (!editingContract && !cfPatient.value) throw new Error('Select a patient.');
+      await apiFetch('../backend/api/contracts/contracts.php', {
+        method: editingContract ? 'PATCH' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...(editingContract ? { contract_id: Number(editingContract.contract_id || editingContract.id.replace('#B-', '')) } : { patient_id: Number(cfPatient.value) }),
+          dentist_id: dentist ? Number(dentist) : null,
+          total_amount: months * monthly, monthly_payment: monthly, duration_months: months, status
+        })
+      });
       contractFormModal.close();
       await applyBraces();
+      await patientMgr.load();
       showToast(editingContract ? 'Contract updated' : 'Contract created');
     } catch (error) {
       contractNote.textContent = error.message;
@@ -463,99 +346,17 @@ if (contractFormModal.modal){
 }
 
 // =====================================================================
-// PROMOTIONS: add + edit (functional mock)
-// =====================================================================
-const promoFormModal = new Modal('promoFormModal');
-let editingPromo = null;
+// Promotions management is unavailable until a server endpoint is provided.
+const addPromoBtn = document.getElementById('addPromoBtn');
+if (addPromoBtn) { addPromoBtn.disabled = true; addPromoBtn.title = 'Promotions management is unavailable.'; }
 
-if (promoFormModal.modal){
-  promoFormModal.registerClose(document.getElementById('promoFormClose'));
-  promoFormModal.registerClose(document.getElementById('promoFormCancel'));
-  const promoNote = document.getElementById('promoFormNote');
-  const promoSaveBtn = document.getElementById('promoFormSave');
-
-  function openPromoForm(promo){
-    editingPromo = promo || null;
-    document.getElementById('promoFormTitle').textContent = promo ? 'Edit Promotion' : 'New Promotion';
-    promoSaveBtn.querySelector('.btn-label').textContent = promo ? 'Save Changes' : 'Save Promotion';
-    document.getElementById('pf2Title').value = promo ? promo.title : '';
-    document.getElementById('pf2Desc').value = promo ? promo.desc : '';
-    document.getElementById('pf2Status').value = promo ? promo.status : 'Scheduled';
-    promoNote.hidden = true;
-    promoFormModal.open();
-  }
-
-  document.getElementById('addPromoBtn').addEventListener('click', () => openPromoForm(null));
-
-  document.getElementById('promoGrid').addEventListener('click', e => {
-    const btn = e.target.closest('[data-action="edit-promo"]');
-    if (!btn) return;
-    const promo = AdminMock.promotions[Number(btn.dataset.index)];
-    if (promo) openPromoForm(promo);
-  });
-
-  promoSaveBtn.addEventListener('click', () => {
-    const title = document.getElementById('pf2Title').value.trim();
-    const desc = document.getElementById('pf2Desc').value.trim();
-    if (!title || !desc){
-      promoNote.textContent = 'Title and description are required.';
-      promoNote.classList.add('err'); promoNote.classList.remove('ok');
-      promoNote.hidden = false;
-      return;
-    }
-    const status = document.getElementById('pf2Status').value;
-    const tag = status === 'Live' ? 'green' : (status === 'Scheduled' ? 'amber' : 'red');
-    if (editingPromo){
-      Object.assign(editingPromo, { title, desc, status, tag });
-    } else {
-      AdminMock.promotions.unshift({ title, desc, status, tag });
-    }
-    promoFormModal.close();
-    renderPromotions(AdminMock.promotions);
-    showToast(editingPromo ? 'Promotion updated' : 'Promotion created');
-  });
-
-  // ---- Delete promotion ----
-  const promoDeleteModal = new Modal('promoDeleteModal');
-  let deletingPromoIndex = null;
-
-  if (promoDeleteModal.modal){
-    promoDeleteModal.registerClose(document.getElementById('promoDeleteClose'));
-    promoDeleteModal.registerClose(document.getElementById('promoDeleteCancel'));
-
-    document.getElementById('promoGrid').addEventListener('click', e => {
-      const btn = e.target.closest('[data-action="delete-promo"]');
-      if (!btn) return;
-      deletingPromoIndex = Number(btn.dataset.index);
-      const promo = AdminMock.promotions[deletingPromoIndex];
-      if (!promo) return;
-      document.getElementById('promoDeleteName').textContent = promo.title;
-      promoDeleteModal.open();
-    });
-
-    document.getElementById('promoDeleteConfirm').addEventListener('click', () => {
-      if (deletingPromoIndex === null) return;
-      AdminMock.promotions.splice(deletingPromoIndex, 1);
-      deletingPromoIndex = null;
-      promoDeleteModal.close();
-      renderPromotions(AdminMock.promotions);
-      showToast('Promotion deleted');
-    });
-  }
-}
-
-// =====================================================================
 // INVENTORY: add item (delegated to InventoryTableManager)
 // =====================================================================
 
 // ---------- Appointment actions initialized above via AppointmentActions class ----------
 
 // =====================================================================
-// EXPORT (PDF) + ARCHIVE: real mock actions replacing the old data-toast
-// placeholders. Export prints the currently filtered rows; Archive moves
-// the visible records out of the active list (in-memory, with Undo).
-// TODO(backend): swap the in-memory mutation for the real API call.
-// =====================================================================
+// Export the records currently returned by the server.
 const exportPatientsBtn = document.getElementById('exportPatientsBtn');
 if (exportPatientsBtn){
   exportPatientsBtn.addEventListener('click', () => {
@@ -608,26 +409,7 @@ if (exportInventoryBtn){
 }
 
 const archiveRecordsBtn = document.getElementById('archiveRecordsBtn');
-if (archiveRecordsBtn){
-  archiveRecordsBtn.addEventListener('click', () => {
-    const selected = recordMgr.getSelectedRecords();
-    if (!selected.size){
-      showToast('Select at least one record to archive.', 'error');
-      return;
-    }
-    const batch = Array.from(selected);
-    AdminMock.records = AdminMock.records.filter(r => !selected.has(r));
-    recordMgr.clearSelection();
-    showToast(batch.length + ' record' + (batch.length === 1 ? '' : 's') + ' archived', 'success', {
-      label: 'Undo',
-      onClick: () => {
-        AdminMock.records = AdminMock.records.concat(batch);
-        recordMgr.clearSelection();
-        showToast(batch.length + ' record' + (batch.length === 1 ? '' : 's') + ' restored');
-      }
-    });
-  });
-}
+if (archiveRecordsBtn) { archiveRecordsBtn.disabled = true; archiveRecordsBtn.title = 'Record archiving is unavailable.'; }
 
 // =====================================================================
 // SHARED DASHBOARD CORE (from ../shared/js/dashboard-core.js)
@@ -638,7 +420,7 @@ initSidebar('asdc.receptionist.sidebar.collapsed');
 initLogout('../auth/login.html');
 
 // =====================================================================
-// MOCK DATA RENDERING
+// DATA RENDERING
 // =====================================================================
 
 function renderUser(user){
@@ -706,7 +488,7 @@ function renderPromotions(promotions){
   const grid = document.getElementById('promoGrid');
   if (!grid) return;
   if (!promotions.length){
-    grid.innerHTML = '<p class="empty-cell">No promotions yet. Create one to feature it on the public site.</p>';
+    grid.innerHTML = '<p class="empty-cell">Promotions are unavailable. Create one to feature it on the public site.</p>';
     return;
   }
   grid.innerHTML = promotions.map((p, i) =>
@@ -730,7 +512,7 @@ function renderPromotions(promotions){
 function renderReports(reports){
   const grid = document.getElementById('reportStats');
   if (!grid) return;
-  grid.innerHTML = reports.stats.map(statCard).join('');
+  grid.innerHTML = '<p class="empty-cell">Attendance reports are unavailable.</p>';
 
   const bars = document.getElementById('reportBars');
   if (bars){
@@ -760,18 +542,18 @@ const paymentMgr = new PaymentApprovalManager();
 const notificationManager = new ASDC.NotificationManager();
 
 // ---------- Render everything on load ----------
-renderUser(AdminMock.user);
-renderDashboardStats(AdminMock.dashboard.stats);
-renderWeekGrid('dashWeekGrid', AdminMock.dashboard.week);
+renderUser(AdminState.user);
+renderDashboardStats(AdminState.dashboard.stats);
+renderWeekGrid('dashWeekGrid', AdminState.dashboard.week);
 // NOTE: the appointments page's own week grid loads itself — see
 // appointmentScheduler.init() a few lines above, which already calls
 // loadWeek(). The old loadAppointmentWeek() global function was removed
 // when this was refactored into the AppointmentScheduler class, but this
 // leftover call was not removed, and it crashed the whole script (so
 // every render call after it, like renderQueue/applyBraces/etc., never ran).
-renderQueue(AdminMock.dashboard.queue);
+renderQueue(AdminState.dashboard.queue);
 applyBraces();
-renderPromotions(AdminMock.promotions);
-renderReports(AdminMock.reports);
+renderPromotions(AdminState.promotions);
+renderReports(AdminState.reports);
 notificationManager.init();
 paymentMgr.init();

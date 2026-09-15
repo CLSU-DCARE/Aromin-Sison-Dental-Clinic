@@ -5,13 +5,13 @@
  * Replaces lines 234-578 of patient.js.
  *
  * Usage:
- *   const booking = new PatientAppointmentBooking({ mock: PatientMock, onBooked: () => loadPatientAppointments() });
+ *   const booking = new PatientAppointmentBooking({ state: PatientState, onBooked: () => loadPatientAppointments() });
  *   booking.init();
  */
 /* global escapeHtml, showToast, announce */
 window.PatientAppointmentBooking = class PatientAppointmentBooking {
-  constructor ({ mock, appointmentsEndpoint = '../backend/api/patients/appointments.php', onBooked = null } = {}) {
-    this.mock       = mock;
+  constructor ({ state, appointmentsEndpoint = '../backend/api/patients/appointments.php', onBooked = null } = {}) {
+    this.state       = state;
     this.endpoint   = appointmentsEndpoint;
     this.onBooked   = onBooked;
     this.noteEl     = null;
@@ -95,45 +95,15 @@ window.PatientAppointmentBooking = class PatientAppointmentBooking {
         const service  = document.getElementById('bookService').value;
         const dentist  = document.getElementById('bookDentist').value;
         const time     = slot.dataset.slot;
-        const dentistLabel = dentist === 'No preference' ? 'Clinic assignment' : dentist;
-        const dateObj = new Date(date.value + 'T00:00:00');
-        const formattedDate = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
-        try {
-          await this._api('POST', {
+        await this._api('POST', {
             service_type: service,
             preferred_dentist: dentist,
             scheduled_date: date.value,
             scheduled_time: time
           });
-        } catch (apiError) {
-          // The generic fallback message means the endpoint didn't return a
-          // real, structured response — i.e. it isn't implemented/reachable
-          // yet — so fall back to the optimistic local booking below instead
-          // of surfacing this as a failure. A real backend's own rejection
-          // (e.g. "That slot is already booked.") always comes through with
-          // its own message and should still be shown as an error.
-          if (apiError.message !== 'Unable to process the request.') throw apiError;
-        }
-
-        // Optimistic UI update: show the new appointment right away. If the
-        // real backend is reachable, the loadPatientAppointments() reload
-        // triggered by onBooked() below will replace this with the
-        // authoritative server copy; if the endpoint isn't implemented yet,
-        // this is what keeps the booking visible in Schedule/Upcoming.
-        this.mock.schedule.unshift({
-          date: formattedDate, time, svc: service, dentist: dentistLabel, status: 'Pending', tag: 'amber'
-        });
-        this.mock.dashboard.upcoming.unshift({
-          d: String(dateObj.getDate()),
-          m: dateObj.toLocaleDateString('en-US', { month: 'short' }).toUpperCase(),
-          svc: service, meta: time + ' · ' + dentistLabel, status: 'Pending', tag: 'amber'
-        });
-
         if (this.onBooked) await this.onBooked();
 
-        slot.classList.add('unavailable');
-        slot.disabled = true;
         slot.classList.remove('selected');
         slot.setAttribute('aria-pressed', 'false');
         document.getElementById('selectedSlot').textContent = 'Not yet selected';
@@ -148,7 +118,7 @@ window.PatientAppointmentBooking = class PatientAppointmentBooking {
         const summaryService = document.getElementById('summaryService');
         const summaryDentist = document.getElementById('summaryDentist');
         if (summaryService) summaryService.textContent = 'Braces Adjustment';
-        if (summaryDentist) summaryDentist.textContent = this.mock.profile.primaryDentist;
+        if (summaryDentist) summaryDentist.textContent = this.state.profile.primaryDentist;
 
         this._showNote('Booking request sent! Our team will confirm shortly.', 'ok');
         announce('Booking request sent. Check your schedule to track it.');

@@ -213,25 +213,23 @@ button{font-family:inherit;cursor:pointer;background:none;border:none;color:inhe
   line-height:1.55;
 }
 
-/* ---- Dev/QA-only disclosure: documents the magic mock values used to
-   demo each validation/error state without a real backend. Safe to
-   delete this whole block once real auth is wired up. ---- */
-.demo-hint{
+/* Sign-in help disclosure. */
+.signin-help{
   margin-top:20px;
   font-size:12.5px;
 }
-.demo-hint summary{
+.signin-help summary{
   cursor:pointer;
   font-family:var(--font-ui);
   font-size:11.5px;letter-spacing:0.04em;text-transform:uppercase;
   color:rgba(27,27,25,0.4);
   list-style:none;
 }
-.demo-hint summary::-webkit-details-marker{display:none;}
-.demo-hint summary:hover{color:rgba(27,27,25,0.65);}
-.demo-hint[open] summary{margin-bottom:10px;}
-.demo-hint ul{padding-left:20px;color:rgba(27,27,25,0.55);line-height:1.7;}
-.demo-hint code{
+.signin-help summary::-webkit-details-marker{display:none;}
+.signin-help summary:hover{color:rgba(27,27,25,0.65);}
+.signin-help[open] summary{margin-bottom:10px;}
+.signin-help ul{padding-left:20px;color:rgba(27,27,25,0.55);line-height:1.7;}
+.signin-help code{
   background:var(--ivory-2);
   padding:2px 6px;
   border-radius:4px;

@@ -5,7 +5,7 @@
  *
  * Usage:
  *   const braces = new PatientBracesProgress();
- *   braces.render(PatientMock.braces);
+ *   braces.render(PatientState.braces);
  */
 /* global escapeHtml */
 window.PatientBracesProgress = class PatientBracesProgress {

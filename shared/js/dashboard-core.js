@@ -141,29 +141,4 @@
 
   wirePublicSiteLinks();
 
-  // ---------- Seed sample payment submissions (once) ----------
-  // Payment submissions live in localStorage (shared between the patient
-  // and receptionist dashboards). On a brand new browser/profile that
-  // store is empty, so Payment Approvals would show nothing at all — this
-  // seeds a few realistic sample receipts the first time only, and never
-  // overwrites anything a real patient/receptionist has already done.
-  (function seedSamplePayments() {
-    const KEY = 'asdc.payments';
-    try {
-      if (localStorage.getItem(KEY)) return; // already seeded or has real data
-      // Small neutral placeholder "receipt" image (inline SVG, no network needed).
-      const placeholderReceipt = 'data:image/svg+xml;utf8,' + encodeURIComponent(
-        '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="520">' +
-        '<rect width="400" height="520" fill="#f4f1ea"/>' +
-        '<text x="200" y="250" font-family="sans-serif" font-size="18" fill="#8a8272" text-anchor="middle">Sample Receipt</text>' +
-        '</svg>'
-      );
-      const seed = [
-        { id: 'pay-seed-1', pid: '#P-1057', patient: 'Juan Reyes', amount: '₱2,000.00', method: 'Online (QR)', note: 'August braces adjustment payment', receiptDataUrl: placeholderReceipt, status: 'pending', submittedAt: 'August 12, 2026 at 9:10 AM', reviewedAt: null, orNumber: null },
-        { id: 'pay-seed-2', pid: '#P-1044', patient: 'Alyssa Ramos', amount: '₱3,000.00', method: 'Over the counter', note: '', receiptDataUrl: placeholderReceipt, status: 'approved', submittedAt: 'August 10, 2026 at 2:40 PM', reviewedAt: 'August 10, 2026 at 3:00 PM', orNumber: 'OR-20260810-101' },
-        { id: 'pay-seed-3', pid: '#P-1066', patient: 'Patricia Villanueva', amount: '₱1,500.00', method: 'Online (QR)', note: 'Partial payment', receiptDataUrl: placeholderReceipt, status: 'pending', submittedAt: 'August 13, 2026 at 4:15 PM', reviewedAt: null, orNumber: null }
-      ];
-      localStorage.setItem(KEY, JSON.stringify(seed));
-    } catch (e) { /* storage unavailable — nothing to do */ }
-  })();
 })();

@@ -1,24 +1,19 @@
 /**
  * PaymentApprovalManager – Admin payment approval workflow.
  *
- * Tries the real backend (backend/api/payments/payments.php) first; falls
- * back to the local localStorage-backed mock only when that endpoint isn't
- * reachable/implemented, so this keeps working during local frontend-only
- * development and automatically "goes live" once the backend is deployed.
+ * Submits requests to the authenticated backend.
  *
  * Usage:
  *   const payMgr = new PaymentApprovalManager();
  *   payMgr.init();
  */
-/* global Modal, showToast, escapeHtml, nameCell, apiFetch, ContractStore, PatientNotify, applyBraces, patientMgr */
+/* global Modal, showToast, escapeHtml, nameCell, apiFetch, applyBraces, patientMgr */
 window.PaymentApprovalManager = class PaymentApprovalManager {
-  constructor ({ storageKey = 'asdc.payments' } = {}) {
-    this._storeKey = storageKey;
+  constructor () {
     this._filter   = 'Pending';
     this._receiptModal = new Modal('receiptModal');
     this._receiptCurrent = null;
-    this._items = [];    // last-rendered list (real or mock), used by _findById
-    this._isReal = false; // whether _items came from the real backend
+    this._items = []; // Last server response, used by _findById.
 
     this.LABEL = { pending: 'Pending Confirmation', approved: 'Approved', rejected: 'Rejected' };
     this.TAG   = { pending: 'amber', approved: 'green', rejected: 'red' };
@@ -31,32 +26,8 @@ window.PaymentApprovalManager = class PaymentApprovalManager {
     this.render();
   }
 
-  /* ------------------------------------------------------------------
-   *  Local mock store (fallback only)
-   * ----------------------------------------------------------------*/
-
-  _all () {
-    try {
-      const raw = localStorage.getItem(this._storeKey);
-      const list = raw ? JSON.parse(raw) : [];
-      return Array.isArray(list) ? list : [];
-    } catch (e) { return []; }
-  }
-
-  _save (list) {
-    try { localStorage.setItem(this._storeKey, JSON.stringify(list)); } catch (e) { /* empty */ }
-  }
-
   _findById (id) {
     return this._items.find(s => String(s.id) === String(id));
-  }
-
-  _commit (updated) {
-    const list = this._all();
-    const i = list.findIndex(s => s.id === updated.id);
-    if (i >= 0) list[i] = updated;
-    this._save(list);
-    this.render();
   }
 
   /* ------------------------------------------------------------------
@@ -74,10 +45,9 @@ window.PaymentApprovalManager = class PaymentApprovalManager {
       const data = await apiFetch('../backend/api/payments/payments.php');
       if (!Array.isArray(data.payments)) throw new Error('not_implemented');
       items = data.payments;
-      this._isReal = true;
     } catch (error) {
-      items = this._all();
-      this._isReal = false;
+      items = [];
+      showToast('Unable to load payment approvals. Please try again.', 'error');
     }
     this._items = items;
 
@@ -145,99 +115,29 @@ window.PaymentApprovalManager = class PaymentApprovalManager {
     const noteEl    = document.getElementById('rcNote');
     if (noteField && noteEl) { noteField.hidden = !s.note; noteEl.textContent = s.note || ''; }
 
-    // Real submissions carry receipt_url (a server file path); the local
-    // mock instead has a full base64 receiptDataUrl — support both.
-    document.getElementById('receiptImg').src = s.receipt_url || s.receiptDataUrl || '';
+    document.getElementById('receiptImg').src = s.receipt_url || '';
     const pending = s.status === 'pending';
     document.getElementById('approvePaymentBtn').hidden = !pending;
     document.getElementById('rejectPaymentBtn').hidden  = !pending;
     this._receiptModal.open(document.getElementById('receiptClose'));
   }
 
-  async _approve (s) {
-    if (this._isReal) {
-      try {
-        await apiFetch('../backend/api/payments/payments.php', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ payment_id: s.id, action: 'approve' })
-        });
-        if (this._receiptModal.modal) this._receiptModal.close();
-        showToast('Payment of ' + s.amount + ' approved for ' + s.patient);
-        await this.render();
-        return;
-      } catch (error) {
-        showToast(error.message, 'error');
-        return;
-      }
-    }
-
-    // Mock fallback: apply the same effects locally.
-    const now = new Date().toLocaleString('en-US', { dateStyle: 'long', timeStyle: 'short' });
-    const seq = String(100 + this._all().filter(x => x.status === 'approved').length);
-    const orNumber = 'OR-' + new Date().toISOString().slice(0, 10).replace(/-/g, '') + '-' + seq;
-    this._commit(Object.assign({}, s, {
-      status: 'approved',
-      reviewedAt: now,
-      orNumber
-    }));
-
-    // Reflect the approved payment on the patient's actual braces contract
-    // (balance/paid/history) instead of only flipping this row's status —
-    // this is what makes the patient's own Contract view show the update.
-    if (typeof ContractStore !== 'undefined' && s.pid) {
-      const amountNum = ContractStore.parsePeso(s.amount);
-      const updated = ContractStore.recordPayment(s.pid, {
-        amount: amountNum,
-        method: s.method,
-        or: orNumber,
-        date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  async _review (s, action) {
+    try {
+      await apiFetch('../backend/api/payments/payments.php', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ payment_id: s.id, action })
       });
-      if (updated && typeof PatientNotify !== 'undefined') {
-        PatientNotify.push(s.pid, {
-          kind: 'pay',
-          title: 'Payment approved',
-          desc: 'Your payment of ' + s.amount + ' was approved (' + orNumber + ').'
-        });
-      }
-      if (typeof applyBraces === 'function') applyBraces();
-      if (typeof patientMgr !== 'undefined' && patientMgr.render) patientMgr.render();
-    }
-
-    if (this._receiptModal.modal) this._receiptModal.close();
-    showToast('Payment of ' + s.amount + ' approved for ' + s.patient);
+      if (this._receiptModal.modal) this._receiptModal.close();
+      showToast('Payment ' + (action === 'approve' ? 'approved' : 'rejected') + ' for ' + s.patient);
+      await this.render();
+      if (typeof applyBraces === 'function') await applyBraces();
+      if (typeof patientMgr !== 'undefined') await patientMgr.load();
+    } catch (error) { showToast(error.message, 'error'); }
   }
 
-  async _reject (s) {
-    if (this._isReal) {
-      try {
-        await apiFetch('../backend/api/payments/payments.php', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ payment_id: s.id, action: 'reject' })
-        });
-        if (this._receiptModal.modal) this._receiptModal.close();
-        showToast('Payment of ' + s.amount + ' rejected for ' + s.patient, 'error');
-        await this.render();
-        return;
-      } catch (error) {
-        showToast(error.message, 'error');
-        return;
-      }
-    }
-
-    const now = new Date().toLocaleString('en-US', { dateStyle: 'long', timeStyle: 'short' });
-    this._commit(Object.assign({}, s, { status: 'rejected', reviewedAt: now, orNumber: null }));
-    if (typeof PatientNotify !== 'undefined' && s.pid) {
-      PatientNotify.push(s.pid, {
-        kind: 'pay',
-        title: 'Payment rejected',
-        desc: 'Your payment submission of ' + s.amount + ' was rejected. Please check your receipt and resubmit.'
-      });
-    }
-    if (this._receiptModal.modal) this._receiptModal.close();
-    showToast('Payment of ' + s.amount + ' rejected for ' + s.patient, 'error');
-  }
+  _approve (s) { return this._review(s, 'approve'); }
+  _reject (s) { return this._review(s, 'reject'); }
 
   /* ------------------------------------------------------------------
    *  Private – event bindings

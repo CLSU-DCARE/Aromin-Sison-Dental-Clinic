@@ -1,48 +1,25 @@
 /**
  * PatientPaymentSubmission – Payment receipt upload and submission logic.
  *
- * Tries the real backend (backend/api/patients/payments.php, a real
- * multipart file upload) first; falls back to the local localStorage mock
- * only when that endpoint isn't reachable/implemented yet.
+ * Submits requests to the authenticated backend.
  *
  * Usage:
- *   const payment = new PatientPaymentSubmission({ mock: PatientMock });
+ *   const payment = new PatientPaymentSubmission({ state: PatientState });
  *   payment.init();
  *   payment.render();
  */
 /* global showToast, escapeHtml, apiFetch */
 window.PatientPaymentSubmission = class PatientPaymentSubmission {
-  constructor ({ mock, paymentMethod = 'Online (QR)', storageKey = 'asdc.payments' } = {}) {
-    this.mock          = mock;
+  constructor ({ state, paymentMethod = 'Online (QR)' } = {}) {
+    this.state          = state;
     this.paymentMethod = paymentMethod;
-    this._receiptData  = null; // base64 preview thumbnail (both paths)
-    this._receiptFile   = null; // original File object (real upload only)
-    this._store        = { key: storageKey };
+    this._receiptData  = null; // base64 preview thumbnail
+    this._receiptFile   = null; // original file for upload
   }
 
   init () {
     this._initReceiptInput();
     this._initSubmit();
-  }
-
-  /* ------------------------------------------------------------------
-   *  Local mock store (fallback only)
-   * ----------------------------------------------------------------*/
-
-  storeAll () {
-    try {
-      const raw = localStorage.getItem(this._store.key);
-      const list = raw ? JSON.parse(raw) : [];
-      return Array.isArray(list) ? list : [];
-    } catch (e) { return []; }
-  }
-
-  storeSave (list) {
-    try { localStorage.setItem(this._store.key, JSON.stringify(list)); } catch (e) { /* empty */ }
-  }
-
-  storeByPatient (patientId) {
-    return this.storeAll().filter(s => s.pid === patientId);
   }
 
   /* ------------------------------------------------------------------
@@ -56,7 +33,8 @@ window.PatientPaymentSubmission = class PatientPaymentSubmission {
       if (!Array.isArray(data.submissions)) throw new Error('not_implemented');
       submissions = data.submissions;
     } catch (error) {
-      submissions = this.storeByPatient(this.mock.user.pid).slice().reverse();
+      submissions = [];
+      showToast('Unable to load payment submissions. Please try again.', 'error');
     }
 
     const list  = document.getElementById('paySubs');
@@ -148,47 +126,19 @@ window.PatientPaymentSubmission = class PatientPaymentSubmission {
       submitBtn.classList.add('loading');
       submitBtn.disabled = true;
 
-      let usedReal = false;
-      if (this._receiptFile) {
-        try {
-          const form = new FormData();
-          form.append('amount', amount.trim());
-          form.append('method', this.paymentMethod);
-          form.append('note', (note || '').trim());
-          form.append('receipt', this._receiptFile);
-          await apiFetch('../backend/api/patients/payments.php', { method: 'POST', body: form });
-          usedReal = true;
-        } catch (error) {
-          // Generic fallback message means the endpoint isn't really
-          // implemented/reachable yet — fall back to the local mock below.
-          // A real backend's own rejection (e.g. bad file type) still
-          // surfaces as an error instead of silently "succeeding" locally.
-          if (error.message !== 'Unable to process the request.') {
-            showToast(error.message, 'error');
-            submitBtn.classList.remove('loading');
-            submitBtn.disabled = false;
-            return;
-          }
-        }
-      }
-
-      if (!usedReal) {
-        const submission = {
-          id: 'pay-' + Date.now(),
-          pid: this.mock.user.pid,
-          patient: this.mock.user.name,
-          amount: amount.trim(),
-          method: this.paymentMethod,
-          note: (note || '').trim(),
-          receiptDataUrl: this._receiptData,
-          status: 'pending',
-          submittedAt: new Date().toLocaleString('en-US', { dateStyle: 'long', timeStyle: 'short' }),
-          reviewedAt: null,
-          orNumber: null
-        };
-        const all = this.storeAll();
-        all.push(submission);
-        this.storeSave(all);
+      try {
+        if (!this._receiptFile) throw new Error('Please attach your receipt again.');
+        const form = new FormData();
+        form.append('amount', amount.trim());
+        form.append('method', this.paymentMethod);
+        form.append('note', (note || '').trim());
+        form.append('receipt', this._receiptFile);
+        await apiFetch('../backend/api/patients/payments.php', { method: 'POST', body: form });
+      } catch (error) {
+        showToast(error.message, 'error');
+        submitBtn.classList.remove('loading');
+        submitBtn.disabled = false;
+        return;
       }
 
       // Reset form

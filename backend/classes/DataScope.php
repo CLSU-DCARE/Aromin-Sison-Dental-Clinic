@@ -104,6 +104,9 @@ class DataScope
      */
     public function patientFilter(): array
     {
+        if ($this->isPatient()) {
+            return ['p.user_id = ?', [$this->userId]];
+        }
         if (!$this->isDentist() || !$this->userId) {
             return ['1=1', []];
         }

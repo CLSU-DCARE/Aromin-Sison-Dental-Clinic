@@ -24,13 +24,12 @@
 
     async _loadTemplates() {
       try {
-        const res = await fetch(API_BASE + '/templates.php?active_only=1');
-        const data = await res.json();
+        const data = await apiFetch(API_BASE + '/templates.php?active_only=1');
         if (data.success && data.templates) { this._templates = data.templates; return; }
         throw new Error('no templates');
       } catch (e) {
-        // Backend not reachable yet — use bundled sample templates instead.
-        this._templates = (typeof AdminMock !== 'undefined' && AdminMock.notificationTemplates) || [];
+        this._templates = [];
+        showToast('Unable to load notification templates.', 'error');
       }
     }
 
@@ -49,28 +48,19 @@
       if (!tbody) return;
 
       let logs = [];
-      let usedMock = false;
       try {
         const params = new URLSearchParams();
         if (this._filter === 'Email') params.set('channel', 'email');
         if (this._filter === 'SMS') params.set('channel', 'sms');
         if (this._filter === 'Failed') params.set('status', 'failed');
         params.set('limit', '50');
-        const res = await fetch(API_BASE + '/list.php?' + params.toString());
-        const data = await res.json();
+        const data = await apiFetch(API_BASE + '/list.php?' + params.toString());
         if (data.success) logs = data.logs || [];
         else throw new Error('list failed');
       } catch (e) {
-        // Backend not reachable yet — filter the bundled sample log the
-        // same way the real endpoint would, so the table isn't just empty.
-        usedMock = true;
-        const all = (typeof AdminMock !== 'undefined' && AdminMock.notificationLog) || [];
-        logs = all.filter(l => {
-          if (this._filter === 'Email') return l.channel === 'email';
-          if (this._filter === 'SMS') return l.channel === 'sms';
-          if (this._filter === 'Failed') return l.status === 'failed';
-          return true;
-        });
+        tbody.innerHTML = '';
+        if (empty) { empty.hidden = false; empty.textContent = 'Unable to load notifications. Please try again.'; }
+        return;
       }
 
       if (!logs.length) {
@@ -128,10 +118,12 @@
       const snNote = document.getElementById('sendNotifNote');
       const snSaveBtn = document.getElementById('sendNotifSave');
 
-      const fillPatientDropdown = () => {
-        snPatient.innerHTML = AdminMock.patients
-          .map((p) => `<option value="${p.pid}">${p.name}</option>`)
-          .join('');
+      const fillPatientDropdown = async () => {
+        snPatient.innerHTML = '';
+        try {
+          const data = await apiFetch('../backend/api/patients/list.php');
+          snPatient.innerHTML = data.patients.map(p => '<option value="' + p.patient_id + '">' + escapeHtml(p.first_name + ' ' + p.last_name) + '</option>').join('');
+        } catch (error) { showToast('Unable to load patients.', 'error'); }
       };
 
       const fillTemplateDropdown = () => {
@@ -205,13 +197,16 @@
         }
 
         try {
-          const res = await fetch(API_BASE + '/send.php', {
+          const data = await apiFetch(API_BASE + '/send.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload),
           });
-          const data = await res.json();
           if (data.success) {
+            if (!Array.isArray(data.results) || data.results.some(result => result.status !== 'sent')) {
+              this.renderLog();
+              throw new Error('Some messages could not be delivered. Check the notification log before retrying.');
+            }
             this._modal.close();
             showToast(
               'Notification sent to ' +
@@ -222,23 +217,9 @@
             throw new Error(data.error || 'send failed');
           }
         } catch (e) {
-          // Backend not reachable yet — record the send in the bundled
-          // sample log so the action still feels functional in the demo.
-          if (typeof AdminMock !== 'undefined') {
-            AdminMock.notificationLog.unshift({
-              patient_name: snPatient.selectedOptions[0]?.textContent || 'Patient',
-              channel: snChannel.value === 'both' ? 'email' : snChannel.value,
-              subject: snSubject.value.trim() || null,
-              status: 'sent',
-              sent_at: new Date().toISOString(),
-            });
-          }
-          this._modal.close();
-          showToast(
-            'Notification sent to ' +
-              (snPatient.selectedOptions[0]?.textContent || 'patient')
-          );
-          this.renderLog();
+          snNote.textContent = e.message || 'Unable to send notification. Please try again.';
+          snNote.classList.add('err');
+          snNote.hidden = false;
         } finally {
           snSaveBtn.classList.remove('loading');
           snSaveBtn.disabled = false;
