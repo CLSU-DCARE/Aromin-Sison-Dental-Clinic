@@ -251,24 +251,25 @@ if (typeof PatientNotify !== 'undefined') {
   if (live.length) PatientMock.notifications = live.concat(PatientMock.notifications);
 }
 
-initNotifications({
-  triggerId: 'notifBtn',
-  panelId: 'notifPanel',
-  listId: 'notifList',
-  badgeId: 'notifBadge',
-  markAllId: 'notifMarkAll',
-  emptyId: 'notifEmpty',
-  notifications:
-    PatientMock.notifications,
-  storageKey:
-    'asdc.notif.patient',
-  onSelect: notification => {
-    showToast(
-      'Opening: ' +
-      notification.title +
-      ' (mock)'
-    );
-  }
+fetch('../backend/api/notifications/list.php')
+.then(res => res.json())
+.then(data => {
+
+    initNotifications({
+        triggerId: 'notifBtn',
+        panelId: 'notifPanel',
+        listId: 'notifList',
+        badgeId: 'notifBadge',
+        markAllId: 'notifMarkAll',
+        emptyId: 'notifEmpty',
+
+        notifications:
+            data.notifications || [],
+
+        storageKey:
+            'asdc.notif.patient'
+    });
+
 });
 
 // ---------- Account menu ----------

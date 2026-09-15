@@ -16,7 +16,7 @@
 
 /* ---- Popover base: anchored frosted panel ---- */
 .popover{
-  position:fixed;z-index:150;
+  position:fixed;z-index:9999;
   min-width:300px;max-width:min(92vw,380px);
   background:var(--glass-solid);
   border:1px solid rgba(255,255,255,0.55);
@@ -167,4 +167,11 @@
 
 @media (prefers-reduced-motion: reduce){
   .popover{transition:none;transform:none;}
+}
+
+header,
+.topbar,
+.dashboard-header,
+.notification-wrapper {
+    overflow: visible !important;
 }

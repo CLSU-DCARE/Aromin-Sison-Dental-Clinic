@@ -83,20 +83,37 @@ if (typeof window !== 'undefined') !window.ASDC && (window.ASDC = {});
   };
 
   DentistDashboard.prototype._initNotifications = function(){
-    initNotifications({
-      triggerId: 'notifBtn',
-      panelId: 'notifPanel',
-      listId: 'notifList',
-      badgeId: 'notifBadge',
-      markAllId: 'notifMarkAll',
-      emptyId: 'notifEmpty',
-      notifications: AdminMock.notifications,
-      storageKey: 'asdc.notif.dentist',
-      onSelect: function(n){
-        ASDC._toast.show('Opening: ' + n.title + ' (mock)');
-      }
+
+    fetch('../backend/api/notifications/list.php')
+    .then(res => res.json())
+    .then(data => {
+
+        initNotifications({
+            triggerId: 'notifBtn',
+            panelId: 'notifPanel',
+            listId: 'notifList',
+            badgeId: 'notifBadge',
+            markAllId: 'notifMarkAll',
+            emptyId: 'notifEmpty',
+
+            notifications: data.notifications || [],
+
+            storageKey: 'asdc.notif.dentist',
+
+            onSelect: function(n){
+                ASDC._toast.show(n.title);
+            }
+        });
+
+    })
+    .catch(error => {
+        console.error(
+            "Notification loading failed:",
+            error
+        );
     });
-  };
+
+};
 
   DentistDashboard.prototype._initUserMenu = function(){
     var userChip = document.getElementById('userChip');
