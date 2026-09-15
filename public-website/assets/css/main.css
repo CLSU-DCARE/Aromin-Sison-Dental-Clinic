@@ -1930,9 +1930,17 @@ header.scrolled .nav-toggle:hover{border-color:var(--gold);background:var(--ivor
   object-fit:cover;
   object-position:top center;
   transition:transform 0.8s cubic-bezier(0.25,0.46,0.45,0.94);
+  /* Forces its own GPU compositing layer. Without this, this image
+     sometimes loads and positions correctly (confirmed via computed
+     styles) but never actually gets painted on screen — a known
+     Chromium quirk with absolutely-positioned cover images inside an
+     aspect-ratio + overflow:hidden + border-radius parent. A transform
+     nudges the compositor into repainting it properly every time. */
+  transform:translateZ(0);
+  backface-visibility:hidden;
 }
 .dentist-photo:hover img{
-  transform:scale(1.03);
+  transform:translateZ(0) scale(1.03);
 }
 .dentist-photo .placeholder-label{
   font-family:var(--font-ui);font-size:11px;letter-spacing:0.08em;text-transform:uppercase;
