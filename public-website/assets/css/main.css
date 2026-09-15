@@ -432,7 +432,7 @@ header.scrolled .nav-toggle:hover{border-color:var(--gold);background:var(--ivor
   overflow:hidden;
   background:
     linear-gradient(90deg, rgba(17,17,16,0.94) 0%, rgba(17,17,16,0.55) 45%, rgba(17,17,16,0.25) 100%),
-    url('../../../shared/images/hero welcome.jpg') center 30% / cover no-repeat;
+    url('../../../shared/images/hero welcome.JPG') center 30% / cover no-repeat;
 }
 .hero-texture{
   position:absolute;inset:0;
@@ -1434,8 +1434,18 @@ header.scrolled .nav-toggle:hover{border-color:var(--gold);background:var(--ivor
     scroll-snap-type:x proximity;
     gap:8px;
     padding:4px 0 10px;
+    position:relative;
   }
   .gallery-filter::-webkit-scrollbar{display:none;}
+  /* Hints there are more chips to scroll to instead of the row just
+     looking like it cuts off mid-word at the edge of the screen. */
+  .gallery-filter-row::after{
+    content:'';
+    position:absolute;
+    top:4px;right:0;bottom:10px;width:28px;
+    pointer-events:none;
+    background:linear-gradient(to right, rgba(250,248,244,0), var(--ivory) 80%);
+  }
   .filter-chip{
     flex:0 0 auto;
     scroll-snap-align:start;
@@ -1758,7 +1768,7 @@ header.scrolled .nav-toggle:hover{border-color:var(--gold);background:var(--ivor
 
 /* Team */
 .team-photo{
-  aspect-ratio:4/5;
+  aspect-ratio:1/1;
   background:linear-gradient(160deg, #2E2E2A 0%, #1C1C1A 60%, #111110 100%);
   display:flex;
   align-items:center;
@@ -1771,48 +1781,48 @@ header.scrolled .nav-toggle:hover{border-color:var(--gold);background:var(--ivor
 }
 .team-mono{
   font-family:'Fraunces',serif;
-  font-size:64px;
+  font-size:44px;
   color:rgba(216,189,145,0.35);
   line-height:1;
   border:1px solid rgba(216,189,145,0.35);
   border-radius:50%;
-  width:120px;
-  height:120px;
+  width:88px;
+  height:88px;
   display:flex;
   align-items:center;
   justify-content:center;
 }
 .team-badge{
   position:absolute;
-  top:16px;
-  left:16px;
+  top:14px;
+  left:14px;
   font-family:var(--font-ui);
-  font-size:10px;
+  font-size:9px;
   letter-spacing:0.1em;
   text-transform:uppercase;
   color:var(--gold);
   background:rgba(17,17,16,0.6);
   border:1px solid rgba(216,189,145,0.3);
-  padding:6px 10px;
+  padding:5px 9px;
   border-radius:999px;
 }
-.team-body{padding:26px 26px 30px;}
-.team-body h3{font-family:'Fraunces',serif;font-size:22px;color:var(--dark);}
+.team-body{padding:18px 20px 22px;}
+.team-body h3{font-family:'Fraunces',serif;font-size:19px;color:var(--dark);}
 .team-body .role{font-family:var(--font-ui);font-size:11px;letter-spacing:0.06em;text-transform:uppercase;color:var(--gold-text);margin:6px 0 14px;}
 .team-body p{font-size:14.5px;color:rgba(18,32,28,0.62);line-height:1.6;}
-.team-tags{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;}
+.team-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px;}
 .team-tag{
   font-family:var(--font-ui);
-  font-size:11px;
+  font-size:10.5px;
   letter-spacing:0.05em;
   color:var(--dark);
   background:rgba(156,139,62,0.1);
   border:1px solid rgba(156,139,62,0.28);
-  padding:5px 12px;
+  padding:4px 10px;
   border-radius:999px;
 }
 .team-note{
-  margin-top:30px;
+  margin-top:24px;
   text-align:center;
   font-size:14px;
   color:rgba(18,32,28,0.65);
@@ -1845,12 +1855,12 @@ header.scrolled .nav-toggle:hover{border-color:var(--gold);background:var(--ivor
 .value-item h4{font-family:'Fraunces',serif;font-size:18px;margin-bottom:8px;color:var(--dark);}
 .value-item p{font-size:14.5px;color:rgba(18,32,28,0.6);line-height:1.6;}
 
-.team-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:30px;margin-top:56px;}
+.team-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:22px;margin-top:40px;}
 .team-card{background:var(--ivory);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;}
-.team-body{padding:26px 26px 30px;}
-.team-body h3{font-family:'Fraunces',serif;font-size:22px;color:var(--dark);}
-.team-body .role{font-family:var(--font-ui);font-size:11px;letter-spacing:0.06em;text-transform:uppercase;color:var(--gold-text);margin:6px 0 14px;}
-.team-body p{font-size:14.5px;color:rgba(18,32,28,0.62);line-height:1.6;}
+.team-body{padding:18px 20px 22px;}
+.team-body h3{font-family:'Fraunces',serif;font-size:19px;color:var(--dark);}
+.team-body .role{font-family:var(--font-ui);font-size:11px;letter-spacing:0.06em;text-transform:uppercase;color:var(--gold-text);margin:5px 0 10px;}
+.team-body p{font-size:13.5px;color:rgba(18,32,28,0.62);line-height:1.55;}
 
 /* Receptionists section reuses .team-card/.team-photo/etc. as-is; this
    just widens the grid to 3 columns for 3 people instead of 2. */
@@ -1866,12 +1876,12 @@ header.scrolled .nav-toggle:hover{border-color:var(--gold);background:var(--ivor
 /* ===== DENTIST PAGE ===== */
 .dentist-profile{
   display:grid;
-  grid-template-columns:280px 1fr;
+  grid-template-columns:300px 1fr;
   gap:60px;
   padding:60px 0;
   align-items:start;
 }
-.dentist-profile.alt-side{grid-template-columns:1fr 280px;}
+.dentist-profile.alt-side{grid-template-columns:1fr 300px;}
 .dentist-profile.alt-side .dentist-photo{order:2;}
 .dentist-profile + .dentist-profile{
   border-top:1px solid var(--line);
@@ -1893,7 +1903,8 @@ header.scrolled .nav-toggle:hover{border-color:var(--gold);background:var(--ivor
   background:linear-gradient(160deg, #2E2E2A 0%, #1C1C1A 60%, #111110 100%);
   display:flex;align-items:center;justify-content:center;
   border:1px solid rgba(184,146,90,0.2);
-  position:relative;
+  position:sticky;
+  top:100px;
   overflow:hidden;
   box-shadow:0 15px 50px rgba(0,0,0,0.12), 0 0 0 1px rgba(184,146,90,0.06);
   transition:transform 0.6s cubic-bezier(0.25,0.46,0.45,0.94), box-shadow 0.6s ease;
@@ -2015,7 +2026,7 @@ header.scrolled .nav-toggle:hover{border-color:var(--gold);background:var(--ivor
 @media (max-width:900px){
   .dentist-profile, .dentist-profile.alt-side{grid-template-columns:1fr;gap:36px;padding:50px 0;}
   .dentist-profile.alt-side .dentist-photo{order:0;}
-  .dentist-photo{max-width:320px;margin:0 auto;}
+  .dentist-photo{width:100%;max-width:320px;margin:0 auto;position:static;}
   .dentist-name{text-align:center;}
   .dentist-title{text-align:center;border-bottom:none;padding-bottom:0;}
   .dentist-title::after{left:50%;transform:translateX(-50%);}
