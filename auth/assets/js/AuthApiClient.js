@@ -124,7 +124,8 @@
           credentials: 'same-origin',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email }),
-        }
+        },
+        30000
       );
       const payload = await AuthApiClient.readJson(response);
       return { response, payload };

@@ -78,7 +78,7 @@ function initLoginForm(form) {
 // REUSABLE MODAL — ASDC.Modal (from shared core)
 // =====================================================================
 function setupModal(modalId, triggerIds = [], closeIds = []) {
-  const modal = new Modal(modalId);
+  const modal = new ASDC.Modal(modalId);
   triggerIds.forEach(id => modal.registerTrigger(document.getElementById(id)));
   closeIds.forEach(id => modal.registerClose(document.getElementById(id)));
   return modal;
@@ -98,7 +98,7 @@ function wireForgotPasswordForm(form, modal) {
     const emailField = form.querySelector('input[type="email"]');
     try {
       const { response, payload } = await ASDC.AuthApiClient.forgotPassword(emailField.value.trim());
-      if (!response.ok) {
+      if (!response.ok || payload.success !== true) {
         showAlert(payload.error || 'Unable to send a reset link. Please try again.');
         return;
       }

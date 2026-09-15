@@ -227,8 +227,8 @@ class AuthService
         // Rate limit: 3 attempts per 15 minutes (tracked by email + IP)
         $resetKey = "password_reset:{$email}";
         $ipKey = 'ip:' . AuthMiddleware::getClientIp();
-        $lockout = RateLimiter::remaining($resetKey, self::RESET_MAX_ATTEMPTS, self::RESET_WINDOW_SECONDS);
-        $ipLockout = RateLimiter::remaining($ipKey, self::RESET_MAX_ATTEMPTS, self::RESET_WINDOW_SECONDS);
+        $lockout = RateLimiter::lockoutRemaining($resetKey);
+        $ipLockout = RateLimiter::lockoutRemaining($ipKey);
         if ($lockout > 0 || $ipLockout > 0) {
             return ['success' => false, 'error' => 'Too many reset requests. Please wait 15 minutes and try again.', 'code' => 429];
         }
@@ -265,7 +265,7 @@ class AuthService
 
             $mailResult = Mailer::sendEmail($user['email'], 'Reset your Aromin-Sison Dental Clinic password', $body);
             if (empty($mailResult['ok'])) {
-                error_log('[PASSWORD RESET MAIL FAILED] Delivery failed for user ID ' . $user['user_id']);
+                error_log('[PASSWORD RESET MAIL FAILED] User ID ' . $user['user_id'] . ': ' . ($mailResult['error'] ?? 'Email delivery failed.'));
             }
         }
 
