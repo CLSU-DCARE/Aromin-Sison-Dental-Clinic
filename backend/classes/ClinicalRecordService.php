@@ -56,4 +56,38 @@ class ClinicalRecordService
             return ['record_id' => $recordId];
         } catch (\Throwable $e) { if ($pdo->inTransaction()) $pdo->rollBack(); throw $e; }
     }
+
+    public static function recordCompletedAppointment(\PDO $pdo, int $appointmentId): ?int
+    {
+        $stmt = $pdo->prepare(
+            "SELECT a.appointment_id, a.patient_id, a.dentist_id, a.service_type, a.scheduled_date
+             FROM appointments a
+             WHERE a.appointment_id=? AND a.status='completed'"
+        );
+        $stmt->execute([$appointmentId]);
+        $appointment = $stmt->fetch();
+        if (!$appointment) return null;
+
+        $stmt = $pdo->prepare('SELECT record_id FROM treatment_records WHERE appointment_id=? LIMIT 1');
+        $stmt->execute([$appointmentId]);
+        $recordId = $stmt->fetchColumn();
+        if ($recordId) return (int) $recordId;
+
+        $protocol = 'Completed visit recorded from appointment #' . $appointmentId . '.';
+        $stmt = $pdo->prepare(
+            'INSERT INTO treatment_records(patient_id,dentist_id,diagnosis,treatment_given,treatment_protocol,date_recorded,appointment_id)
+             VALUES(?,?,?,?,?,?,?)'
+        );
+        $stmt->execute([
+            (int) $appointment['patient_id'],
+            $appointment['dentist_id'] ? (int) $appointment['dentist_id'] : null,
+            null,
+            $appointment['service_type'] ?: 'Completed treatment',
+            $protocol,
+            $appointment['scheduled_date'] ?: date('Y-m-d'),
+            $appointmentId,
+        ]);
+
+        return (int) $pdo->lastInsertId();
+    }
 }
