@@ -344,10 +344,6 @@ if (contractFormModal.modal){
 }
 
 // =====================================================================
-// Promotions management is unavailable until a server endpoint is provided.
-const addPromoBtn = document.getElementById('addPromoBtn');
-if (addPromoBtn) { addPromoBtn.disabled = true; addPromoBtn.title = 'Promotions management is unavailable.'; }
-
 // INVENTORY: add item (delegated to InventoryTableManager)
 // =====================================================================
 
