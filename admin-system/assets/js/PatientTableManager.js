@@ -184,7 +184,7 @@ window.PatientTableManager = class PatientTableManager {
       const okContract = !!p.contract;
       const okStatus   = this.status === 'All' || p.status === this.status;
       const okQuery    = !q || [p.name, p.id, p.contact].some(v => String(v).toLowerCase().includes(q));
-      return okStatus && okQuery;
+      return okContract && okStatus && okQuery;
     });
     this.patientsList = list;
     if (!list.length) {
