@@ -21,7 +21,7 @@ class PublicBookingService
      * @param array{requested_date: string, requested_time: string, first_name: string,
      *              last_name: string, contact_number: string, service_type: string,
      *              email?: string, preferred_dentist_id?: int, notes?: string} $body
-     * @return array{request_id: int, status: string}
+     * @return array{request_id: int, patient_name: string, service_type: string, requested_date: string, requested_time: string, contact_number: string, email: ?string, status: string}
      */
     public static function submitRequest(array $body): array
     {
@@ -109,6 +109,15 @@ class PublicBookingService
             AppointmentSlotManager::unlock($pdo, $lock);
         }
 
-        return ['request_id' => $id, 'status' => 'pending'];
+        return [
+            'request_id' => $id,
+            'patient_name' => trim($values['first_name'] . ' ' . $values['last_name']),
+            'service_type' => $values['service_type'],
+            'requested_date' => $date,
+            'requested_time' => $time,
+            'contact_number' => $values['contact_number'],
+            'email' => $email ?: null,
+            'status' => 'pending',
+        ];
     }
 }
