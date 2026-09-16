@@ -100,6 +100,7 @@ class PublicBookingService
                 isset($body['notes']) && is_string($body['notes']) ? trim($body['notes']) : null,
             ]);
             $id = (int) $pdo->lastInsertId();
+            PortalEvent::appointmentRequest($id, 'received');
             $pdo->commit();
         } catch (Throwable $e) {
             if ($pdo->inTransaction()) $pdo->rollBack();

@@ -23,7 +23,7 @@ class Database
         }
 
         $host = trim((string) (getenv('ASDC_DB_HOST') ?: '127.0.0.1'));
-        $port = (int) (getenv('ASDC_DB_PORT') ?: 3307);
+        $port = (int) (getenv('ASDC_DB_PORT') ?: 3306);
         $name = trim((string) (getenv('ASDC_DB_NAME') ?: 'aromin_sison_dental'));
         $user = trim((string) (getenv('ASDC_DB_USER') ?: 'root'));
         $pass = (string) getenv('ASDC_DB_PASS');

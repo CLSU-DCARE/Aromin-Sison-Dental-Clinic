@@ -109,6 +109,7 @@ class AppointmentService
             $stmt->execute($params);
             if (!$stmt->rowCount()) { $pdo->rollBack(); ApiResponse::error(409, 'state_changed', 'This appointment no longer permits that action.'); }
             if ($type === 'appointment') PortalEvent::appointment($id, $status);
+            else PortalEvent::appointmentRequest($id, $status);
             $pdo->commit();
         } catch (Throwable $e) { if ($pdo->inTransaction()) $pdo->rollBack(); throw $e; }
         ApiResponse::ok([$key => $id, 'status' => $status], 'Appointment updated.');
@@ -179,6 +180,7 @@ class AppointmentService
             }
 
             if ($type === 'appointment') PortalEvent::appointment($id, 'rescheduled');
+            else PortalEvent::appointmentRequest($id, 'rescheduled');
             $pdo->commit();
         } catch (Throwable $e) {
             if ($pdo->inTransaction()) $pdo->rollBack();

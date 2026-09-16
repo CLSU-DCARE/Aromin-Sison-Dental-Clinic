@@ -65,6 +65,41 @@
       finally { this._saving = false; }
     }
 
+    _openDetails(notification) {
+      const escHtml = window.ASDC.HtmlHelpers.escapeHtml;
+      const dialog = document.createElement('dialog');
+      const kind = notification.kind || 'info';
+      const kindLabel = {
+        appt: 'Appointment',
+        pay: 'Payment',
+        stock: 'Inventory',
+        contract: 'Contract',
+        promo: 'Promotion',
+        info: 'Notification'
+      }[kind] || 'Notification';
+
+      dialog.className = 'workflow-dialog';
+      dialog.innerHTML =
+        '<form method="dialog" class="modal workflow-dialog-panel notification-detail-panel">' +
+        '<div class="notification-detail-icon">' +
+        (NOTIF_ICONS[kind] || NOTIF_ICONS.info) +
+        '</div>' +
+        '<p class="notification-detail-kicker">' + escHtml(kindLabel) + '</p>' +
+        '<h3>' + escHtml(notification.title || 'Notification') + '</h3>' +
+        '<p class="notification-detail-message">' + escHtml(notification.desc || 'No additional details were provided.') + '</p>' +
+        '<div class="notification-detail-meta">' +
+        '<span>Received</span>' +
+        '<strong>' + escHtml(notification.time || 'Just now') + '</strong>' +
+        '</div>' +
+        '<div class="modal-actions">' +
+        '<button type="submit" class="btn btn-gold">Close</button>' +
+        '</div>' +
+        '</form>';
+      document.body.appendChild(dialog);
+      dialog.addEventListener('close', () => dialog.remove());
+      dialog.showModal();
+    }
+
     _render() {
       const unread = this._items.filter((n) => n.unread).length;
       if (this._badge) {
@@ -82,6 +117,7 @@
       const escHtml = window.ASDC.HtmlHelpers.escapeHtml;
 
       this._items.forEach((n) => {
+        const summary = String(n.desc || '').split('\n')[0];
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.className = 'notif-item ' + (n.unread ? 'unread' : 'read');
@@ -98,7 +134,7 @@
           escHtml(n.title) +
           '</span>' +
           '<span class="notif-desc">' +
-          escHtml(n.desc || '') +
+          escHtml(summary) +
           '</span>' +
           '<span class="notif-time">' +
           escHtml(n.time) +
@@ -106,6 +142,7 @@
           '</span>' +
           '<span class="notif-dot" aria-hidden="true"></span>';
         btn.addEventListener('click', () => {
+          this._openDetails(n);
           if (n.unread) {
             this._markRead([n.id]);
           }
