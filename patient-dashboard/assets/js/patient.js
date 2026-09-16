@@ -595,8 +595,16 @@ function renderDashboardStats(stats) {
           ? (appointmentsLoaded ? String(upcomingCount) : '—')
           : stat.num;
 
+      const target = {
+        'Upcoming Appointment': 'schedule',
+        'Completed Visits': 'history',
+        'Treatment Records': 'treatment',
+        'Braces Treatment Progress': 'braces',
+        'Outstanding Balance': 'contract'
+      }[stat.label] || 'dashboard';
+
       return (
-        `<div class="stat-card">` +
+        `<div class="stat-card stat-card-link" role="button" tabindex="0" data-stat-target="${target}" aria-label="Open ${escapeHtml(stat.label)}">` +
         `<div class="stat-top">` +
         `<div class="stat-icon" ` +
         `style="background:${stat.iconBg};` +
@@ -614,6 +622,19 @@ function renderDashboardStats(stats) {
       );
     }).join('');
 }
+
+document.getElementById('dashStats')?.addEventListener('click', event => {
+  const card = event.target.closest('[data-stat-target]');
+  if (card) switchView(card.dataset.statTarget);
+});
+
+document.getElementById('dashStats')?.addEventListener('keydown', event => {
+  if (!['Enter', ' '].includes(event.key)) return;
+  const card = event.target.closest('[data-stat-target]');
+  if (!card) return;
+  event.preventDefault();
+  switchView(card.dataset.statTarget);
+});
 
 function renderUpcoming(rows) {
   const list =

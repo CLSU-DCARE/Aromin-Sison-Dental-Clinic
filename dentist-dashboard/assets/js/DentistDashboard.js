@@ -30,6 +30,7 @@ if (typeof window !== 'undefined') !window.ASDC && (window.ASDC = {});
     this._initCore();
     this._initNotifications();
     this._initUserMenu();
+    this._wireStatCards();
     this._wireRecordsFilter();
     this._wirePatientsFilter();
     this._bindProgressModal();
@@ -133,6 +134,36 @@ if (inboxEmpty) inboxEmpty.textContent = 'Loading notifications…';
       self.patientsFilter = label;
       self._applyPatients();
     });
+  };
+
+  DentistDashboard.prototype._wireStatCards = function(){
+    var self = this;
+    var grid = document.getElementById('dashStats');
+    if (!grid) return;
+    grid.addEventListener('click', function(event){
+      var card = event.target.closest('[data-stat-target]');
+      if (card) self._switchView(card.dataset.statTarget);
+    });
+    grid.addEventListener('keydown', function(event){
+      if (event.key !== 'Enter' && event.key !== ' ') return;
+      var card = event.target.closest('[data-stat-target]');
+      if (!card) return;
+      event.preventDefault();
+      self._switchView(card.dataset.statTarget);
+    });
+  };
+
+  DentistDashboard.prototype._renderStats = function(){
+    var grid = document.getElementById('dashStats');
+    if (!grid) return;
+    var targets = ['appointments', 'patients', 'patients', 'patients'];
+    grid.innerHTML = AdminState.dashboard.stats.map(function(stat, index){
+      var target = targets[index] || 'dashboard';
+      return ASDC.HtmlHelpers.statCard(stat).replace(
+        'class="stat-card"',
+        'class="stat-card stat-card-link" role="button" tabindex="0" data-stat-target="' + target + '" aria-label="Open ' + ASDC.HtmlHelpers.escapeHtml(stat.label) + '"'
+      );
+    }).join('');
   };
 
   DentistDashboard.prototype._bindProgressModal = function(){
@@ -243,8 +274,7 @@ if (inboxEmpty) inboxEmpty.textContent = 'Loading notifications…';
     this._set('greetingText', user.greeting);
     this._set('greetingSubtext', user.name + ' · Dentist');
 
-    var statsGrid = document.getElementById('dashStats');
-    if (statsGrid) statsGrid.innerHTML = AdminState.dashboard.stats.map(ASDC.HtmlHelpers.statCard).join('');
+    this._renderStats();
 
     this._renderQueue(AdminState.dashboard.queue);
     this._applyPatients();
@@ -328,7 +358,7 @@ if (inboxEmpty) inboxEmpty.textContent = 'Loading notifications…';
       self._renderQueue(ASDC.ScheduleView.queue(data.week.appointments));
       ['dashWeekLabel','apptWeekLabel'].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = week.label; });
       AdminState.dashboard.stats.forEach((s,i) => { s.num = i === 2 ? ContractFormat.peso(data.metrics[i]) : String(data.metrics[i]); });
-      document.getElementById('dashStats').innerHTML = AdminState.dashboard.stats.map(ASDC.HtmlHelpers.statCard).join('');
+      self._renderStats();
       ASDC.renderDentistActions(document.getElementById('dentistAppointmentActions'), data);
     }});
   };
