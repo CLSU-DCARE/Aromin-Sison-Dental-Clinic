@@ -8,7 +8,7 @@
  *   const actions = new AppointmentActions({ scheduler });
  *   actions.init();
  */
-/* global Modal, showToast */
+/* global Modal, showToast, ASDC */
 window.AppointmentActions = class AppointmentActions {
   constructor ({ scheduler, actionEndpoint = '../backend/api/appointments/actions.php' } = {}) {
     this.scheduler      = scheduler;
@@ -57,7 +57,15 @@ window.AppointmentActions = class AppointmentActions {
       }
 
       const action = button.dataset.requestAction;
-      if (action === 'reject' && !window.confirm(`Reject the booking request from ${request.patient_name}?`)) return;
+      if (action === 'reject') {
+        const confirmed = await ASDC.confirmAction({
+          title: 'Reject Booking Request',
+          message: `Reject the booking request from ${request.patient_name}?`,
+          confirmLabel: 'Reject',
+          tone: 'danger'
+        });
+        if (!confirmed) return;
+      }
 
       const rowButtons = button.closest('tr').querySelectorAll('button');
       rowButtons.forEach(b => { b.disabled = true; });
@@ -78,7 +86,7 @@ window.AppointmentActions = class AppointmentActions {
    *  Private – grid/list appointment action delegation
    * ----------------------------------------------------------------*/
 
-  handleGridClick (event) {
+  async handleGridClick (event) {
     const button = event.target.closest('[data-appointment-action]');
     if (!button || button.disabled) return;
 
@@ -98,7 +106,19 @@ window.AppointmentActions = class AppointmentActions {
       return;
     }
 
-    if (!window.confirm(`${action.charAt(0).toUpperCase() + action.slice(1)} the appointment for ${appointment.patient_name}?`)) return;
+    const actionLabel = {
+      reject: 'Reject',
+      cancel: 'Cancel',
+      complete: 'Complete',
+      no_show: 'Mark No-show'
+    }[action] || action.charAt(0).toUpperCase() + action.slice(1).replace('_', ' ');
+    const confirmed = await ASDC.confirmAction({
+      title: `${actionLabel} Appointment`,
+      message: `${actionLabel} the appointment for ${appointment.patient_name}?`,
+      confirmLabel: actionLabel,
+      tone: ['reject', 'cancel'].includes(action) ? 'danger' : 'gold'
+    });
+    if (!confirmed) return;
 
     const controls = button.closest('.appointment-card-actions, .appointment-request-actions');
     const buttons  = controls ? controls.querySelectorAll('button') : [button];

@@ -646,6 +646,7 @@ body.sidebar-open{overflow:hidden;}
 /* ---- Confirm Logout / modal: full mobile scaling ---- */
 @media (max-width:520px){
   .modal-overlay{padding:16px;align-items:flex-end;}
+  #reschedModal{align-items:center;}
   .modal{
     max-width:100%;
     padding:26px 22px;

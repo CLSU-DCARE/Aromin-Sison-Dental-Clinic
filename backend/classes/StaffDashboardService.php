@@ -19,7 +19,7 @@ class StaffDashboardService
             $contracts = ContractService::listAll($scope);
             $records = ClinicalRecordService::listAll();
             $notifications = UserNotificationService::listForUser((int) $scope->getUserId());
-            $stmt = $pdo->prepare("SELECT COUNT(*) FROM appointments a WHERE DATE_FORMAT(a.scheduled_date,'%Y-%m')=DATE_FORMAT(CURRENT_DATE(),'%Y-%m') AND $where");
+            $stmt = $pdo->prepare("SELECT COUNT(*) FROM appointments a WHERE DATE_FORMAT(a.scheduled_date,'%Y-%m')=DATE_FORMAT(CURRENT_DATE(),'%Y-%m') AND a.status NOT IN ('cancelled','rejected') AND $where");
             $stmt->execute($params); $monthCount = (int) $stmt->fetchColumn();
             [$contractWhere, $contractParams] = $scope->contractFilter();
             $stmt = $pdo->prepare("SELECT COALESCE(SUM(cp.amount_paid),0) FROM contract_payments cp JOIN braces_contracts c ON c.contract_id=cp.contract_id WHERE cp.status='approved' AND YEARWEEK(cp.payment_date,1)=YEARWEEK(CURRENT_DATE(),1) AND $contractWhere");

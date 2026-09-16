@@ -799,7 +799,14 @@ const rescheduleModal = new PatientRescheduleModal({
 rescheduleModal.init();
 document.getElementById('scheduleBody')?.addEventListener('click', async event => {
   const button = event.target.closest('[data-cancel-appointment]');
-  if (!button || button.disabled || !window.confirm('Cancel this appointment?')) return;
+  if (!button || button.disabled) return;
+  const confirmed = await ASDC.confirmAction({
+    title: 'Cancel Appointment',
+    message: 'Cancel this appointment?',
+    confirmLabel: 'Cancel Appointment',
+    tone: 'danger'
+  });
+  if (!confirmed) return;
   button.disabled = true;
   try {
     await apiFetch(PATIENT_APPOINTMENTS_ENDPOINT, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'cancel', appointment_id: Number(button.dataset.cancelAppointment) }) });

@@ -147,6 +147,84 @@
 }
 .search-hint,.search-empty{padding:14px 12px;font-size:12.5px;color:rgba(27,27,25,0.5);text-align:center;}
 
+/* ---- Workflow dialogs created from shared PortalForms.js ---- */
+.workflow-dialog{
+  position:fixed;
+  inset:0;
+  width:min(520px,calc(100vw - 32px));
+  max-height:calc(100dvh - 32px);
+  margin:auto;
+  padding:0;
+  border:none;
+  background:transparent;
+  color:var(--ink);
+  overflow:visible;
+}
+.workflow-dialog::backdrop{
+  background:rgba(17,17,16,0.38);
+  -webkit-backdrop-filter:blur(10px);
+  backdrop-filter:blur(10px);
+}
+.workflow-dialog-panel{
+  max-width:none;
+  max-height:calc(100dvh - 32px);
+  margin:0;
+}
+.workflow-dialog-panel h3{
+  margin-bottom:22px;
+}
+.workflow-confirm-panel h3{
+  margin-bottom:12px;
+}
+.workflow-confirm-panel p{
+  font-size:14.5px;
+  color:rgba(27,27,25,0.65);
+  margin-bottom:26px;
+  line-height:1.55;
+}
+.workflow-dialog-panel .form-group{
+  margin-bottom:18px;
+}
+.workflow-dialog-panel .form-group label{
+  display:block;
+  font-family:var(--font-ui);
+  font-size:11px;
+  letter-spacing:0.06em;
+  text-transform:uppercase;
+  color:rgba(27,27,25,0.65);
+  margin-bottom:8px;
+}
+.workflow-dialog-panel input,
+.workflow-dialog-panel select,
+.workflow-dialog-panel textarea{
+  width:100%;
+  padding:12px 14px;
+  border:1px solid var(--line);
+  border-radius:10px;
+  font-family:inherit;
+  font-size:16px;
+  color:var(--ink);
+  background:var(--white);
+  transition:border-color .2s ease, box-shadow .2s ease, background .2s ease;
+}
+.workflow-dialog-panel textarea{
+  min-height:118px;
+  resize:vertical;
+}
+.workflow-dialog-panel input:focus,
+.workflow-dialog-panel select:focus,
+.workflow-dialog-panel textarea:focus{
+  outline:none;
+  border-color:var(--gold);
+  box-shadow:var(--ring-gold);
+}
+.workflow-dialog-error[hidden]{
+  display:none;
+}
+.workflow-dialog-panel .modal-actions{
+  margin-top:8px;
+}
+
 /* ---- Phones: popovers become bottom sheets, always inside the viewport ---- */
 @media (max-width:640px){
   .popover.sheet{
@@ -163,6 +241,20 @@
     margin:10px auto 2px;
   }
   .notif-list{max-height:calc(60dvh - 140px);}
+  .workflow-dialog{
+    width:calc(100vw - 32px);
+    max-height:calc(100dvh - 32px);
+  }
+  .workflow-dialog-panel{
+    padding:26px 22px;
+  }
+  .workflow-dialog-panel .modal-actions{
+    flex-direction:column-reverse;
+    gap:10px;
+  }
+  .workflow-dialog-panel .modal-actions .btn{
+    width:100%;
+  }
 }
 
 @media (prefers-reduced-motion: reduce){

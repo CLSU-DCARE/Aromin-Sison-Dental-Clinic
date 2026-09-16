@@ -3,8 +3,8 @@
   const esc = value => ASDC.HtmlHelpers.escapeHtml(String(value ?? ''));
   function form(title, fields, save) {
     const dialog = document.createElement('dialog');
-    dialog.style.cssText = 'border:1px solid #ddd;border-radius:16px;padding:24px;width:min(520px,90vw);max-height:90vh';
-    dialog.innerHTML = `<form><h3>${esc(title)}</h3>${fields}<p role="alert" data-error></p><div style="display:flex;gap:12px;margin-top:16px"><button type="submit" class="btn btn-primary">Save</button><button type="button" class="btn btn-outline" data-close>Cancel</button></div></form>`;
+    dialog.className = 'workflow-dialog';
+    dialog.innerHTML = `<form class="modal workflow-dialog-panel"><h3>${esc(title)}</h3>${fields}<p class="form-note err workflow-dialog-error" role="alert" data-error hidden></p><div class="modal-actions"><button type="submit" class="btn btn-primary">Save</button><button type="button" class="btn btn-secondary" data-close>Cancel</button></div></form>`;
     document.body.appendChild(dialog);
     dialog.querySelector('[data-close]').onclick = () => dialog.close();
     dialog.addEventListener('close', () => dialog.remove());
@@ -14,13 +14,55 @@
       if (button.disabled) return;
       button.disabled = true;
       try { await save(Object.fromEntries(new FormData(event.target))); dialog.close(); ASDC._toast.show('Saved successfully.'); }
-      catch (error) { dialog.querySelector('[data-error]').textContent = error.message; }
+      catch (error) {
+        const note = dialog.querySelector('[data-error]');
+        note.textContent = error.message;
+        note.hidden = false;
+      }
       finally { button.disabled = false; }
     };
     dialog.showModal();
   }
-  const field = (label, input) => `<label style="display:block;margin-top:12px">${esc(label)}${input}</label>`;
+  function confirmAction({
+    title = 'Confirm action',
+    message = 'Continue with this action?',
+    confirmLabel = 'Confirm',
+    cancelLabel = 'Cancel',
+    tone = 'danger'
+  } = {}) {
+    return new Promise(resolve => {
+      const dialog = document.createElement('dialog');
+      const confirmClass = tone === 'danger' ? 'btn-danger' : tone === 'gold' ? 'btn-gold' : 'btn-primary';
+      let settled = false;
+      const settle = value => {
+        if (settled) return;
+        settled = true;
+        resolve(value);
+        dialog.close();
+      };
+
+      dialog.className = 'workflow-dialog';
+      dialog.innerHTML = `<form method="dialog" class="modal workflow-dialog-panel workflow-confirm-panel"><h3>${esc(title)}</h3><p>${esc(message)}</p><div class="modal-actions"><button type="button" class="btn btn-secondary" data-cancel>${esc(cancelLabel)}</button><button type="submit" class="btn ${confirmClass}" data-confirm>${esc(confirmLabel)}</button></div></form>`;
+      document.body.appendChild(dialog);
+      dialog.querySelector('[data-cancel]').addEventListener('click', () => settle(false));
+      dialog.querySelector('[data-confirm]').addEventListener('click', event => {
+        event.preventDefault();
+        settle(true);
+      });
+      dialog.addEventListener('cancel', event => {
+        event.preventDefault();
+        settle(false);
+      });
+      dialog.addEventListener('close', () => {
+        if (!settled) resolve(false);
+        dialog.remove();
+      });
+      dialog.showModal();
+    });
+  }
+  const field = (label, input) => `<div class="form-group"><label>${esc(label)}</label>${input}</div>`;
   const write = (url, body, method = 'PATCH') => apiFetch('../backend/api/' + url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  ASDC.confirmAction = confirmAction;
   ASDC.openProfileForm = patient => form('Edit patient profile',
     field('Full name', `<input name="name" required maxlength="100" value="${esc(patient.name)}">`) +
     field('Contact number', `<input name="contact_number" maxlength="20" value="${esc(patient.contact === '—' ? '' : patient.contact)}">`),
@@ -62,7 +104,14 @@
         form('Reschedule appointment', field('Date', `<input type="date" name="scheduled_date" required value="${esc(appointment.scheduled_date)}">`) + field('Time', `<input type="time" name="scheduled_time" required value="${esc(appointment.scheduled_time.slice(0,5))}">`), values => write('appointments/actions.php', { ...body, ...values }));
         return;
       }
-      if (!window.confirm('Update this appointment to ' + action.replace('_', '-') + '?')) return;
+      const actionLabel = action.replace('_', '-');
+      const confirmed = await confirmAction({
+        title: 'Update Appointment',
+        message: 'Update this appointment to ' + actionLabel + '?',
+        confirmLabel: 'Update',
+        tone: ['reject', 'cancel', 'no_show'].includes(action) ? 'danger' : 'gold'
+      });
+      if (!confirmed) return;
       button.disabled = true;
       try { await write('appointments/actions.php', body, 'POST'); ASDC._toast.show('Appointment updated.'); }
       catch (error) { ASDC._toast.show(error.message, 'error'); }
