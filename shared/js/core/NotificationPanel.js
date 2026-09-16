@@ -117,6 +117,7 @@
       const escHtml = window.ASDC.HtmlHelpers.escapeHtml;
 
       this._items.forEach((n) => {
+        const summary = String(n.desc || '').split('\n')[0];
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.className = 'notif-item ' + (n.unread ? 'unread' : 'read');
@@ -133,7 +134,7 @@
           escHtml(n.title) +
           '</span>' +
           '<span class="notif-desc">' +
-          escHtml(n.desc || '') +
+          escHtml(summary) +
           '</span>' +
           '<span class="notif-time">' +
           escHtml(n.time) +
