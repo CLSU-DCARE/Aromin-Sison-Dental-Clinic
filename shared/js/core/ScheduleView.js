@@ -13,7 +13,7 @@
         date.setDate(date.getDate() + i);
         return date;
       });
-      const active = appointments.filter(a => a.status !== 'cancelled');
+      const active = appointments.filter(a => !['cancelled','rejected'].includes(a.status));
       const times = [...new Set(active.map(a => a.scheduled_time))].sort();
       const esc = ns.HtmlHelpers.escapeHtml;
       return {
@@ -30,7 +30,7 @@
     },
     queue(appointments) {
       const tags = { pending: 'amber', confirmed: 'green', completed: 'green', no_show: 'red' };
-      return appointments.filter(a => a.scheduled_date === iso(new Date()) && a.status !== 'cancelled').map(a => ({
+      return appointments.filter(a => a.scheduled_date === iso(new Date()) && !['cancelled','rejected'].includes(a.status)).map(a => ({
         initials: (a.patient_name || '').split(/\s+/).map(n => n[0]).slice(0, 2).join(''),
         name: a.patient_name, sub: a.service_type, time: timeLabel(a.scheduled_time),
         status: a.status.replace('_', ' '), tag: tags[a.status] || 'amber'

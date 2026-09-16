@@ -39,12 +39,10 @@ window.RecordTableManager = class RecordTableManager {
   apply () {
     const tbody = document.getElementById('recordsBody');
     if (!tbody) return;
-    const contractNames = new Set(this.state.patients.filter(p => p.contract).map(p => p.name));
-    const list = (this.filter ? this.state.records.filter(r => r.category === this.filter) : this.state.records)
-      .filter(r => contractNames.has(r.name));
+    const list = this.filter ? this.state.records.filter(r => r.category === this.filter) : this.state.records;
     this.recordsList = list;
     if (!list.length) {
-      tbody.innerHTML = '<tr><td colspan="7" class="empty-cell">Treatment records are unavailable.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="7" class="empty-cell">No treatment records match this filter.</td></tr>';
       this._syncSelectAll();
       return;
     }
@@ -56,13 +54,13 @@ window.RecordTableManager = class RecordTableManager {
     if (!tbody) return;
     tbody.innerHTML = records.map((r, i) =>
       `<tr>
-        <td class="check-cell"><input type="checkbox" class="row-check" data-index="${i}" ${this.selectedRecords.has(r) ? 'checked' : ''} aria-label="Select record: ${r.procedure}"></td>
+        <td class="check-cell"><input type="checkbox" class="row-check" data-index="${i}" ${this.selectedRecords.has(r) ? 'checked' : ''} aria-label="Select record: ${escapeHtml(r.procedure)}"></td>
         <td>${nameCell(r.initials, r.name)}</td>
-        <td>${r.procedure}</td>
-        <td>${r.date}</td>
-        <td>${r.dentist}</td>
+        <td>${escapeHtml(r.procedure)}</td>
+        <td>${escapeHtml(r.date)}</td>
+        <td>${escapeHtml(r.dentist || '')}</td>
         <td>${statusTag(r)}</td>
-        <td><div class="row-actions"><button class="icon-btn" data-action="view" data-index="${i}" aria-label="View record: ${r.procedure}">${eyeIcon}</button></div></td>
+        <td><div class="row-actions"><button class="icon-btn" data-action="view" data-index="${i}" aria-label="View record: ${escapeHtml(r.procedure)}">${eyeIcon}</button></div></td>
       </tr>`
     ).join('');
     this._syncSelectAll();
@@ -126,8 +124,8 @@ window.RecordTableManager = class RecordTableManager {
       const record = this.recordsList[Number(btn.dataset.index)];
       if (!record) return;
       this._openDetail('Record Details', [
-        ['Patient', record.name], ['Procedure', record.procedure], ['Date', record.date],
-        ['Dentist', record.dentist], ['Status', `<span class="tag tag-${record.tag}">${record.status}</span>`]
+        ['Patient', escapeHtml(record.name)], ['Procedure', escapeHtml(record.procedure)], ['Date', escapeHtml(record.date)],
+        ['Dentist', escapeHtml(record.dentist || '')], ['Diagnosis', escapeHtml(record.diagnosis || '')], ['Notes / protocol', escapeHtml(record.treatment_protocol || '')]
       ]);
     });
   }

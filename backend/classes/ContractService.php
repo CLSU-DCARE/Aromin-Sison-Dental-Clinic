@@ -79,6 +79,8 @@ class ContractService
         $estCompletion = date('Y-m-d', strtotime($start . " + {$months} months"));
 
         $pdo = Database::pdo();
+        $pdo->beginTransaction();
+        try {
         $stmt = $pdo->prepare(
             'INSERT INTO braces_contracts
                 (patient_id, dentist_id, total_amount, downpayment, monthly_payment,
@@ -91,7 +93,11 @@ class ContractService
             $start, $estCompletion, $data['status'] ?? 'active',
         ]);
 
-        return self::present(self::findRaw((int) $pdo->lastInsertId()) + self::patientNames((int) $data['patient_id']) + ['dentist_name' => self::dentistName($data['dentist_id'] ?: null)]);
+        $result = self::present(self::findRaw((int) $pdo->lastInsertId()) + self::patientNames((int) $data['patient_id']) + ['dentist_name' => self::dentistName($data['dentist_id'] ?: null)]);
+        PortalEvent::patient((int) $data['patient_id'], 'Billing contract created', 'Your braces contract is available.', 'contract');
+        $pdo->commit();
+        return $result;
+        } catch (\Throwable $e) { if ($pdo->inTransaction()) $pdo->rollBack(); throw $e; }
     }
 
     /**
@@ -101,8 +107,14 @@ class ContractService
      */
     public static function update(int $contractId, array $data): array
     {
-        $existing = self::findRaw($contractId);
+        $pdo = Database::pdo();
+        $pdo->beginTransaction();
+        try {
+        $locked = $pdo->prepare('SELECT * FROM braces_contracts WHERE contract_id=? FOR UPDATE');
+        $locked->execute([$contractId]);
+        $existing = $locked->fetch();
         if (!$existing) {
+            $pdo->rollBack();
             ApiResponse::error(404, 'not_found', 'Contract not found.');
         }
 
@@ -138,7 +150,11 @@ class ContractService
             $newBalance, $estCompletion, $status, $contractId,
         ]);
 
-        return self::present(self::findRaw($contractId) + self::patientNames((int) $existing['patient_id']) + ['dentist_name' => self::dentistName($dentistId)]);
+        $result = self::present(self::findRaw($contractId) + self::patientNames((int) $existing['patient_id']) + ['dentist_name' => self::dentistName($dentistId)]);
+        PortalEvent::patient((int) $existing['patient_id'], 'Billing contract updated', 'Your contract details or payment terms have changed.', 'contract');
+        $pdo->commit();
+        return $result;
+        } catch (\Throwable $e) { if ($pdo->inTransaction()) $pdo->rollBack(); throw $e; }
     }
 
     /**
@@ -147,11 +163,18 @@ class ContractService
      */
     public static function updateProgress(int $contractId, array $data, DataScope $scope): array
     {
-        $existing = self::findRaw($contractId);
+        $pdo = Database::pdo();
+        $pdo->beginTransaction();
+        try {
+        $locked = $pdo->prepare('SELECT * FROM braces_contracts WHERE contract_id=? FOR UPDATE');
+        $locked->execute([$contractId]);
+        $existing = $locked->fetch();
         if (!$existing) {
+            $pdo->rollBack();
             ApiResponse::error(404, 'not_found', 'Contract not found.');
         }
         if (!$scope->canUpdateContractProgress($existing)) {
+            $pdo->rollBack();
             ApiResponse::error(403, 'forbidden', 'You can only update progress for your own patients.');
         }
 
@@ -173,7 +196,11 @@ class ContractService
             $contractId,
         ]);
 
-        return self::present(self::findRaw($contractId) + self::patientNames((int) $existing['patient_id']) + ['dentist_name' => self::dentistName($existing['dentist_id'])]);
+        $result = self::present(self::findRaw($contractId) + self::patientNames((int) $existing['patient_id']) + ['dentist_name' => self::dentistName($existing['dentist_id'])]);
+        PortalEvent::patient((int) $existing['patient_id'], 'Treatment progress updated', $stage . ' (' . $pct . '%)', 'info');
+        $pdo->commit();
+        return $result;
+        } catch (\Throwable $e) { if ($pdo->inTransaction()) $pdo->rollBack(); throw $e; }
     }
 
     /**
@@ -264,6 +291,7 @@ class ContractService
             'paid'      => max(0, (float) $row['total_amount'] - (float) $row['balance_amount']),
             'balance'   => (float) $row['balance_amount'],
             'status'    => $statusLabel,
+            'status_code' => $row['status'],
             'tag'       => $tag,
             'progress'  => [
                 'stage' => $row['current_stage'] ?? self::STAGE_ORDER[0],

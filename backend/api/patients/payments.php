@@ -30,16 +30,18 @@ if ($method === 'GET') {
 
 $amount = filter_var($_POST['amount'] ?? null, FILTER_VALIDATE_FLOAT);
 $fields = [];
-if ($amount === false || $amount <= 0) {
+if ($amount === false || $amount <= 0 || $amount > 99999999.99) {
     $fields['amount'] = 'Enter the amount you paid.';
 }
 $method_ = is_string($_POST['method'] ?? null) ? trim($_POST['method']) : '';
-if ($method_ === '') {
+if (!in_array(strtolower($method_), ['cash','card','gcash','bank transfer','over the counter','online (qr)'], true)) {
     $fields['method'] = 'Select a payment method.';
 }
 if ($fields) {
     \ASDC\ApiResponse::error(422, 'validation_failed', 'Please correct the highlighted fields.', $fields);
 }
+if (!is_string($_POST['note'] ?? '') || mb_strlen($_POST['note'] ?? '') > 255) \ASDC\ApiResponse::error(422, 'validation_failed', 'Payment note must be at most 255 characters.');
+if (!\ASDC\ContractService::activeContractForPatient($patientId)) \ASDC\ApiResponse::error(422, 'no_contract', 'No active contract is available for this payment.');
 
 $receiptPath = \ASDC\ReceiptUploader::store($_FILES['receipt'] ?? null, $patientId);
 

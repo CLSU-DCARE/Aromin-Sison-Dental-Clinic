@@ -72,6 +72,7 @@ window.PatientAppointmentBooking = class PatientAppointmentBooking {
   _initConfirm () {
     if (!this.confirmBtn) return;
     this.confirmBtn.addEventListener('click', async () => {
+      if (this._submitting) return;
       const date = document.getElementById('bookDate');
       const slot = document.querySelector('.slot.selected');
 
@@ -90,6 +91,8 @@ window.PatientAppointmentBooking = class PatientAppointmentBooking {
 
       this._showNote('', '', true);
       this.confirmBtn.classList.add('is-loading');
+      this._submitting = true;
+      this.confirmBtn.disabled = true;
 
       try {
         const service  = document.getElementById('bookService').value;
@@ -125,7 +128,9 @@ window.PatientAppointmentBooking = class PatientAppointmentBooking {
       } catch (error) {
         this._showNote(error.message, 'err');
       } finally {
+        this._submitting = false;
         this.confirmBtn.classList.remove('is-loading');
+        this._updateConfirmState();
       }
     });
   }

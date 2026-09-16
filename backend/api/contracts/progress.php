@@ -25,6 +25,11 @@ $pct = filter_var($body['progress_pct'] ?? null, FILTER_VALIDATE_INT, ['options'
 if ($pct === false) {
     \ASDC\ApiResponse::error(422, 'validation_failed', 'Please correct the highlighted fields.', ['progress_pct' => 'Enter a percentage between 0 and 100.']);
 }
+if (!in_array($body['current_stage'] ?? '', \ASDC\ContractService::STAGE_ORDER, true)
+    || !is_string($body['progress_note'] ?? '') || mb_strlen($body['progress_note'] ?? '') > 10000
+    || !is_string($body['next_note'] ?? '') || mb_strlen($body['next_note'] ?? '') > 255) {
+    \ASDC\ApiResponse::error(422, 'validation_failed', 'Choose a valid stage and keep the next-visit note under 256 characters.');
+}
 
 $contract = \ASDC\ContractService::updateProgress($contractId, [
     'current_stage'  => is_string($body['current_stage'] ?? null) ? $body['current_stage'] : '',

@@ -10,9 +10,10 @@
  */
 /* global showToast, escapeHtml, apiFetch */
 window.PatientPaymentSubmission = class PatientPaymentSubmission {
-  constructor ({ state, paymentMethod = 'Online (QR)' } = {}) {
+  constructor ({ state, paymentMethod = 'cash', onSubmitted = null } = {}) {
     this.state          = state;
     this.paymentMethod = paymentMethod;
+    this.onSubmitted = onSubmitted;
     this._receiptData  = null; // base64 preview thumbnail
     this._receiptFile   = null; // original file for upload
   }
@@ -33,10 +34,14 @@ window.PatientPaymentSubmission = class PatientPaymentSubmission {
       if (!Array.isArray(data.submissions)) throw new Error('not_implemented');
       submissions = data.submissions;
     } catch (error) {
-      submissions = [];
       showToast('Unable to load payment submissions. Please try again.', 'error');
+      return;
     }
 
+    this.renderSubmissions(submissions);
+  }
+
+  renderSubmissions(submissions) {
     const list  = document.getElementById('paySubs');
     const empty = document.getElementById('paySubsEmpty');
     const tag   = document.getElementById('payPendingTag');
@@ -130,7 +135,7 @@ window.PatientPaymentSubmission = class PatientPaymentSubmission {
         if (!this._receiptFile) throw new Error('Please attach your receipt again.');
         const form = new FormData();
         form.append('amount', amount.trim());
-        form.append('method', this.paymentMethod);
+        form.append('method', document.getElementById('payMethod')?.value || this.paymentMethod);
         form.append('note', (note || '').trim());
         form.append('receipt', this._receiptFile);
         await apiFetch('../backend/api/patients/payments.php', { method: 'POST', body: form });
@@ -156,7 +161,8 @@ window.PatientPaymentSubmission = class PatientPaymentSubmission {
       submitBtn.classList.remove('loading');
       submitBtn.disabled = false;
 
-      await this.render();
+      if (this.onSubmitted) await this.onSubmitted();
+      else await this.render();
       showToast('Payment submitted — awaiting confirmation.');
     });
   }

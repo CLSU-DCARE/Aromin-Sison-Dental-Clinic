@@ -57,7 +57,7 @@ window.AppointmentActions = class AppointmentActions {
       }
 
       const action = button.dataset.requestAction;
-      if (action === 'cancel' && !window.confirm(`Reject the booking request from ${request.patient_name}?`)) return;
+      if (action === 'reject' && !window.confirm(`Reject the booking request from ${request.patient_name}?`)) return;
 
       const rowButtons = button.closest('tr').querySelectorAll('button');
       rowButtons.forEach(b => { b.disabled = true; });
@@ -88,20 +88,25 @@ window.AppointmentActions = class AppointmentActions {
 
     const action = button.dataset.appointmentAction;
 
+    if (action === 'approve' && window.ASDC.approveAppointment) {
+      window.ASDC.approveAppointment(appointment).catch(error => showToast(error.message, 'error'));
+      return;
+    }
+
     if (action === 'reschedule') {
       this._openReschedule('appointment', appointmentId, appointment.patient_name, appointment.service_type, appointment.scheduled_date, String(appointment.scheduled_time).slice(0, 5));
       return;
     }
 
-    if (!window.confirm(`Cancel the appointment for ${appointment.patient_name}?`)) return;
+    if (!window.confirm(`${action.charAt(0).toUpperCase() + action.slice(1)} the appointment for ${appointment.patient_name}?`)) return;
 
     const controls = button.closest('.appointment-card-actions, .appointment-request-actions');
     const buttons  = controls ? controls.querySelectorAll('button') : [button];
     buttons.forEach(b => { b.disabled = true; });
     button.classList.add('is-loading');
 
-    this.run('cancel', 'appointment', appointmentId)
-      .then(() => showToast('Appointment cancelled', 'error'))
+    this.run(action, 'appointment', appointmentId)
+      .then(() => showToast('Appointment updated', 'success'))
       .catch(error => {
         showToast(error.message, 'error');
         buttons.forEach(b => { b.disabled = false; });

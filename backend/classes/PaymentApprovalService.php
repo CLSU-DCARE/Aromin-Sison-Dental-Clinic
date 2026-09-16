@@ -43,6 +43,8 @@ class PaymentApprovalService
         $method = self::METHOD_MAP[strtolower(trim($data['method'] ?? ''))] ?? 'other';
 
         $pdo = Database::pdo();
+        $pdo->beginTransaction();
+        try {
         $stmt = $pdo->prepare(
             'INSERT INTO contract_payments
                 (contract_id, amount_paid, payment_date, payment_method, status, receipt_path, note, submitted_by)
@@ -53,7 +55,11 @@ class PaymentApprovalService
             $receiptPath, $data['note'] !== '' ? $data['note'] : null, $data['user_id'],
         ]);
 
-        return self::present(self::findRaw((int) $pdo->lastInsertId()) + self::patientInfo($patientId));
+        $result = self::present(self::findRaw((int) $pdo->lastInsertId()) + self::patientInfo($patientId));
+        PortalEvent::patient($patientId, 'Payment submitted', 'A payment receipt is awaiting review.', 'pay');
+        $pdo->commit();
+        return $result;
+        } catch (\Throwable $e) { if ($pdo->inTransaction()) $pdo->rollBack(); throw $e; }
     }
 
     private static function patientInfo(int $patientId): array
@@ -111,45 +117,43 @@ class PaymentApprovalService
 
     public static function approve(int $paymentId, int $reviewerId): array
     {
-        $row = self::findRaw($paymentId);
-        if (!$row) ApiResponse::error(404, 'not_found', 'Payment submission not found.');
-        if ($row['status'] !== 'pending') ApiResponse::error(409, 'already_reviewed', 'This submission was already reviewed.');
-
-        $orNumber = 'OR-' . date('Ymd') . '-' . str_pad((string) $paymentId, 3, '0', STR_PAD_LEFT);
-
-        $pdo = Database::pdo();
-        $stmt = $pdo->prepare(
-            "UPDATE contract_payments
-                SET status = 'approved', reviewed_by = ?, reviewed_at = NOW(), or_number = ?
-              WHERE payment_id = ?"
-        );
-        $stmt->execute([$reviewerId, $orNumber, $paymentId]);
-
-        ContractService::applyPayment((int) $row['contract_id'], (float) $row['amount_paid']);
-
-        self::notifyPatient((int) $row['contract_id'], 'payment_received', [
-            'amount' => '₱' . number_format((float) $row['amount_paid'], 2),
-        ]);
-
-        return self::present(self::findRaw($paymentId));
+        return self::review($paymentId, $reviewerId, true);
     }
 
     public static function reject(int $paymentId, int $reviewerId): array
     {
-        $row = self::findRaw($paymentId);
-        if (!$row) ApiResponse::error(404, 'not_found', 'Payment submission not found.');
-        if ($row['status'] !== 'pending') ApiResponse::error(409, 'already_reviewed', 'This submission was already reviewed.');
+        return self::review($paymentId, $reviewerId, false);
+    }
 
+    private static function review(int $paymentId, int $reviewerId, bool $approve): array
+    {
         $pdo = Database::pdo();
-        $stmt = $pdo->prepare(
-            "UPDATE contract_payments SET status = 'rejected', reviewed_by = ?, reviewed_at = NOW() WHERE payment_id = ?"
-        );
-        $stmt->execute([$reviewerId, $paymentId]);
-
-        self::notifyPatient((int) $row['contract_id'], 'payment_rejected', [
+        $pdo->beginTransaction();
+        try {
+            $stmt = $pdo->prepare('SELECT * FROM contract_payments WHERE payment_id = ? FOR UPDATE');
+            $stmt->execute([$paymentId]);
+            $row = $stmt->fetch();
+            if (!$row || $row['status'] !== 'pending') {
+                $pdo->rollBack();
+                if (!$row) ApiResponse::error(404, 'not_found', 'Payment submission not found.');
+                ApiResponse::error(409, 'already_reviewed', 'This submission was already reviewed.');
+            }
+            $status = $approve ? 'approved' : 'rejected';
+            $orNumber = $approve ? 'OR-' . date('Ymd') . '-' . str_pad((string) $paymentId, 3, '0', STR_PAD_LEFT) : null;
+            $stmt = $pdo->prepare('UPDATE contract_payments SET status = ?, reviewed_by = ?, reviewed_at = NOW(), or_number = ? WHERE payment_id = ?');
+            $stmt->execute([$status, $reviewerId, $orNumber, $paymentId]);
+            if ($approve) ContractService::applyPayment((int) $row['contract_id'], (float) $row['amount_paid']);
+            $contract = ContractService::findRaw((int) $row['contract_id']);
+            PortalEvent::patient((int) $contract['patient_id'], 'Payment ' . $status, 'Payment review completed. View your billing details for the receipt and balance.', 'pay');
+            $pdo->commit();
+        } catch (\Throwable $error) {
+            if ($pdo->inTransaction()) $pdo->rollBack();
+            throw $error;
+        }
+        // Delivery runs after the status and balance have committed together.
+        self::notifyPatient((int) $row['contract_id'], $approve ? 'payment_received' : 'payment_rejected', [
             'amount' => '₱' . number_format((float) $row['amount_paid'], 2),
         ]);
-
         return self::present(self::findRaw($paymentId));
     }
 
@@ -193,7 +197,7 @@ class PaymentApprovalService
             'amount'     => '₱' . number_format((float) $row['amount_paid'], 2),
             'method'     => ucwords(str_replace('_', ' ', $row['payment_method'])),
             'note'       => $row['note'] ?? '',
-            'receipt_url' => $row['receipt_path'] ? '../backend/' . $row['receipt_path'] : null,
+            'receipt_url' => $row['receipt_path'] ? '../backend/api/payments/receipt.php?payment_id=' . (int) $row['payment_id'] : null,
             'status'     => $row['status'],
             'submittedAt' => self::fmtDateTime($row['created_at']),
             'reviewedAt'  => $row['reviewed_at'] ? self::fmtDateTime($row['reviewed_at']) : null,

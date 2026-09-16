@@ -8,6 +8,8 @@ require_once __DIR__ . '/../../config/auth.php';
 require_once __DIR__ . '/../../config/headers.php';
 
 require_role('receptionist', 'dentist', 'patient');
+\ASDC\ApiResponse::method('GET');
+header('Cache-Control: no-store');
 
 $patients = \ASDC\PatientService::listAll();
 echo json_encode(['success' => true, 'patients' => $patients]);

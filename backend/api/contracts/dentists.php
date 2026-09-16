@@ -9,7 +9,7 @@ require_once __DIR__ . '/../../config/headers.php';
 require_once __DIR__ . '/../../config/auth.php';
 
 \ASDC\ApiResponse::method('GET');
-require_role('receptionist');
+require_role('receptionist', 'dentist', 'patient');
 
 try {
     $stmt = \ASDC\Database::pdo()->query(

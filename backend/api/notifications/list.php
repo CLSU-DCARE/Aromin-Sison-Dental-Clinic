@@ -8,6 +8,7 @@ require_once __DIR__ . '/../../config/auth.php';
 require_once __DIR__ . '/../../config/headers.php';
 
 require_role('receptionist', 'dentist');
+\ASDC\ApiResponse::method('GET');
 
 $filters = [
     'patient_id' => $_GET['patient_id'] ?? null,

@@ -76,6 +76,8 @@ class DataScope
      */
     public function appointmentFilter(): array
     {
+        if ($this->isPatient()) return ['a.patient_id IN (SELECT patient_id FROM patients WHERE user_id=?)', [$this->userId]];
+        if (!$this->hasFullAccess() && !$this->isDentist()) return ['1=0', []];
         if (!$this->isDentist() || !$this->userId) {
             return ['1=1', []];
         }
@@ -90,6 +92,7 @@ class DataScope
      */
     public function requestFilter(): array
     {
+        if (!$this->hasFullAccess() && !$this->isDentist()) return ['1=0', []];
         if (!$this->isDentist() || !$this->userId) {
             return ['1=1', []];
         }
@@ -111,8 +114,8 @@ class DataScope
             return ['1=1', []];
         }
         return [
-            'p.patient_id IN (SELECT patient_id FROM appointments WHERE dentist_id = ?)',
-            [$this->userId],
+            '(p.patient_id IN (SELECT patient_id FROM appointments WHERE dentist_id = ?) OR p.patient_id IN (SELECT patient_id FROM braces_contracts WHERE dentist_id = ?))',
+            [$this->userId, $this->userId],
         ];
     }
 
@@ -125,6 +128,8 @@ class DataScope
      */
     public function contractFilter(): array
     {
+        if ($this->isPatient()) return ['c.patient_id IN (SELECT patient_id FROM patients WHERE user_id=?)', [$this->userId]];
+        if (!$this->hasFullAccess() && !$this->isDentist()) return ['1=0', []];
         if (!$this->isDentist() || !$this->userId) {
             return ['1=1', []];
         }
@@ -159,7 +164,9 @@ class DataScope
             return (int) ($appointment['dentist_id'] ?? 0) === $this->userId;
         }
         if ($this->isPatient()) {
-            return (int) ($appointment['patient_id'] ?? 0) === $this->userId;
+            $stmt = Database::pdo()->prepare('SELECT 1 FROM patients WHERE patient_id=? AND user_id=?');
+            $stmt->execute([(int) ($appointment['patient_id'] ?? 0), $this->userId]);
+            return (bool) $stmt->fetchColumn();
         }
         return false;
     }

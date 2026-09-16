@@ -36,7 +36,7 @@ window.InventoryTableManager = class InventoryTableManager {
     else if (this.filter === 'Equipment')   list = list.filter(i => i.category === 'Equipment');
     this.inventoryList = list;
     if (!list.length) {
-      tbody.innerHTML = '<tr><td colspan="5" class="empty-cell">Inventory is unavailable.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="5" class="empty-cell">No inventory items match this filter.</td></tr>';
       return;
     }
     this._renderTable(list);
@@ -48,8 +48,8 @@ window.InventoryTableManager = class InventoryTableManager {
     tbody.innerHTML = items.map(i =>
       `<tr>
         <td>${nameCell(i.initials, i.item)}</td>
-        <td>${i.category}</td>
-        <td>${i.stock}</td>
+        <td>${escapeHtml(i.category || '')}</td>
+        <td>${escapeHtml(i.stock)}</td>
         <td><span class="stock-bar"><span class="stock-fill" style="width:${i.width}%;background:${i.fill};"></span></span></td>
         <td>${statusTag(i)}</td>
       </tr>`

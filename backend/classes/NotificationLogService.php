@@ -30,6 +30,9 @@ class NotificationLogService
 
         $where  = [];
         $params = [];
+        [$scopeWhere, $scopeParams] = DataScope::current()->patientFilter();
+        $where[] = $scopeWhere;
+        $params = $scopeParams;
 
         if ($patientId) {
             $where[]  = 'nl.patient_id = ?';
@@ -72,7 +75,7 @@ class NotificationLogService
         $stmt->execute($params);
         $logs = $stmt->fetchAll();
 
-        $countSql = "SELECT COUNT(*) FROM notification_logs nl $whereClause";
+        $countSql = "SELECT COUNT(*) FROM notification_logs nl JOIN patients p ON p.patient_id=nl.patient_id $whereClause";
         $countStmt = $pdo->prepare($countSql);
         $countStmt->execute($params);
         $total = (int) $countStmt->fetchColumn();

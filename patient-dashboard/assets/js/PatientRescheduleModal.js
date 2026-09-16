@@ -15,7 +15,7 @@ window.PatientRescheduleModal = class PatientRescheduleModal {
     this.endpoint      = appointmentsEndpoint;
     this.onRescheduled = onRescheduled;
     this.modal         = new Modal('reschedModal');
-    this._selectedIndex = null;
+    this._selectedAppointmentId = null;
   }
 
   init () {
@@ -36,9 +36,14 @@ window.PatientRescheduleModal = class PatientRescheduleModal {
     }
 
     saveBtn?.addEventListener('click', async () => {
-      if (this._selectedIndex === null) return;
-      const appointment = this.state.schedule[this._selectedIndex];
-      if (!appointment) return;
+      if (this._selectedAppointmentId === null) return;
+      const appointment = this.state.schedule.find(item => String(item.appointment_id) === String(this._selectedAppointmentId));
+      if (!appointment) {
+        noteEl.textContent = 'This appointment changed or is no longer available. Close this dialog and check your schedule.';
+        noteEl.classList.add('err');
+        noteEl.hidden = false;
+        return;
+      }
 
       if (!dateEl.value) {
         noteEl.textContent = 'Please choose a new date.';
@@ -81,7 +86,7 @@ window.PatientRescheduleModal = class PatientRescheduleModal {
       const appointment = this.state.schedule[index];
       if (!appointment) return;
 
-      this._selectedIndex = index;
+      this._selectedAppointmentId = appointment.appointment_id;
       dateEl.value = '';
       timeEl.value = appointment.time;
       noteEl.hidden = true;

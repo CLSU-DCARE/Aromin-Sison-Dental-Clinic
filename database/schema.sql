@@ -61,7 +61,7 @@ CREATE TABLE appointments (
     service_type VARCHAR(150) NOT NULL,     -- e.g. 'Cleaning', 'Braces Adjustment'
     scheduled_date DATE NOT NULL,
     scheduled_time TIME NOT NULL,
-    status ENUM('pending','confirmed','completed','cancelled','no_show') DEFAULT 'pending',
+    status ENUM('pending','confirmed','completed','cancelled','no_show','rejected') NOT NULL DEFAULT 'pending',
     notes TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_appointment_week (scheduled_date, scheduled_time, status),
@@ -83,7 +83,7 @@ CREATE TABLE appointment_requests (
     preferred_dentist_id INT NULL,
     requested_date DATE NOT NULL,
     requested_time TIME NOT NULL,
-    status ENUM('pending','approved','rescheduled','cancelled') NOT NULL DEFAULT 'pending',
+    status ENUM('pending','approved','rescheduled','cancelled','rejected') NOT NULL DEFAULT 'pending',
     notes TEXT NULL,
     appointment_id INT NULL,
     reviewed_by INT NULL,
@@ -117,12 +117,21 @@ CREATE TABLE treatment_records (
 CREATE TABLE braces_contracts (
     contract_id INT AUTO_INCREMENT PRIMARY KEY,
     patient_id INT NOT NULL,
+    dentist_id INT NULL,
     total_amount DECIMAL(10,2) NOT NULL,
+    downpayment DECIMAL(10,2) NOT NULL DEFAULT 0,
+    monthly_payment DECIMAL(10,2) NOT NULL DEFAULT 0,
     balance_amount DECIMAL(10,2) NOT NULL,
     duration_months INT NOT NULL,
     start_date DATE NOT NULL,
     estimated_completion_date DATE,
     status ENUM('active','completed','defaulted','cancelled') DEFAULT 'active',
+    current_stage VARCHAR(100) NOT NULL DEFAULT 'Consultation & Records',
+    progress_pct TINYINT UNSIGNED NOT NULL DEFAULT 0,
+    progress_note TEXT NULL,
+    next_note VARCHAR(255) NULL,
+    progress_updated_at TIMESTAMP NULL,
+    FOREIGN KEY (dentist_id) REFERENCES users(user_id) ON DELETE SET NULL,
     FOREIGN KEY (patient_id) REFERENCES patients(patient_id) ON DELETE CASCADE
 );
 
@@ -133,11 +142,34 @@ CREATE TABLE contract_payments (
     amount_paid DECIMAL(10,2) NOT NULL,
     payment_date DATE NOT NULL,
     payment_method ENUM('cash','card','gcash','bank_transfer','other') DEFAULT 'cash',
+    status ENUM('pending','approved','rejected') NOT NULL DEFAULT 'approved',
+    receipt_path VARCHAR(255) NULL,
+    note VARCHAR(255) NULL,
+    submitted_by INT NULL,
+    reviewed_by INT NULL,
+    reviewed_at TIMESTAMP NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     or_number VARCHAR(50),                  -- official receipt number
+    FOREIGN KEY (submitted_by) REFERENCES users(user_id) ON DELETE SET NULL,
+    FOREIGN KEY (reviewed_by) REFERENCES users(user_id) ON DELETE SET NULL,
     FOREIGN KEY (contract_id) REFERENCES braces_contracts(contract_id) ON DELETE CASCADE
 );
 
 -- ---------- PROMOTIONS ----------
+CREATE TABLE user_notifications (
+    notification_id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    patient_id INT NULL,
+    title VARCHAR(160) NOT NULL,
+    message TEXT NOT NULL,
+    type VARCHAR(30) NOT NULL DEFAULT 'info',
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    read_at DATETIME NULL,
+    INDEX idx_notification_user (user_id, notification_id),
+    CONSTRAINT fk_notification_user FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+    CONSTRAINT fk_inbox_patient FOREIGN KEY (patient_id) REFERENCES patients(patient_id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 CREATE TABLE promotions (
     promo_id INT AUTO_INCREMENT PRIMARY KEY,
     title VARCHAR(150) NOT NULL,
@@ -206,7 +238,15 @@ INSERT INTO notification_templates (template_key, name, channel, subject, body) 
 
 ('payment_received', 'Payment Received Confirmation', 'both',
  'Payment Received — Aromin-Sison Dental Clinic',
- 'Hi {patient_name}, we have received your payment of {amount}. Your remaining balance is {balance}. Thank you! — Aromin-Sison Dental Clinic');
+ 'Hi {patient_name}, we have received your payment of {amount}. Your remaining balance is {balance}. Thank you! — Aromin-Sison Dental Clinic'),
+
+('payment_rejected', 'Payment Rejected', 'both',
+ 'Payment Update - Aromin-Sison Dental Clinic',
+ 'Hi {patient_name}, your submitted payment of {amount} could not be approved. Your current balance is {balance}. Please contact the clinic or submit a corrected receipt. - Aromin-Sison Dental Clinic'),
+
+('braces_progress_updated', 'Braces Progress Updated', 'both',
+ 'Braces Progress Update - Aromin-Sison Dental Clinic',
+ 'Hi {patient_name}, your braces progress has been updated. Current stage: {stage}. Progress: {progress}%. Next: {next}. - Aromin-Sison Dental Clinic');
 
 -- Logs every notification sent (email or SMS) for audit and history.
 CREATE TABLE notification_logs (

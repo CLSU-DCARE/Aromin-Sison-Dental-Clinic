@@ -13,6 +13,7 @@
 namespace ASDC;
 
 use PDO;
+use DateTime;
 
 class PatientAppointmentService
 {
@@ -39,7 +40,7 @@ class PatientAppointmentService
         $history = self::select(
             $pdo,
             $patientId,
-            "a.status IN ('completed', 'cancelled', 'no_show')
+            "a.status IN ('completed', 'cancelled', 'no_show', 'rejected')
              OR a.scheduled_date < CURRENT_DATE()
              OR (a.scheduled_date = CURRENT_DATE() AND a.scheduled_time < CURRENT_TIME())",
             'a.scheduled_date DESC, a.scheduled_time DESC'
@@ -89,6 +90,7 @@ class PatientAppointmentService
         $pdo  = Database::pdo();
         $lock = AppointmentSlotManager::lock($pdo, $date, $time);
 
+        try {
         $pdo->beginTransaction();
 
         if (AppointmentSlotManager::isTaken($pdo, $date, $time)) {
@@ -121,7 +123,8 @@ class PatientAppointmentService
             if ($row) {
                 $dentistId = (int) $row['user_id'];
             } else {
-                $notes = 'Preferred dentist: ' . $preferred;
+                $pdo->rollBack();
+                ApiResponse::error(422, 'validation_failed', 'Choose an active dentist or no preference.');
             }
         }
 
@@ -146,8 +149,10 @@ class PatientAppointmentService
         $insert->execute([$patientId, $dentistId, $service, $date, $time, $notes]);
         $appointmentId = (int) $pdo->lastInsertId();
 
+        PortalEvent::appointment($appointmentId, 'requested');
         $pdo->commit();
-        AppointmentSlotManager::unlock($pdo, $lock);
+        } catch (\Throwable $e) { if ($pdo->inTransaction()) $pdo->rollBack(); throw $e; }
+        finally { AppointmentSlotManager::unlock($pdo, $lock); }
 
         return ['appointment_id' => $appointmentId, 'status' => 'pending'];
     }
@@ -177,11 +182,13 @@ class PatientAppointmentService
         $pdo  = Database::pdo();
         $lock = AppointmentSlotManager::lock($pdo, $date, $time);
 
+        try {
         $pdo->beginTransaction();
 
         $appt = $pdo->prepare(
             "SELECT appointment_id, dentist_id FROM appointments
              WHERE appointment_id=? AND patient_id=? AND status IN ('pending','confirmed')
+             AND TIMESTAMP(scheduled_date,scheduled_time) > NOW()
              LIMIT 1 FOR UPDATE"
         );
         $appt->execute([$appointmentId, $patientId]);
@@ -218,8 +225,10 @@ class PatientAppointmentService
              WHERE appointment_id=? AND patient_id=?"
         )->execute([$date, $time, $appointmentId, $patientId]);
 
+        PortalEvent::appointment($appointmentId, 'reschedule requested');
         $pdo->commit();
-        AppointmentSlotManager::unlock($pdo, $lock);
+        } catch (\Throwable $e) { if ($pdo->inTransaction()) $pdo->rollBack(); throw $e; }
+        finally { AppointmentSlotManager::unlock($pdo, $lock); }
 
         return ['appointment_id' => $appointmentId, 'scheduled_date' => $date, 'scheduled_time' => $time];
     }
@@ -231,6 +240,22 @@ class PatientAppointmentService
     private static function trimmed(array $input, string $key): string
     {
         return isset($input[$key]) && is_string($input[$key]) ? trim($input[$key]) : '';
+    }
+
+    public static function cancel(int $patientId, array $input): array
+    {
+        $id = InputValidator::positiveId($input['appointment_id'] ?? null);
+        if (!$id) ApiResponse::error(422, 'validation_failed', 'Choose an appointment.');
+        $pdo = Database::pdo();
+        $pdo->beginTransaction();
+        try {
+            $stmt = $pdo->prepare("UPDATE appointments SET status='cancelled' WHERE appointment_id=? AND patient_id=? AND status IN ('pending','confirmed') AND TIMESTAMP(scheduled_date,scheduled_time)>NOW()");
+            $stmt->execute([$id, $patientId]);
+            if (!$stmt->rowCount()) { $pdo->rollBack(); ApiResponse::error(404, 'not_found', 'Appointment not found or no longer cancellable.'); }
+            PortalEvent::appointment($id, 'cancelled');
+            $pdo->commit();
+            return ['appointment_id' => $id, 'status' => 'cancelled'];
+        } catch (\Throwable $e) { if ($pdo->inTransaction()) $pdo->rollBack(); throw $e; }
     }
 
     private static function statusLabel(string $status): string
@@ -265,6 +290,8 @@ class PatientAppointmentService
             'dentist' => $dentist,
             'meta' => $label . ' · ' . $dentist,
             'status' => $status,
+            'status_code' => $row['status'],
+            'notes' => $row['notes'] ?? '',
             'tag'    => self::statusTag($row['status']),
         ];
     }
@@ -273,7 +300,7 @@ class PatientAppointmentService
     {
         $stmt = $pdo->prepare("
             SELECT a.appointment_id, a.service_type, a.scheduled_date,
-                   a.scheduled_time, a.status, d.full_name AS dentist_name
+                   a.scheduled_time, a.status, a.notes, d.full_name AS dentist_name
             FROM appointments a
             LEFT JOIN users d ON d.user_id = a.dentist_id
             WHERE a.patient_id = ? AND ($where)

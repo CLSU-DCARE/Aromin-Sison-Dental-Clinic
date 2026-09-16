@@ -19,7 +19,6 @@
       this._loadTemplates();
       this._wireFilter();
       this._initSendModal();
-      this.renderLog();
     }
 
     async _loadTemplates() {
@@ -42,7 +41,8 @@
       });
     }
 
-    async renderLog() {
+    async renderLog(snapshot = null) {
+      snapshot = snapshot || window.staffSnapshot;
       const tbody = document.getElementById('notifLogBody');
       const empty = document.getElementById('notifLogEmpty');
       if (!tbody) return;
@@ -54,12 +54,11 @@
         if (this._filter === 'SMS') params.set('channel', 'sms');
         if (this._filter === 'Failed') params.set('status', 'failed');
         params.set('limit', '50');
-        const data = await apiFetch(API_BASE + '/list.php?' + params.toString());
+        const data = snapshot ? { success: true, logs: snapshot.logs.filter(log => this._filter === 'All' || (this._filter === 'Failed' ? log.status === 'failed' : log.channel === this._filter.toLowerCase())) } : await apiFetch(API_BASE + '/list.php?' + params.toString());
         if (data.success) logs = data.logs || [];
         else throw new Error('list failed');
       } catch (e) {
-        tbody.innerHTML = '';
-        if (empty) { empty.hidden = false; empty.textContent = 'Unable to load notifications. Please try again.'; }
+        if (empty) { empty.hidden = false; empty.textContent = 'Unable to refresh notifications. Showing the last update.'; }
         return;
       }
 

@@ -105,6 +105,7 @@
   window.initNotifications = (opts) => {
     const panel = new ASDC.NotificationPanel();
     panel.init(opts);
+    return panel;
   };
 
   // Filter chips (backward-compatible globals)

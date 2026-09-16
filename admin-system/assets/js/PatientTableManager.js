@@ -31,12 +31,12 @@ window.PatientTableManager = class PatientTableManager {
     this._bindDetailModal();
     this._bindFormModal();
     this._bindDeleteModal();
-    this.load();
   }
 
-  async load () {
+  async load (snapshot = null) {
+    if (!snapshot && window.staffLiveSync) return window.staffLiveSync.refetch();
     try {
-      const [patients, contracts] = await Promise.all([
+      const [patients, contracts] = snapshot ? [snapshot, snapshot] : await Promise.all([
         apiFetch('../backend/api/patients/list.php'), apiFetch('../backend/api/contracts/contracts.php')
       ]);
       if (!Array.isArray(patients.patients) || !Array.isArray(contracts.contracts)) throw new Error('Invalid patient response.');
@@ -45,18 +45,16 @@ window.PatientTableManager = class PatientTableManager {
         const name = p.first_name + ' ' + p.last_name;
         return {
           id: '#P-' + p.patient_id, pid: p.patient_id, name, initials: this._initialsOf(name),
-          contact: p.contact_number || '—', lastVisit: '—',
+          contact: p.contact_number || '—', email: p.email || '', lastVisit: p.last_visit || '—',
           contract: contract ? contract.id : null,
           balance: contract ? ContractFormat.peso(contract.balance) : '—',
-          status: contract ? contract.status : '', tag: contract ? contract.tag : ''
+          status: contract ? contract.status : 'No contract', tag: contract ? contract.tag : 'green'
         };
       });
       this.apply();
     } catch (error) {
-      this.state.patients = [];
-      this.patientsList = [];
       const tbody = document.getElementById('patientsBody');
-      if (tbody) tbody.innerHTML = '<tr><td colspan="6" class="empty-cell">Unable to load patients. Please try again.</td></tr>';
+      if (tbody && !this.state.patients.length) tbody.innerHTML = '<tr><td colspan="6" class="empty-cell">Unable to load patients. Please try again.</td></tr>';
     }
   }
 
@@ -140,7 +138,7 @@ window.PatientTableManager = class PatientTableManager {
       return;
     }
     const matches = this.state.patients.filter(p =>
-      p.contract && [p.name, p.id, p.contact].some(v => String(v).toLowerCase().includes(q))
+      [p.name, p.id, p.contact].some(v => String(v).toLowerCase().includes(q))
     );
     if (!matches.length) {
       container.innerHTML = `<p class="search-empty">No patients match "${escapeHtml(query.trim())}".</p>`;
@@ -186,7 +184,7 @@ window.PatientTableManager = class PatientTableManager {
       const okContract = !!p.contract;
       const okStatus   = this.status === 'All' || p.status === this.status;
       const okQuery    = !q || [p.name, p.id, p.contact].some(v => String(v).toLowerCase().includes(q));
-      return okContract && okStatus && okQuery;
+      return okStatus && okQuery;
     });
     this.patientsList = list;
     if (!list.length) {
@@ -209,7 +207,7 @@ window.PatientTableManager = class PatientTableManager {
         <td>${statusTag(p)}</td>
         <td><div class="row-actions">
           <button class="icon-btn" data-action="view" data-id="${p.id}" aria-label="View ${escapeHtml(p.name)}">${eyeIcon}</button>
-          <button class="icon-btn" data-action="edit" data-id="${p.id}" aria-label="Edit ${escapeHtml(p.name)}" disabled title="Patient editing is unavailable.">${pencilIcon}</button>
+          <button class="icon-btn" data-action="edit" data-id="${p.id}" aria-label="Edit ${escapeHtml(p.name)}">${pencilIcon}</button>
           <button class="icon-btn" data-action="delete" data-id="${p.id}" aria-label="Delete ${escapeHtml(p.name)}" disabled title="Patient deletion is unavailable.">${trashIcon}</button>
         </div></td>
       </tr>`
@@ -264,7 +262,7 @@ window.PatientTableManager = class PatientTableManager {
     if (button) { button.disabled = true; button.title = 'Patient editing is unavailable.'; }
   }
 
-  _openForm () { showToast('Patient editing is unavailable. Please contact the clinic.', 'error'); }
+  _openForm (patient) { window.ASDC.openProfileForm(patient); }
 
   _showFormNote (msg, isError) {
     const el = document.getElementById('patientFormNote');

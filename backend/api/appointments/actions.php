@@ -17,12 +17,15 @@ $type   = ($body['resource_type'] ?? 'appointment') === 'request' ? 'request' : 
 $key    = $type === 'request' ? 'request_id' : 'appointment_id';
 $id     = appointment_positive_id($body[$key] ?? null);
 
-if (!in_array($action, ['approve', 'reschedule', 'cancel'], true) || !$id) {
+if (!in_array($action, ['approve', 'reschedule', 'cancel', 'reject', 'complete', 'no_show'], true) || !$id) {
     appointment_error(422, 'validation_failed', 'A valid action and resource identifier are required.');
 }
 
 match ($action) {
+    'reject'     => \ASDC\AppointmentService::cancel($type, $id, 'rejected'),
+    'complete'   => \ASDC\AppointmentService::cancel($type, $id, 'completed'),
+    'no_show'    => \ASDC\AppointmentService::cancel($type, $id, 'no_show'),
     'cancel'     => \ASDC\AppointmentService::cancel($type, $id),
     'reschedule' => \ASDC\AppointmentService::reschedule($type, $id, $body['scheduled_date'] ?? '', $body['scheduled_time'] ?? ''),
-    'approve'    => \ASDC\AppointmentService::approve($type, $id),
+    'approve'    => \ASDC\AppointmentService::approve($type, $id, \ASDC\InputValidator::positiveId($body['dentist_id'] ?? null)),
 };

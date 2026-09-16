@@ -79,7 +79,7 @@ class AppointmentService
     /**
      * Cancel an appointment or request by ID.
      */
-    public static function cancel(string $type, int $id): void
+    public static function cancel(string $type, int $id, string $status = 'cancelled'): void
     {
         $pdo = Database::pdo();
         $scope = DataScope::current();
@@ -97,19 +97,21 @@ class AppointmentService
             }
         }
 
+        if (!in_array($status, ['cancelled', 'rejected', 'completed', 'no_show'], true)
+            || ($type === 'request' && !in_array($status, ['cancelled', 'rejected'], true))) ApiResponse::error(422, 'validation_failed', 'Invalid status.');
+        if (in_array($status, ['completed', 'no_show'], true) && !$scope->isDentist()) ApiResponse::error(403, 'forbidden', 'Only the assigned dentist can set clinical appointment status.');
         $extra = $type === 'request' ? ', reviewed_by=?, reviewed_at=NOW()' : '';
-        $params = $type === 'request' ? [(int) $_SESSION['user_id'], $id] : [$id];
-
-        $stmt = $pdo->prepare(
-            "UPDATE {$table} SET status='cancelled'{$extra} WHERE {$key}=? AND status<>'cancelled'"
-        );
-        $stmt->execute($params);
-
-        if (!$stmt->rowCount()) {
-            ApiResponse::error(404, 'not_found', 'Active appointment record not found.');
-        }
-
-        ApiResponse::ok([$key => $id, 'status' => 'cancelled'], 'Appointment cancelled.');
+        $params = $type === 'request' ? [$status, (int) $_SESSION['user_id'], $id] : [$status, $id];
+        $allowed = $type === 'request' ? "('pending','rescheduled')" : ($status === 'rejected' ? "('pending')" : (in_array($status, ['completed','no_show'], true) ? "('confirmed')" : "('pending','confirmed')"));
+        $pdo->beginTransaction();
+        try {
+            $stmt = $pdo->prepare("UPDATE {$table} SET status=?{$extra} WHERE {$key}=? AND status IN $allowed");
+            $stmt->execute($params);
+            if (!$stmt->rowCount()) { $pdo->rollBack(); ApiResponse::error(409, 'state_changed', 'This appointment no longer permits that action.'); }
+            if ($type === 'appointment') PortalEvent::appointment($id, $status);
+            $pdo->commit();
+        } catch (Throwable $e) { if ($pdo->inTransaction()) $pdo->rollBack(); throw $e; }
+        ApiResponse::ok([$key => $id, 'status' => $status], 'Appointment updated.');
     }
 
     /**
@@ -162,7 +164,7 @@ class AppointmentService
                     $pdo->rollBack();
                     ApiResponse::error(404, 'not_found', 'Active appointment not found.');
                 }
-                if ($scope->isDentist() && $apptRow['dentist_id'] !== null && (int) $apptRow['dentist_id'] !== $scope->getUserId()) {
+                if ($scope->isDentist() && (int) $apptRow['dentist_id'] !== $scope->getUserId()) {
                     $pdo->rollBack();
                     ApiResponse::error(403, 'forbidden', 'You do not have permission to reschedule this appointment.');
                 }
@@ -176,6 +178,7 @@ class AppointmentService
                 $stmt->execute([$date, $time, $id]);
             }
 
+            if ($type === 'appointment') PortalEvent::appointment($id, 'rescheduled');
             $pdo->commit();
         } catch (Throwable $e) {
             if ($pdo->inTransaction()) $pdo->rollBack();
@@ -194,10 +197,10 @@ class AppointmentService
      * - For appointment: confirm a pending appointment.
      * - For request: find-or-create patient, insert confirmed appointment, mark request approved.
      */
-    public static function approve(string $type, int $id): void
+    public static function approve(string $type, int $id, ?int $dentistId = null): void
     {
         if ($type === 'appointment') {
-            self::approveAppointment($id);
+            self::approveAppointment($id, $dentistId);
         } else {
             self::approveRequest($id);
         }
@@ -207,10 +210,17 @@ class AppointmentService
      *  Private helpers
      * ----------------------------------------------------------------*/
 
-    private static function approveAppointment(int $id): void
+    private static function approveAppointment(int $id, ?int $dentistId): void
     {
         $pdo = Database::pdo();
         $scope = DataScope::current();
+
+        if ($dentistId !== null) {
+            if (!$scope->isReceptionist()) ApiResponse::error(403, 'forbidden', 'Only receptionists can assign dentists.');
+            $dentist = $pdo->prepare("SELECT user_id FROM users WHERE user_id=? AND role='dentist' AND is_active=1");
+            $dentist->execute([$dentistId]);
+            if (!$dentist->fetchColumn()) ApiResponse::error(422, 'validation_failed', 'Choose an active dentist.');
+        }
 
         $stmt = $pdo->prepare(
             "SELECT scheduled_date, scheduled_time, dentist_id FROM appointments
@@ -222,7 +232,7 @@ class AppointmentService
             ApiResponse::error(404, 'not_found', 'Pending appointment not found.');
         }
 
-        if ($scope->isDentist() && $row['dentist_id'] !== null && (int) $row['dentist_id'] !== $scope->getUserId()) {
+        if ($scope->isDentist() && (int) $row['dentist_id'] !== $scope->getUserId()) {
             ApiResponse::error(403, 'forbidden', 'You do not have permission to approve this appointment.');
         }
 
@@ -249,7 +259,8 @@ class AppointmentService
                 ApiResponse::error(409, 'slot_unavailable', 'That appointment slot is no longer available.');
             }
 
-            $pdo->prepare("UPDATE appointments SET status='confirmed' WHERE appointment_id=?")->execute([$id]);
+            $pdo->prepare("UPDATE appointments SET status='confirmed', dentist_id=COALESCE(?,dentist_id) WHERE appointment_id=?")->execute([$dentistId, $id]);
+            PortalEvent::appointment($id, 'confirmed');
             $pdo->commit();
         } catch (Throwable $e) {
             if ($pdo->inTransaction()) $pdo->rollBack();
@@ -325,6 +336,7 @@ class AppointmentService
                 "UPDATE appointment_requests SET status='approved', appointment_id=?, reviewed_by=?, reviewed_at=NOW() WHERE request_id=?"
             )->execute([$appointmentId, (int) $_SESSION['user_id'], $id]);
 
+            PortalEvent::appointment($appointmentId, 'confirmed');
             $pdo->commit();
         } catch (Throwable $e) {
             if ($pdo->inTransaction()) $pdo->rollBack();

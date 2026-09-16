@@ -1,7 +1,7 @@
 /**
  * NotificationPanel: Aromin-Sison Dental Clinic System.
  * Shared notification panel with read/unread states and "mark all as read".
- * Uses localStorage for read-state persistence via NotifStore.
+ * Read state is persisted through the authenticated inbox API.
  */
 (function () {
   'use strict';
@@ -14,24 +14,6 @@
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>',
     promo: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7"/><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/></svg>',
     info: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>',
-  };
-
-  const NotifStore = {
-    readIds(key) {
-      if (!key) return new Set();
-      try {
-        const raw = localStorage.getItem(key);
-        return new Set(raw ? JSON.parse(raw) : []);
-      } catch (e) {
-        return new Set();
-      }
-    },
-    saveIds(key, ids) {
-      if (!key) return;
-      try {
-        localStorage.setItem(key, JSON.stringify(Array.from(ids)));
-      } catch (e) {}
-    },
   };
 
   class NotificationPanel {
@@ -59,22 +41,28 @@
       this._onSelect = onSelect;
       this._storageKey = storageKey;
 
-      const readIds = NotifStore.readIds(storageKey);
-      this._items = notifications.map((n) =>
-        Object.assign({}, n, { unread: n.unread && !readIds.has(n.id) })
-      );
-      this._readIds = readIds;
+      this._items = notifications || [];
 
       this._bindEvents();
       this._render();
     }
 
-    _persist() {
-      this._readIds.clear();
-      this._items.forEach((n) => {
-        if (!n.unread) this._readIds.add(n.id);
-      });
-      NotifStore.saveIds(this._storageKey, this._readIds);
+    setItems(items) {
+      this._items = items;
+      if (this._empty) this._empty.textContent = 'No notifications yet.';
+      this._render();
+    }
+
+    async _markRead(ids) {
+      if (!ids.length || this._saving) return;
+      this._saving = true;
+      try {
+        const data = await apiFetch('../backend/api/notifications/inbox.php', {
+          method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids })
+        });
+        this.setItems(data.notifications);
+      } catch (error) { window.ASDC._toast?.show(error.message, 'error'); }
+      finally { this._saving = false; }
     }
 
     _render() {
@@ -119,9 +107,7 @@
           '<span class="notif-dot" aria-hidden="true"></span>';
         btn.addEventListener('click', () => {
           if (n.unread) {
-            n.unread = false;
-            this._persist();
-            this._render();
+            this._markRead([n.id]);
           }
           if (typeof this._onSelect === 'function') this._onSelect(n);
         });
@@ -134,13 +120,7 @@
 
       if (this._markAll) {
         this._markAll.addEventListener('click', () => {
-          this._items.forEach((n) => {
-            n.unread = false;
-          });
-          this._persist();
-          this._render();
-          if (window.ASDC._toast)
-            window.ASDC._toast.show('All notifications marked as read');
+          this._markRead(this._items.filter(n => n.unread).map(n => n.id));
         });
       }
 

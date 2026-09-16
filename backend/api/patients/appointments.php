@@ -36,5 +36,8 @@ if ($method === 'POST') {
     appointment_ok($result, 'Appointment booked.', 201);
 }
 
+if (($input['action'] ?? '') === 'cancel') {
+    appointment_ok(\ASDC\PatientAppointmentService::cancel($patientId, $input), 'Appointment cancelled.');
+}
 $result = \ASDC\PatientAppointmentService::reschedule($patientId, $input);
 appointment_ok($result, 'Appointment rescheduled.');

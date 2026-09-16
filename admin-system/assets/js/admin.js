@@ -111,19 +111,19 @@ recordMgr.init();
 let bracesFilter = 'Current'; // SCOPE: default to current/delinquent contracts only
 let bracesList = [];          // last filtered rows shown (used by Export)
 
-async function applyBraces(){
+async function applyBraces(snapshot = null){
+  if (!snapshot && window.staffSnapshot) snapshot = window.staffSnapshot;
+  if (!snapshot && window.staffLiveSync) return window.staffLiveSync.refetch();
   const tbody = document.getElementById('bracesBody');
   if (!tbody) return;
 
   let raw;
   try {
-    const data = await apiFetch('../backend/api/contracts/contracts.php');
+    const data = snapshot || await apiFetch('../backend/api/contracts/contracts.php');
     if (!Array.isArray(data.contracts)) throw new Error('not_implemented');
     raw = data.contracts;
   } catch (error) {
-    bracesRaw = [];
-    bracesList = [];
-    tbody.innerHTML = '<tr><td colspan="6" class="empty-cell">Unable to load contracts. Please try again.</td></tr>';
+    if (!bracesRaw.length) tbody.innerHTML = '<tr><td colspan="6" class="empty-cell">Unable to load contracts. Please try again.</td></tr>';
     return;
   }
   bracesRaw = raw;
@@ -164,9 +164,6 @@ const appointmentScheduler = new AppointmentScheduler({
   apiBase: '../backend/api/appointments',
   onLoaded: state => {
     if (state.error) {
-      document.getElementById('dashWeekGrid').textContent = 'Unable to load appointments. Please try again.';
-      document.getElementById('dashWeekLabel').textContent = 'Unavailable';
-      document.getElementById('dashQueueBody').innerHTML = '<tr><td colspan="3" class="empty-cell">Unable to load appointments.</td></tr>';
       return;
     }
     const week = ASDC.ScheduleView.week(state.start, state.appointments);
@@ -193,9 +190,9 @@ wireChips(reportGroup, label => {
 // =====================================================================
 // NOTIFICATIONS + ACCOUNT MENU
 // =====================================================================
-initNotifications({ triggerId: 'notifBtn', panelId: 'notifPanel', listId: 'notifList', badgeId: 'notifBadge', markAllId: 'notifMarkAll', emptyId: 'notifEmpty', notifications: [], storageKey: 'asdc.notif.receptionist' });
+const inbox = initNotifications({ triggerId: 'notifBtn', panelId: 'notifPanel', listId: 'notifList', badgeId: 'notifBadge', markAllId: 'notifMarkAll', emptyId: 'notifEmpty', notifications: [] });
 const inboxEmpty = document.getElementById('notifEmpty');
-if (inboxEmpty) inboxEmpty.textContent = 'Notifications are unavailable.';
+if (inboxEmpty) inboxEmpty.textContent = 'Loading notifications…';
 
 const userChip = document.getElementById('userChip');
 const userMenu = document.getElementById('userMenu');
@@ -245,7 +242,7 @@ if (contractFormModal.modal){
       const data = await apiFetch('../backend/api/patients/list.php');
       if (!Array.isArray(data.patients) || !data.patients.length) throw new Error('empty');
       cfPatient.innerHTML = data.patients.map(p =>
-        `<option value="${p.patient_id}">${p.first_name} ${p.last_name} (#P-${p.patient_id})</option>`
+        `<option value="${p.patient_id}">${escapeHtml(p.first_name)} ${escapeHtml(p.last_name)} (#P-${p.patient_id})</option>`
       ).join('');
     } catch (e) {
       cfPatient.innerHTML = '';
@@ -259,7 +256,7 @@ if (contractFormModal.modal){
       if (!Array.isArray(data.dentists) || !data.dentists.length) throw new Error('empty');
       // Real mode needs the numeric user_id (what the backend expects for
       // dentist_id) — the display name alone isn't enough to save it.
-      cfDentist.innerHTML = data.dentists.map(d => `<option value="${d.user_id}">${d.full_name}</option>`).join('');
+      cfDentist.innerHTML = data.dentists.map(d => `<option value="${d.user_id}">${escapeHtml(d.full_name)}</option>`).join('');
     } catch (e) { cfDentist.innerHTML = ''; showToast('Unable to load dentists.', 'error'); }
   };
 
@@ -269,7 +266,8 @@ if (contractFormModal.modal){
   const contractNote = document.getElementById('contractFormNote');
   const contractSaveBtn = document.getElementById('contractFormSave');
 
-  function openContractForm(contract){
+  async function openContractForm(contract){
+    await Promise.all([fillPatients(), fillDentists()]);
     editingContract = contract || null;
     document.getElementById('contractFormTitle').textContent = contract
       ? 'Edit Contract — ' + contract.name
@@ -488,20 +486,18 @@ function renderPromotions(promotions){
   const grid = document.getElementById('promoGrid');
   if (!grid) return;
   if (!promotions.length){
-    grid.innerHTML = '<p class="empty-cell">Promotions are unavailable. Create one to feature it on the public site.</p>';
+    grid.innerHTML = '<p class="empty-cell">No promotions on file.</p>';
     return;
   }
   grid.innerHTML = promotions.map((p, i) =>
     `<div class="promo-card">
-      <div class="promo-img"><span>Campaign Artwork</span></div>
       <div class="promo-body">
         <h4>${escapeHtml(p.title)}</h4>
         <p>${escapeHtml(p.desc)}</p>
         <div class="promo-foot">
           <span class="tag tag-${p.tag}">${p.status}</span>
           <div class="promo-actions">
-            <button class="btn btn-outline btn-sm" data-action="edit-promo" data-index="${i}">Edit</button>
-            <button class="btn btn-outline btn-sm btn-danger" data-action="delete-promo" data-index="${i}">Delete</button>
+            <span>${escapeHtml(p.start_date || '')} – ${escapeHtml(p.end_date || '')}</span>
           </div>
         </div>
       </div>
@@ -552,8 +548,28 @@ renderWeekGrid('dashWeekGrid', AdminState.dashboard.week);
 // leftover call was not removed, and it crashed the whole script (so
 // every render call after it, like renderQueue/applyBraces/etc., never ran).
 renderQueue(AdminState.dashboard.queue);
-applyBraces();
 renderPromotions(AdminState.promotions);
 renderReports(AdminState.reports);
 notificationManager.init();
 paymentMgr.init();
+
+window.staffLiveSync = ASDC.startPortalSync({
+  start: () => appointmentScheduler.state.start,
+  apply: data => {
+    window.staffSnapshot = data;
+    appointmentScheduler.applySnapshot(data);
+    patientMgr.load(data);
+    AdminState.records = data.records; recordMgr.apply();
+    applyBraces(data); paymentMgr.render(data);
+    inbox.setItems(data.notifications);
+    notificationManager.renderLog(data);
+    AdminState.dashboard.stats.forEach((stat, index) => { stat.num = index === 2 ? ContractFormat.peso(data.metrics[index]) : String(data.metrics[index]); });
+    renderDashboardStats(AdminState.dashboard.stats);
+    AdminState.promotions = data.promotions.map(p => ({ ...p, tag: p.status === 'live' ? 'green' : 'amber' }));
+    renderPromotions(AdminState.promotions);
+    AdminState.inventory = data.inventory.map(i => ({ ...i, initials: '', stock: i.qty + ' ' + (i.unit || ''),
+      width: Math.min(100, i.qty / Math.max(1, i.reorder_level) * 50), fill: 'var(--green)',
+      status: i.qty <= i.reorder_level ? 'Low' : 'Available', tag: i.qty <= i.reorder_level ? 'red' : 'green' }));
+    inventoryMgr.apply();
+  }
+});

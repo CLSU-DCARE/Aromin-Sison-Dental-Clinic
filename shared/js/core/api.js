@@ -66,8 +66,12 @@
     if (!response.ok || payload.success === false) {
       var msg = (payload.error && (payload.error.message || payload.error)) || 'Unable to process the request.';
       var error = new Error(msg);
+      error.status = response.status;
       error.code = (payload.error && payload.error.code) || 'request_failed';
       throw error;
+    }
+    if (method !== 'GET' && method !== 'HEAD' && typeof window.dispatchEvent === 'function') {
+      window.dispatchEvent(new CustomEvent('asdc:mutation', { detail: { url: url } }));
     }
     return payload.data || payload;
   }

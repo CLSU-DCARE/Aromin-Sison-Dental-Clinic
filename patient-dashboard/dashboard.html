@@ -17,6 +17,7 @@
 <body>
 
 <div class="app">
+  <p id="patientSyncStatus" role="status" aria-live="polite" style="position:fixed;bottom:8px;right:16px;max-width:calc(100vw - 32px);z-index:20;padding:6px 12px;background:var(--ivory);border-radius:8px;font-size:12px;pointer-events:none;">Connecting to clinic…</p>
   <!-- ===== SIDEBAR ===== -->
   <aside class="sidebar" id="sidebar">
     <div class="side-brand">
@@ -72,10 +73,10 @@
       </button>
     </nav>
     <div class="side-foot">
-      <div class="avatar-sm" id="sideFootAvatar">MR</div>
+      <div class="avatar-sm" id="sideFootAvatar">—</div>
       <div>
-        <div class="name" id="sideFootName">Miguel Ramos</div>
-        <div class="role" id="sideFootRole">Patient ID #A-1042</div>
+        <div class="name" id="sideFootName">Loading…</div>
+        <div class="role" id="sideFootRole">Patient</div>
       </div>
       <button class="logout-link" id="logoutBtn" title="Log Out" aria-label="Log Out">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
@@ -113,8 +114,8 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
           Book Appointment
         </button>
-        <button type="button" class="user-chip" title="Miguel Ramos: Patient ID #A-1042" aria-haspopup="menu" aria-expanded="false" id="userChip" aria-label="Account menu">
-          <div class="avatar-sm" id="chipAvatar">MR</div>
+        <button type="button" class="user-chip" title="Loading…: Patient" aria-haspopup="menu" aria-expanded="false" id="userChip" aria-label="Account menu">
+          <div class="avatar-sm" id="chipAvatar">—</div>
         </button>
       </div>
     </div>
@@ -125,7 +126,7 @@
       <section class="view active" id="view-dashboard">
         <div class="welcome-banner">
           <div>
-            <h2 id="welcomeTitle">Kumusta, Miguel!</h2>
+            <h2 id="welcomeTitle">Welcome</h2>
             <p id="welcomeText">You have no upcoming appointments.</p>
           </div>
           <div class="actions">
@@ -157,12 +158,12 @@
         </div>
         <div class="profile-grid">
           <div class="profile-card">
-            <div class="profile-avatar" id="profileAvatar">MR</div>
-            <h3 id="profileName">Miguel Ramos</h3>
-            <div class="pid" id="profilePid">Patient ID #A-1042</div>
+            <div class="profile-avatar" id="profileAvatar">—</div>
+            <h3 id="profileName">Loading…</h3>
+            <div class="pid" id="profilePid">Patient</div>
             <div style="text-align:left;">
-              <div class="field" style="margin-bottom:12px;"><label>Member Since</label><div class="val field-val" id="profileMemberSince">February 2026</div></div>
-              <div class="field"><label>Primary Dentist</label><div class="val field-val" id="profileDentist">Dr. Kathrine Sison</div></div>
+              <div class="field" style="margin-bottom:12px;"><label>Member Since</label><div class="val field-val" id="profileMemberSince">Loading…</div></div>
+              <div class="field"><label>Primary Dentist</label><div class="val field-val" id="profileDentist">Loading…</div></div>
             </div>
           </div>
           <div class="panel">
@@ -205,7 +206,7 @@
               </div>
               <div class="form-group">
                 <label for="bookDentist">Preferred Dentist</label>
-                <select id="bookDentist"><option>Dr. Kathrine Sison</option><option>Dr. Arsenia Aromin</option><option>No preference</option></select>
+                <select id="bookDentist"><option>No preference</option></select>
               </div>
               <div class="form-group">
                 <label for="bookDate">Preferred Date</label>
@@ -229,7 +230,7 @@
               </div>
               <div class="booking-summary">
                 <div class="row"><span>Service</span><span id="summaryService">Braces Adjustment</span></div>
-                <div class="row"><span>Dentist</span><span id="summaryDentist">Dr. Kathrine Sison</span></div>
+                <div class="row"><span>Dentist</span><span id="summaryDentist">Loading…</span></div>
                 <div class="row"><span>Selected Time</span><span id="selectedSlot">Not yet selected</span></div>
               </div>
               <button type="button" id="confirmBookingBtn" class="btn btn-gold btn-block" disabled>
@@ -316,17 +317,13 @@
           <div class="panel-head"><h3>Make a Payment</h3></div>
           <div class="pay-layout">
             <div class="pay-qr">
-              <img src="../shared/images/bank qr.png" alt="Clinic bank QR code">
-              <div class="pay-bank">
-                <div class="bank-row"><span>Bank</span><b id="payBank">Landbank of the Philippines</b></div>
-                <div class="bank-row"><span>Account Name</span><b id="payAcctName">Aromin-Sison Dental Clinic</b></div>
-                <div class="bank-row"><span>Account No.</span><b id="payAcctNo">1234-5678-90</b></div>
-              </div>
+              <p>Contact the clinic for payment instructions. Upload the receipt for a payment you have already made.</p>
             </div>
             <div class="pay-form">
+              <div class="form-group"><label for="payMethod">Payment method</label><select id="payMethod"><option value="cash">Cash</option><option value="gcash">GCash</option><option value="bank transfer">Bank transfer</option><option value="card">Card</option></select></div>
               <div class="form-group">
                 <label for="payAmount">Amount</label>
-                <input type="text" id="payAmount" value="₱3,600" inputmode="numeric">
+                <input type="text" id="payAmount" inputmode="numeric" placeholder="Enter amount paid">
               </div>
               <div class="form-group">
                 <label for="payReceipt">Payment Receipt</label>
@@ -395,10 +392,10 @@
 <!-- ===== ACCOUNT MENU POPOVER ===== -->
 <div class="popover user-menu" id="userMenu" role="menu" aria-label="Account menu">
   <div class="user-menu-head">
-    <div class="avatar-sm" id="menuAvatar">MR</div>
+    <div class="avatar-sm" id="menuAvatar">—</div>
     <div>
-      <div class="name" id="menuName">Miguel Ramos</div>
-      <div class="role" id="menuRole">Patient ID #A-1042</div>
+      <div class="name" id="menuName">Loading…</div>
+      <div class="role" id="menuRole">Patient</div>
     </div>
   </div>
   <button type="button" class="user-menu-item" id="menuProfile">
@@ -500,31 +497,32 @@
   </div>
 </div>
 
-<script src="../shared/js/core/namespace.js?v=20260915" defer></script>
-<script src="../shared/js/core/Modal.js?v=20260915" defer></script>
-<script src="../shared/js/core/ToastManager.js?v=20260915" defer></script>
-<script src="../shared/js/core/Popover.js?v=20260915" defer></script>
-<script src="../shared/js/core/SidebarController.js?v=20260915" defer></script>
-<script src="../shared/js/core/HtmlHelpers.js?v=20260915" defer></script>
-<script src="../shared/js/core/ScheduleView.js?v=20260915" defer></script>
-<script src="../shared/js/core/api.js?v=20260915" defer></script>
-<script src="../shared/js/core/ViewRouter.js?v=20260915" defer></script>
-<script src="../shared/js/core/FilterChipGroup.js?v=20260915" defer></script>
-<script src="../shared/js/core/SessionGuard.js?v=20260915" defer></script>
-<script src="../shared/js/core/NotificationPanel.js?v=20260915" defer></script>
-<script src="../shared/js/core/LogoutManager.js?v=20260915" defer></script>
-<script src="../shared/js/core/FullscreenToggle.js?v=20260915" defer></script>
-<script src="../shared/js/core/ReportExporter.js?v=20260915" defer></script>
-<script src="../shared/js/dashboard-core.js?v=20260915" defer></script>
-<script src="../shared/js/state/patient.js?v=20260915" defer></script>
-<script src="../shared/js/core/ContractFormat.js?v=20260915" defer></script>
-<script src="assets/js/PatientAppointmentBooking.js?v=20260915" defer></script>
-<script src="assets/js/PatientRescheduleModal.js?v=20260915" defer></script>
-<script src="assets/js/PatientBracesProgress.js?v=20260915" defer></script>
-<script src="assets/js/PatientContractView.js?v=20260915" defer></script>
-<script src="assets/js/PatientProfileEditor.js?v=20260915" defer></script>
-<script src="assets/js/PatientPaymentSubmission.js?v=20260915" defer></script>
-<script src="assets/js/patient.js?v=20260915" defer></script>
+<script src="../shared/js/core/namespace.js?v=20260916-integration" defer></script>
+<script src="../shared/js/core/Modal.js?v=20260916-integration" defer></script>
+<script src="../shared/js/core/ToastManager.js?v=20260916-integration" defer></script>
+<script src="../shared/js/core/Popover.js?v=20260916-integration" defer></script>
+<script src="../shared/js/core/SidebarController.js?v=20260916-integration" defer></script>
+<script src="../shared/js/core/HtmlHelpers.js?v=20260916-integration" defer></script>
+<script src="../shared/js/core/ScheduleView.js?v=20260916-integration" defer></script>
+<script src="../shared/js/core/api.js?v=20260916-integration" defer></script>
+<script src="../shared/js/core/ViewRouter.js?v=20260916-integration" defer></script>
+<script src="../shared/js/core/FilterChipGroup.js?v=20260916-integration" defer></script>
+<script src="../shared/js/core/SessionGuard.js?v=20260916-integration" defer></script>
+<script src="../shared/js/core/NotificationPanel.js?v=20260916-integration" defer></script>
+<script src="../shared/js/core/LogoutManager.js?v=20260916-integration" defer></script>
+<script src="../shared/js/core/FullscreenToggle.js?v=20260916-integration" defer></script>
+<script src="../shared/js/core/ReportExporter.js?v=20260916-integration" defer></script>
+<script src="../shared/js/dashboard-core.js?v=20260916-integration" defer></script>
+<script src="../shared/js/state/patient.js?v=20260916-integration" defer></script>
+<script src="../shared/js/core/ContractFormat.js?v=20260916-integration" defer></script>
+<script src="assets/js/PatientAppointmentBooking.js?v=20260916-integration" defer></script>
+<script src="assets/js/PatientRescheduleModal.js?v=20260916-integration" defer></script>
+<script src="assets/js/PatientBracesProgress.js?v=20260916-integration" defer></script>
+<script src="assets/js/PatientContractView.js?v=20260916-integration" defer></script>
+<script src="assets/js/PatientProfileEditor.js?v=20260916-integration" defer></script>
+<script src="assets/js/PatientPaymentSubmission.js?v=20260916-integration" defer></script>
+<script src="assets/js/PatientLiveSync.js?v=20260916-integration" defer></script>
+<script src="assets/js/patient.js?v=20260916-integration" defer></script>
 
 </body>
 </html>

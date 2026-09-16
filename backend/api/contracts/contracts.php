@@ -30,6 +30,21 @@ if ($method === 'GET') {
 require_role('receptionist');
 \ASDC\CsrfToken::requireValid();
 $body = \ASDC\ApiResponse::requireJson();
+// Validate foreign keys and money before any write; never accept a patient account as a dentist.
+if (!empty($body['dentist_id'])) {
+    $check = \ASDC\Database::pdo()->prepare("SELECT user_id FROM users WHERE user_id=? AND role='dentist' AND is_active=1");
+    $check->execute([$body['dentist_id']]);
+    if (!$check->fetchColumn()) \ASDC\ApiResponse::error(422, 'validation_failed', 'Choose an active dentist.');
+}
+if ($method === 'POST') {
+    $check = \ASDC\Database::pdo()->prepare('SELECT patient_id FROM patients WHERE patient_id=?');
+    $check->execute([$body['patient_id'] ?? 0]);
+    if (!$check->fetchColumn()) \ASDC\ApiResponse::error(422, 'validation_failed', 'Choose an existing patient.');
+}
+foreach (['total_amount','monthly_payment','downpayment'] as $moneyKey) {
+    if (isset($body[$moneyKey]) && (!is_numeric($body[$moneyKey]) || (float) $body[$moneyKey] < 0 || (float) $body[$moneyKey] > 99999999.99)) \ASDC\ApiResponse::error(422, 'validation_failed', 'Invalid payment amount.');
+}
+if (isset($body['status']) && !in_array($body['status'], ['active','completed','defaulted','cancelled'], true)) \ASDC\ApiResponse::error(422, 'validation_failed', 'Invalid contract status.');
 
 if ($method === 'POST') {
     $fields = [];
@@ -43,7 +58,8 @@ if ($method === 'POST') {
     $total = ($totalInput !== false && $totalInput > 0) ? $totalInput : ($months && $monthly ? $months * $monthly : 0);
     if ($total <= 0) $fields['total_amount'] = 'Enter the total contract amount.';
     $downpayment = filter_var($body['downpayment'] ?? 0, FILTER_VALIDATE_FLOAT) ?: 0;
-    $status = in_array($body['status'] ?? 'active', ['active', 'completed', 'defaulted', 'cancelled'], true) ? $body['status'] : 'active';
+    $status = $body['status'] ?? 'active';
+    if ($downpayment > $total) $fields['downpayment'] = 'Downpayment cannot exceed the contract total.';
     $dentistId = \ASDC\InputValidator::positiveId($body['dentist_id'] ?? null);
     $startDate = \ASDC\InputValidator::date($body['start_date'] ?? null) ?: date('Y-m-d');
 

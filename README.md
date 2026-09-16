@@ -258,6 +258,30 @@ Test-account seed scripts have been removed. Existing database records are uncha
 
 ## Next steps
 
+### Automatic patient updates
+
+The patient dashboard reads a patient-scoped server snapshot every three seconds while visible. Returning to the tab or reconnecting refreshes immediately. Appointments, contracts, dentist progress, payment reviews, balances, and stored treatment records update without reloading the page. Form inputs remain intact; open rescheduling dialogs track appointment IDs rather than row positions.
+
+During connection failures, the last successful data stays visible with a retry notice. Retries back off to at most 30 seconds. This is polling, so delivery takes roughly three seconds plus request time under a healthy connection.
+
+Apply the required contract/payment schema updates after importing the base schema:
+
+```sh
+php database/migrate_patient_sync.php
+```
+
+Verification:
+
+```sh
+node tests/patient_live_sync.cjs
+node tests/server_data_regression.cjs
+php tests/patient_sync_integration.php
+```
+
+The integration test uses local Apache and MySQL, exercises separate receptionist/dentist/patient sessions, and removes its temporary records. Its patients have no email or phone, so it sends no external messages.
+
+### Remaining setup
+
 1. Install XAMPP, import `database/schema.sql`, confirm `backend/api/patients/list.php` returns JSON
 2. Configure email delivery and clinic staff accounts.
 3. Implement the remaining unavailable modules with authenticated server endpoints.

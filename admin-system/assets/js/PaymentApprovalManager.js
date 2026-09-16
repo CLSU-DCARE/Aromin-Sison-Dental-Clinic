@@ -23,7 +23,6 @@ window.PaymentApprovalManager = class PaymentApprovalManager {
     this._bindReceiptModal();
     this._bindActions();
     this._bindFilter();
-    this.render();
   }
 
   _findById (id) {
@@ -34,7 +33,9 @@ window.PaymentApprovalManager = class PaymentApprovalManager {
    *  Render
    * ----------------------------------------------------------------*/
 
-  async render () {
+  async render (snapshot = null) {
+    if (!snapshot && window.staffSnapshot) snapshot = window.staffSnapshot;
+    if (!snapshot && window.staffLiveSync) return window.staffLiveSync.refetch();
     const tbody  = document.getElementById('adminPaymentsBody');
     const empty  = document.getElementById('payAdminEmpty');
     const countTag = document.getElementById('payQueueCount');
@@ -42,12 +43,12 @@ window.PaymentApprovalManager = class PaymentApprovalManager {
 
     let items;
     try {
-      const data = await apiFetch('../backend/api/payments/payments.php');
+      const data = snapshot || await apiFetch('../backend/api/payments/payments.php');
       if (!Array.isArray(data.payments)) throw new Error('not_implemented');
       items = data.payments;
     } catch (error) {
-      items = [];
       showToast('Unable to load payment approvals. Please try again.', 'error');
+      return;
     }
     this._items = items;
 
@@ -123,6 +124,8 @@ window.PaymentApprovalManager = class PaymentApprovalManager {
   }
 
   async _review (s, action) {
+    if (this._reviewing) return;
+    this._reviewing = true;
     try {
       await apiFetch('../backend/api/payments/payments.php', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -134,6 +137,7 @@ window.PaymentApprovalManager = class PaymentApprovalManager {
       if (typeof applyBraces === 'function') await applyBraces();
       if (typeof patientMgr !== 'undefined') await patientMgr.load();
     } catch (error) { showToast(error.message, 'error'); }
+    finally { this._reviewing = false; }
   }
 
   _approve (s) { return this._review(s, 'approve'); }

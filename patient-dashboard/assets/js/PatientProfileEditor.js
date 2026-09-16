@@ -45,14 +45,24 @@ window.PatientProfileEditor = class PatientProfileEditor {
     };
 
     document.getElementById('epName').value    = this.state.user.name;
-    document.getElementById('epContact').value = getVal('Contact Number');
+    document.getElementById('epContact').value = getVal('Contact Number') === '—' ? '' : getVal('Contact Number');
     document.getElementById('epEmail').value   = getVal('Email Address');
+    document.getElementById('epEmail').readOnly = true;
+    document.getElementById('epEmail').title = 'Contact the clinic to change your login email.';
     this._noteEl.hidden = true;
     this.modal.open();
   }
 
-  _save () {
-    this._showNote('Profile editing is unavailable. Please contact the clinic to update your details.', true);
+  async _save () {
+    const button = document.getElementById('profileSaveBtn');
+    if (button.disabled) return;
+    button.disabled = true;
+    try {
+      await apiFetch('../backend/api/patients/profile.php', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: document.getElementById('epName').value, contact_number: document.getElementById('epContact').value }) });
+      await refreshAfterPatientAction();
+      this.modal.close(); showToast('Profile updated.');
+    } catch (error) { this._showNote(error.message, true); }
+    finally { button.disabled = false; }
   }
 
   _showNote (message, isError) {

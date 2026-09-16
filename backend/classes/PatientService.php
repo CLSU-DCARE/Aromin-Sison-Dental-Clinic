@@ -28,7 +28,8 @@ class PatientService
         [$where, $params] = $scope->patientFilter();
 
         $stmt = Database::pdo()->prepare(
-            "SELECT patient_id, first_name, last_name, contact_number, email, registered_at
+            "SELECT patient_id, first_name, last_name, contact_number, email, registered_at,
+                    (SELECT MAX(a.scheduled_date) FROM appointments a WHERE a.patient_id=p.patient_id AND a.status='completed') AS last_visit
              FROM patients p
              WHERE {$where}
              ORDER BY registered_at DESC"

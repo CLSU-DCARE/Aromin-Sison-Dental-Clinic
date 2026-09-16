@@ -52,6 +52,14 @@ class AuthMiddleware
         }
 
         $_SESSION['last_activity'] = time();
+        // A revoked account or changed role must not retain access through an old session.
+        $stmt = Database::pdo()->prepare('SELECT role FROM users WHERE user_id=? AND is_active=1');
+        $stmt->execute([(int) $_SESSION['user_id']]);
+        $role = $stmt->fetchColumn();
+        if (!$role || $role !== ($_SESSION['role'] ?? null)) {
+            $_SESSION = []; session_destroy();
+            ApiResponse::error(401, 'session_expired', 'Your session has ended. Please sign in again.');
+        }
     }
 
     public static function requireRole(string ...$roles): void

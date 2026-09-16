@@ -26,10 +26,10 @@ window.AppointmentScheduler = class AppointmentScheduler {
   init () {
     this._render();
     this._bindNav();
-    this.loadWeek();
   }
 
   async loadWeek () {
+    if (window.staffLiveSync) return window.staffLiveSync.refetch();
     if (this.state.loading) return;
     this.state.loading = true;
 
@@ -56,8 +56,6 @@ window.AppointmentScheduler = class AppointmentScheduler {
       this._render();
     } catch (error) {
       this.state.error = error.message;
-      this.state.appointments = [];
-      this.state.requests = [];
       this._render();
       if (errorNote) { errorNote.textContent = error.message; errorNote.hidden = false; errorNote.classList.add('err'); errorNote.classList.remove('ok'); }
     } finally {
@@ -73,13 +71,22 @@ window.AppointmentScheduler = class AppointmentScheduler {
     this._renderSchedule();
   }
 
+  applySnapshot(data) {
+    this.state.appointments = data.week.appointments;
+    this.state.requests = data.week.requests;
+    this.state.pending = data.pending;
+    this.state.error = null;
+    this._render();
+    if (this.onLoaded) this.onLoaded(this.state);
+  }
+
   /* Expose helpers for AppointmentActions */
   getRequest (requestId) {
     return this.state.requests.find(item => Number(item.request_id) === Number(requestId)) || null;
   }
 
   getAppointment (appointmentId) {
-    return this.state.appointments.find(item => Number(item.appointment_id) === Number(appointmentId)) || null;
+    return this.state.appointments.concat(this.state.pending || []).find(item => Number(item.appointment_id) === Number(appointmentId)) || null;
   }
 
   static isoDate (value) { return new AppointmentScheduler()._isoDate(value); }
@@ -137,6 +144,7 @@ window.AppointmentScheduler = class AppointmentScheduler {
     const id   = Number(item.appointment_id);
     const size = compact ? ' appointment-card-actions' : ' appointment-request-actions';
     return `<div class="${size.trim()}">` +
+      (item.status === 'pending' ? `<button type="button" class="btn btn-sm btn-approve" data-appointment-action="approve" data-appointment-id="${id}">Approve</button><button type="button" class="btn btn-sm btn-reject" data-appointment-action="reject" data-appointment-id="${id}">Reject</button>` : '') +
       `<button type="button" class="btn btn-sm btn-outline" data-appointment-action="reschedule" data-appointment-id="${id}">Reschedule</button>` +
       `<button type="button" class="btn btn-sm btn-reject" data-appointment-action="cancel" data-appointment-id="${id}">Cancel</button>` +
       `</div>`;
@@ -191,13 +199,13 @@ window.AppointmentScheduler = class AppointmentScheduler {
 
     const cells = times.map(time => {
       const row = visibleDays.map(day => {
-        const item = this.state.appointments.find(
+        const items = this.state.appointments.filter(
           appt => appt.scheduled_date === day && String(appt.scheduled_time).slice(0, 5) === time
         );
-        return item
-          ? `<div class="cell"><div class="appt-block"><strong>${escapeHtml(item.patient_name)}</strong>` +
+        return items.length
+          ? '<div class="cell">' + items.map(item => `<div class="appt-block"><strong>${escapeHtml(item.patient_name)}</strong>` +
             `<span class="t">${escapeHtml(item.service_type)} · ${escapeHtml(item.status)}</span>` +
-            `${this._actionControls(item, true)}</div></div>`
+            `${this._actionControls(item, true)}</div>`).join('') + '</div>'
           : '<div class="cell"></div>';
       }).join('');
       return `<div class="cell time">${escapeHtml(this._timeLabel(time))}</div>${row}`;
@@ -211,7 +219,7 @@ window.AppointmentScheduler = class AppointmentScheduler {
     const count = document.getElementById('appointmentRequestCount');
     if (!tbody || !count) return;
 
-    count.textContent = `${this.state.requests.length} pending`;
+    count.textContent = `${this.state.requests.length + (this.state.pending || []).length} pending`;
 
     tbody.innerHTML = this.state.requests.length
       ? this.state.requests.map(request => {
@@ -226,10 +234,14 @@ window.AppointmentScheduler = class AppointmentScheduler {
           `<td><div class="appointment-request-actions">` +
           `<button type="button" class="btn btn-sm btn-approve" data-request-action="approve" data-request-id="${Number(request.request_id)}">Approve</button>` +
           `<button type="button" class="btn btn-sm btn-outline" data-request-action="reschedule" data-request-id="${Number(request.request_id)}">Reschedule</button>` +
-          `<button type="button" class="btn btn-sm btn-reject" data-request-action="cancel" data-request-id="${Number(request.request_id)}">Reject</button>` +
+          `<button type="button" class="btn btn-sm btn-reject" data-request-action="reject" data-request-id="${Number(request.request_id)}">Reject</button>` +
           `</div></td></tr>`;
       }).join('')
       : '<tr><td colspan="6" class="empty-cell">No pending booking requests for this week.</td></tr>';
+    if (this.state.pending?.length) {
+      const rows = this.state.pending.map(a => `<tr><td>${escapeHtml(a.patient_name)}</td><td>${escapeHtml(a.service_type)}</td><td>${escapeHtml(a.scheduled_date)} ${escapeHtml(String(a.scheduled_time).slice(0,5))}</td><td>Patient portal</td><td>${this._statusTag(a.status)}</td><td>${this._actionControls(a)}</td></tr>`).join('');
+      tbody.innerHTML = (this.state.requests.length ? tbody.innerHTML : '') + rows;
+    }
   }
 
   /* ------------------------------------------------------------------
@@ -244,6 +256,7 @@ window.AppointmentScheduler = class AppointmentScheduler {
 
     document.getElementById('apptWeekGrid')?.addEventListener('click', e => this._onGridClick(e));
     document.getElementById('apptListBody')?.addEventListener('click', e => this._onGridClick(e));
+    document.getElementById('appointmentRequestsBody')?.addEventListener('click', e => this._onGridClick(e));
   }
 
   /* Delegate grid clicks to AppointmentActions if registered */

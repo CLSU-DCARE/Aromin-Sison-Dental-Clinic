@@ -11,78 +11,6 @@ const PatientDashboardVisibility = {
   balance: false
 };
 
-async function patientAppointmentRequest(
-  method = 'GET',
-  body = null
-) {
-  const options = {
-    method,
-    credentials: 'same-origin',
-    headers: {
-      Accept: 'application/json'
-    }
-  };
-
-  if (body !== null) {
-    options.headers['Content-Type'] =
-      'application/json';
-
-    options.body = JSON.stringify(body);
-  }
-
-  const response = await fetch(
-    PATIENT_APPOINTMENTS_ENDPOINT,
-    options
-  );
-
-  let payload = {};
-
-  try {
-    payload = await response.json();
-  } catch (error) {
-    payload = {};
-  }
-
-  if (!response.ok) {
-    throw new Error(
-      (payload.error && (payload.error.message || payload.error)) ||
-      'Unable to process the appointment request.'
-    );
-  }
-
-  return payload.data || payload;
-}
-
-async function patientBracesRequest() {
-  const response = await fetch(
-    PATIENT_BRACES_ENDPOINT,
-    {
-      method: 'GET',
-      credentials: 'same-origin',
-      headers: {
-        Accept: 'application/json'
-      }
-    }
-  );
-
-  let payload = {};
-
-  try {
-    payload = await response.json();
-  } catch (error) {
-    payload = {};
-  }
-
-  if (!response.ok) {
-    throw new Error(
-      (payload.error && (payload.error.message || payload.error)) ||
-      'Unable to load braces information.'
-    );
-  }
-
-  return payload;
-}
-
 // PATIENT DASHBOARD: page-specific logic
 // Shared utilities (Modal, toast, sidebar, fullscreen, logout) live in
 // ../shared/js/dashboard-core.js and are loaded before this file.
@@ -238,14 +166,14 @@ document
 const appointmentBooking = new PatientAppointmentBooking({
   state: PatientState,
   appointmentsEndpoint: PATIENT_APPOINTMENTS_ENDPOINT,
-  onBooked: () => loadPatientAppointments().then(() => loadPatientBraces())
+  onBooked: refreshAfterPatientAction
 });
 appointmentBooking.init();
 
 // ---------- Notifications ----------
-initNotifications({ triggerId: 'notifBtn', panelId: 'notifPanel', listId: 'notifList', badgeId: 'notifBadge', markAllId: 'notifMarkAll', emptyId: 'notifEmpty', notifications: [], storageKey: 'asdc.notif.patient' });
+const inbox = initNotifications({ triggerId: 'notifBtn', panelId: 'notifPanel', listId: 'notifList', badgeId: 'notifBadge', markAllId: 'notifMarkAll', emptyId: 'notifEmpty', notifications: [] });
 const inboxEmpty = document.getElementById('notifEmpty');
-if (inboxEmpty) inboxEmpty.textContent = 'Notifications are unavailable.';
+if (inboxEmpty) inboxEmpty.textContent = 'Loading notifications…';
 
 // ---------- Account menu ----------
 const userChip =
@@ -855,6 +783,7 @@ function renderSchedule(rows) {
         `data-index="${index}">` +
         `Reschedule` +
         `</button>` +
+        `<button class="btn btn-outline btn-sm" data-cancel-appointment="${Number(row.appointment_id)}">Cancel</button>` +
         `</td>` +
         `</tr>`
       );
@@ -865,9 +794,19 @@ function renderSchedule(rows) {
 const rescheduleModal = new PatientRescheduleModal({
   state: PatientState,
   appointmentsEndpoint: PATIENT_APPOINTMENTS_ENDPOINT,
-  onRescheduled: () => loadPatientAppointments().then(() => loadPatientBraces())
+  onRescheduled: refreshAfterPatientAction
 });
 rescheduleModal.init();
+document.getElementById('scheduleBody')?.addEventListener('click', async event => {
+  const button = event.target.closest('[data-cancel-appointment]');
+  if (!button || button.disabled || !window.confirm('Cancel this appointment?')) return;
+  button.disabled = true;
+  try {
+    await apiFetch(PATIENT_APPOINTMENTS_ENDPOINT, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'cancel', appointment_id: Number(button.dataset.cancelAppointment) }) });
+    await refreshAfterPatientAction(); showToast('Appointment cancelled.');
+  } catch (error) { showToast(error.message, 'error'); }
+  finally { button.disabled = false; }
+});
 
 function renderHistory(rows) {
   const tableBody =
@@ -934,6 +873,7 @@ function renderTreatments(rows) {
         `</div>` +
         `<div class="tl-meta">` +
         `${escapeHtml(treatment.meta)}` +
+        `<p>${escapeHtml(treatment.diagnosis || '')}</p><p>${escapeHtml(treatment.notes || '')}</p>` +
         `</div>` +
         `</div>` +
         `</div>`
@@ -946,7 +886,7 @@ const bracesProgressView = new PatientBracesProgress();
 const renderBracesProgress = (braces) => bracesProgressView.render(braces);
 
 // ---------- Payment submissions (delegated to PatientPaymentSubmission) ----------
-const paymentSubmission = new PatientPaymentSubmission({ state: PatientState });
+const paymentSubmission = new PatientPaymentSubmission({ state: PatientState, onSubmitted: refreshAfterPatientAction });
 paymentSubmission.init();
 const renderPayments = () => paymentSubmission.render();
 
@@ -967,7 +907,7 @@ function renderPromoCards(cards) {
 
   if (!cards.length) {
     grid.innerHTML = emptyState(
-      'Announcements are unavailable.'
+      'No current announcements.'
     );
 
     return;
@@ -977,9 +917,6 @@ function renderPromoCards(cards) {
     cards.map(card => {
       return (
         `<div class="promo-card">` +
-        `<div class="promo-img">` +
-        `<span>Promo Image</span>` +
-        `</div>` +
         `<div class="promo-body">` +
         `<h4>${escapeHtml(card.title)}</h4>` +
         `<p>${escapeHtml(card.desc)}</p>` +
@@ -1042,156 +979,12 @@ function applyPatientFeatureVisibility() {
   );
 }
 
-async function loadPatientBraces() {
-  try {
-    const payload =
-      await patientBracesRequest();
-
-    // Reject malformed responses.
-    if (typeof payload.has_braces_treatment !== 'boolean') {
-      throw new Error('not_implemented');
-    }
-
-    PatientDashboardVisibility.braces =
-      payload.has_braces_treatment === true;
-
-    PatientDashboardVisibility.contract =
-      payload.has_contract === true;
-
-    PatientDashboardVisibility.balance =
-      payload.has_outstanding_balance === true;
-
-    PatientState.braces =
-      payload.braces || PatientState.braces;
-
-    PatientState.contract =
-      payload.contract || PatientState.contract;
-
-    setDashboardStat(
-      'Braces Treatment Progress',
-      payload.braces_progress || '0%'
-    );
-
-    setDashboardStat(
-      'Outstanding Balance',
-      payload.outstanding_balance || '₱0.00'
-    );
-
-    setDashboardStat(
-      'Completed Visits',
-      payload.completed_visits || 0
-    );
-
-    setDashboardStat(
-      'Treatment Records',
-      payload.treatment_records || 0
-    );
-
-    applyPatientFeatureVisibility();
-
-    renderDashboardStats(
-      PatientState.dashboard.stats
-    );
-
-    renderBracesProgress(PatientState.braces);
-
-    renderContract(
-      PatientState.contract
-    );
-
-    renderPayments();
-  } catch (error) {
-    PatientState.braces.active = false;
-    PatientState.contract.active = false;
-    PatientDashboardVisibility.braces = false;
-    PatientDashboardVisibility.contract = false;
-    PatientDashboardVisibility.balance = false;
-    applyPatientFeatureVisibility();
-    showToast('Unable to load braces information. Please try again.', 'error');
-  }
+async function refreshAfterPatientAction() {
+  if (patientLiveSync.pending) await patientLiveSync.pending;
+  return patientLiveSync.refresh();
 }
-
-async function loadPatientAppointments() {
-  try {
-    const payload =
-      await patientAppointmentRequest();
-
-    // Reject malformed responses.
-    if (
-      !Array.isArray(payload.schedule) &&
-      !Array.isArray(payload.upcoming) &&
-      !Array.isArray(payload.history)
-    ) {
-      throw new Error('not_implemented');
-    }
-
-    PatientState.schedule =
-      Array.isArray(
-        payload.schedule
-      )
-        ? payload.schedule
-        : [];
-
-    PatientState.dashboard.upcoming =
-      Array.isArray(
-        payload.upcoming
-      )
-        ? payload.upcoming
-        : [];
-
-    PatientState.history =
-      Array.isArray(
-        payload.history
-      )
-        ? payload.history
-        : [];
-
-    appointmentsLoaded = true;
-
-    const first =
-      PatientState.schedule[0];
-
-    const welcomeText =
-      document.getElementById(
-        'welcomeText'
-      );
-
-    if (welcomeText) {
-      welcomeText.textContent =
-        first
-          ? `Your next visit is on ${first.date} at ${first.time} for ${first.svc}.`
-          : 'You have no upcoming appointments.';
-    }
-
-    renderDashboardStats(
-      PatientState.dashboard.stats
-    );
-
-    renderUpcoming(
-      PatientState.dashboard.upcoming
-    );
-
-    renderSchedule(
-      PatientState.schedule
-    );
-
-    renderHistory(
-      PatientState.history
-    );
-  } catch (error) {
-    appointmentsLoaded = false;
-    PatientState.schedule = [];
-    PatientState.dashboard.upcoming = [];
-    PatientState.history = [];
-    renderUpcoming([]);
-    renderSchedule([]);
-    renderHistory([]);
-    renderDashboardStats(PatientState.dashboard.stats);
-    const welcomeText = document.getElementById('welcomeText');
-    if (welcomeText) welcomeText.textContent = 'Unable to load appointments. Please try again.';
-    showToast('Unable to load appointments. Please try again.', 'error');
-  }
-}
+function loadPatientAppointments() { return refreshAfterPatientAction(); }
+function loadPatientBraces() { return refreshAfterPatientAction(); }
 
 // ---------- Initial rendering ----------
 
@@ -1236,7 +1029,6 @@ renderContract(
   PatientState.contract
 );
 
-renderPayments();
 
 renderPromoCards(
   PatientState.promoCards
@@ -1244,30 +1036,91 @@ renderPromoCards(
 
 applyPatientFeatureVisibility();
 
-loadPatientAppointments();
-loadPatientBraces();
-
-async function loadPatientProfile(user) {
-  PatientState.user.name = user.full_name;
-  PatientState.user.initials = user.full_name.trim().split(/\s+/).map(n => n[0]).slice(0, 2).join('');
-  try {
-    const data = await apiFetch('../backend/api/patients/list.php');
-    const profile = data.patients && data.patients[0];
-    if (!profile) throw new Error('Patient profile unavailable.');
-    PatientState.user.pid = '#P-' + profile.patient_id;
-    PatientState.profile = {
-      memberSince: profile.registered_at ? new Date(profile.registered_at.replace(' ', 'T')).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : '—',
-      primaryDentist: '—',
-      info: [
-        { label: 'Full Name', value: profile.first_name + ' ' + profile.last_name },
-        { label: 'Patient ID', value: PatientState.user.pid },
-        { label: 'Contact Number', value: profile.contact_number || '—' },
-        { label: 'Email Address', value: profile.email || user.email }
-      ]
-    };
-    renderProfile(PatientState.profile);
-    document.getElementById('profilePid').textContent = PatientState.user.pid;
-  } catch (error) { showToast('Unable to load your profile. Please try again.', 'error'); }
+function applyPatientSnapshot(data, changed) {
+  const { appointments, braces, profile } = data;
+  PatientState.schedule = appointments.schedule;
+  PatientState.history = appointments.history;
+  PatientState.dashboard.upcoming = appointments.upcoming;
+  PatientState.braces = braces.braces;
+  PatientState.contract = braces.contract;
+  PatientState.treatments = data.treatments;
+  appointmentsLoaded = true;
+  PatientDashboardVisibility.braces = braces.has_braces_treatment === true;
+  PatientDashboardVisibility.contract = braces.has_contract === true;
+  PatientDashboardVisibility.balance = braces.has_outstanding_balance === true;
+  setDashboardStat('Braces Treatment Progress', braces.braces_progress);
+  setDashboardStat('Outstanding Balance', braces.outstanding_balance);
+  setDashboardStat('Completed Visits', braces.completed_visits);
+  setDashboardStat('Treatment Records', braces.treatment_records);
+  PatientState.user.pid = '#P-' + profile.patient_id;
+  PatientState.user.name = profile.first_name + ' ' + profile.last_name;
+  PatientState.user.initials = PatientState.user.name.split(/\s+/).map(s => s[0]).slice(0,2).join('').toUpperCase();
+  renderUser(PatientState.user);
+  inbox.setItems(data.notifications || []);
+  const dentistSelect = document.getElementById('bookDentist');
+  const dentistVersion = JSON.stringify(data.dentists || []);
+  if (dentistSelect && dentistSelect.dataset.version !== dentistVersion) {
+    const selected = dentistSelect.value;
+    dentistSelect.innerHTML = '<option>No preference</option>' + (data.dentists || []).map(d => `<option>${escapeHtml(d.full_name)}</option>`).join('');
+    if ([...dentistSelect.options].some(o => o.value === selected)) dentistSelect.value = selected;
+    dentistSelect.dataset.version = dentistVersion;
+  }
+  PatientState.promoCards = (data.announcements || []).map(a => ({ ...a, title: a.title, tag: 'green', status: 'Live', eyebrow: 'Clinic announcement', meta: a.start_date || '' }));
+  PatientState.dashboard.announcements = PatientState.promoCards.map(a => ({ ...a, sub: a.desc }));
+  renderPromoCards(PatientState.promoCards); renderAnnouncementMinis(PatientState.dashboard.announcements);
+  const dentist = (braces.contract.summary || []).find(item => item.l === 'Treating Dentist');
+  PatientState.profile = {
+    memberSince: profile.registered_at ? new Date(profile.registered_at.replace(' ', 'T')).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : '—',
+    primaryDentist: dentist ? dentist.v : '—',
+    info: [
+      { label: 'Full Name', value: PatientState.user.name },
+      { label: 'Patient ID', value: PatientState.user.pid },
+      { label: 'Contact Number', value: profile.contact_number || '—' },
+      { label: 'Email Address', value: profile.email || '—' }
+    ]
+  };
+  renderProfile(PatientState.profile);
+  document.getElementById('profilePid').textContent = PatientState.user.pid;
+  const first = appointments.schedule[0];
+  document.getElementById('welcomeText').textContent = first
+    ? 'Your next visit is on ' + first.date + ' at ' + first.time + ' for ' + first.svc + '.'
+    : 'You have no upcoming appointments.';
+  applyPatientFeatureVisibility();
+  renderDashboardStats(PatientState.dashboard.stats);
+  renderUpcoming(appointments.upcoming);
+  renderSchedule(appointments.schedule);
+  renderHistory(appointments.history);
+  renderTreatments(data.treatments);
+  renderBracesProgress(braces.braces);
+  renderContract(braces.contract);
+  paymentSubmission.renderSubmissions(data.submissions);
+  const active = document.querySelector('.view.active');
+  if ((active?.id === 'view-braces' && !PatientDashboardVisibility.braces) ||
+      (active?.id === 'view-contract' && !PatientDashboardVisibility.contract)) switchView('dashboard');
 }
-window.addEventListener('asdc:authenticated', event => loadPatientProfile(event.detail));
-if (window.ASDCAuthUser) loadPatientProfile(window.ASDCAuthUser);
+
+const patientLiveSync = new PatientLiveSync({
+  fetchSnapshot: async () => {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 10000);
+    try {
+      return await apiFetch('../backend/api/patients/dashboard.php', { cache: 'no-store', signal: controller.signal });
+    } finally { clearTimeout(timer); }
+  },
+  applySnapshot: applyPatientSnapshot,
+  onStatus: status => {
+    const label = document.getElementById('patientSyncStatus');
+    if (label) label.textContent = {
+      live: 'Updates automatically',
+      reconnecting: 'Connection interrupted — showing last update. Retrying…',
+      unavailable: 'Unable to load clinic records. Retrying…',
+      'signed-out': 'Your session has ended. Please sign in again.'
+    }[status];
+    if (status === 'signed-out') window.location.replace('../auth/login.html?error=session');
+  }
+});
+window.addEventListener('asdc:authenticated', () => patientLiveSync.start());
+window.addEventListener('asdc:mutation', refreshAfterPatientAction);
+window.addEventListener('pagehide', () => patientLiveSync.stop());
+window.addEventListener('pageshow', event => { if (event.persisted) patientLiveSync.start(); });
+if (window.ASDCAuthUser) patientLiveSync.start();

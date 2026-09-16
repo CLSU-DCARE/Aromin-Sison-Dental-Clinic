@@ -49,7 +49,7 @@ function load(ctx, file) { vm.runInContext(fs.readFileSync(path.join(root, file)
   scheduler._render = () => {};
   scheduler.state.appointments = [{ appointment_id: 1 }];
   await scheduler.loadWeek();
-  assert.equal(scheduler.state.appointments.length, 0);
+  assert.equal(scheduler.state.appointments.length, 1, 'Failed refresh keeps the last valid appointments');
   assert.equal(scheduler.state.requests.length, 0);
   assert.equal(c.get('appointmentLoadError').hidden, false);
   assert.ok(scheduler.state.error);
@@ -90,11 +90,23 @@ function load(ctx, file) { vm.runInContext(fs.readFileSync(path.join(root, file)
   const appt = { appointment_id: 1, date: 'Sep 20, 2026', time: '9:00 AM', status: 'Confirmed' };
   const before = JSON.stringify(appt);
   const reschedule = new c.PatientRescheduleModal({ state: { schedule: [appt] } });
-  reschedule.init(); reschedule._selectedIndex = 0;
+  reschedule.init(); reschedule._selectedAppointmentId = 1;
   c.get('rsDate').value = '2026-10-20'; c.get('rsTime').value = '10:00 AM';
   await c.get('rsSaveBtn').handlers.click();
   assert.equal(JSON.stringify(appt), before);
   assert.ok(c.get('rsNote').classList.contains('err'));
+
+  // A live update can reorder the schedule while this dialog stays open.
+  let submittedId;
+  c.apiFetch = async (url, options) => { submittedId = JSON.parse(options.body).appointment_id; return {}; };
+  reschedule.state.schedule.unshift({ appointment_id: 99 });
+  await c.get('rsSaveBtn').handlers.click();
+  assert.equal(submittedId, 1, 'An open dialog must keep its original appointment ID after a refresh.');
+  reschedule.state.schedule = [{ appointment_id: 99 }];
+  submittedId = null;
+  await c.get('rsSaveBtn').handlers.click();
+  assert.equal(submittedId, null, 'An appointment removed by staff must not be replaced with another row.');
+  assert.match(c.get('rsNote').textContent, /no longer available/);
 
   c = context();
   load(c, 'patient-dashboard/assets/js/PatientPaymentSubmission.js');
