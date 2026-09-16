@@ -344,9 +344,61 @@ if (contractFormModal.modal){
 }
 
 // =====================================================================
-// Promotions management is unavailable until a server endpoint is provided.
-const addPromoBtn = document.getElementById('addPromoBtn');
-if (addPromoBtn) { addPromoBtn.disabled = true; addPromoBtn.title = 'Promotions management is unavailable.'; }
+// PROMOTIONS: create live/scheduled clinic announcements
+const promoFormModal = new Modal('promoFormModal');
+if (promoFormModal.modal){
+  const addPromoBtn = document.getElementById('addPromoBtn');
+  const promoNote = document.getElementById('promoFormNote');
+  const promoSaveBtn = document.getElementById('promoFormSave');
+  const promoTitle = document.getElementById('pf2Title');
+  const promoDesc = document.getElementById('pf2Desc');
+  const promoStatus = document.getElementById('pf2Status');
+
+  promoFormModal.registerClose(document.getElementById('promoFormClose'));
+  promoFormModal.registerClose(document.getElementById('promoFormCancel'));
+
+  addPromoBtn?.addEventListener('click', () => {
+    promoTitle.value = '';
+    promoDesc.value = '';
+    promoStatus.value = 'Live';
+    promoNote.hidden = true;
+    promoSaveBtn.classList.remove('loading');
+    promoSaveBtn.disabled = false;
+    promoFormModal.open(addPromoBtn);
+  });
+
+  promoSaveBtn?.addEventListener('click', async () => {
+    const title = promoTitle.value.trim();
+    const description = promoDesc.value.trim();
+    const status = promoStatus.value.toLowerCase();
+    if (!title || !description){
+      promoNote.textContent = 'Enter a title and description.';
+      promoNote.classList.add('err'); promoNote.classList.remove('ok');
+      promoNote.hidden = false;
+      return;
+    }
+
+    promoSaveBtn.classList.add('loading');
+    promoSaveBtn.disabled = true;
+    try {
+      await apiFetch('../backend/api/promotions/promotions.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, description, status })
+      });
+      promoFormModal.close();
+      showToast('Promotion saved');
+      if (window.staffLiveSync) await window.staffLiveSync.refetch();
+    } catch (error) {
+      promoNote.textContent = error.message;
+      promoNote.classList.add('err'); promoNote.classList.remove('ok');
+      promoNote.hidden = false;
+    } finally {
+      promoSaveBtn.classList.remove('loading');
+      promoSaveBtn.disabled = false;
+    }
+  });
+}
 
 // INVENTORY: add item (delegated to InventoryTableManager)
 // =====================================================================
@@ -467,7 +519,7 @@ function renderWeekGrid(containerId, week){
     `<div class="cell${d ? ' head': ''}">${d}</div>`).join('');
   const body = week.rows.map(row =>
     `<div class="cell time">${row.time}</div>` + row.appts.map(a =>
-      a ? `<div class="cell"><div class="appt-block">${a.name} <span class="t">${a.t}</span></div></div>`
+      a ? `<div class="cell"><div class="appt-block${a.status === 'completed' ? ' appt-completed' : ''}">${a.name} <span class="t">${a.t}</span>${a.status === 'completed' ? '<span class="appt-status">Completed</span>' : ''}</div></div>`
         : '<div class="cell"></div>'
     ).join('')
   ).join('');

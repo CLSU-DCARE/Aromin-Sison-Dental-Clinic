@@ -23,7 +23,11 @@
           time: timeLabel(time),
           appts: dates.map(date => {
             const items = active.filter(a => a.scheduled_date === iso(date) && a.scheduled_time === time);
-            return items.length ? { name: esc(items.map(a => a.patient_name).join(', ')), t: esc(timeLabel(time) + ' · ' + items.map(a => a.service_type).join(', ')) } : null;
+            return items.length ? {
+              status: items.every(a => String(a.status).toLowerCase() === 'completed') ? 'completed' : '',
+              name: esc(items.map(a => a.patient_name).join(', ')),
+              t: esc(timeLabel(time) + ' · ' + items.map(a => a.service_type).join(', '))
+            } : null;
           })
         }))
       };

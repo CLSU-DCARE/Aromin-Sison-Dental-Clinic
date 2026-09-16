@@ -581,6 +581,34 @@ background:var(--ivory-2);color:rgba(27,27,25,0.65);padding:13px 10px;min-height
   border-radius:var(--r-sm);padding:6px 8px;font-size:11.5px;font-weight:600;color:var(--dark);margin-bottom:4px;
 }
 .appt-block .t{font-weight:400;color:rgba(27,27,25,0.65);font-size:10.5px;margin-left:5px;}
+.appt-block.appt-completed{
+  background:rgba(92,122,92,0.13);
+  border-left-color:var(--green-text);
+  color:var(--green-text);
+}
+.appt-block.appt-completed .t{
+  color:rgba(54,83,55,0.78);
+}
+.appt-status{
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  margin-top:6px;
+  padding:3px 7px;
+  border-radius:var(--r-pill);
+  background:rgba(92,122,92,0.14);
+  color:var(--green-text);
+  font-family:var(--font-ui);
+  font-size:10px;
+  font-weight:700;
+}
+.appt-status::before{
+  content:'';
+  width:6px;
+  height:6px;
+  border-radius:50%;
+  background:var(--green-text);
+}
 .appointment-card-actions{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px;}
 .appointment-card-actions .btn{min-height:28px;padding:5px 8px;font-size:10px;line-height:1.2;white-space:nowrap;}
 .appointment-week-nav{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap;}
