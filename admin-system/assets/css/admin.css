@@ -379,6 +379,9 @@ text-transform:uppercase;color:rgba(27,27,25,0.65);
   transition:transform .25s var(--ease), box-shadow .25s var(--ease), border-color .25s ease;
 }
 .stat-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-hover);border-color:rgba(27,27,25,0.14);}
+.stat-card-link{cursor:pointer;}
+.stat-card-link:focus-visible{outline:3px solid rgba(174,153,67,0.36);outline-offset:3px;}
+.stat-card-link:active{transform:translateY(0);}
 .stat-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;}
 .stat-icon{
   width:40px;height:40px;border-radius:10px;

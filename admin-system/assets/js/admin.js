@@ -437,8 +437,28 @@ function renderUser(user){
 function renderDashboardStats(stats){
   const grid = document.getElementById('dashStats');
   if (!grid) return;
-  grid.innerHTML = stats.map(statCard).join('');
+  const targets = ['appointments', 'patients', 'payments', 'braces'];
+  grid.innerHTML = stats.map((stat, index) => {
+    const target = targets[index] || 'dashboard';
+    return statCard(stat).replace(
+      'class="stat-card"',
+      `class="stat-card stat-card-link" role="button" tabindex="0" data-stat-target="${target}" aria-label="Open ${escapeHtml(stat.label)}"`
+    );
+  }).join('');
 }
+
+document.getElementById('dashStats')?.addEventListener('click', event => {
+  const card = event.target.closest('[data-stat-target]');
+  if (card) switchView(card.dataset.statTarget);
+});
+
+document.getElementById('dashStats')?.addEventListener('keydown', event => {
+  if (!['Enter', ' '].includes(event.key)) return;
+  const card = event.target.closest('[data-stat-target]');
+  if (!card) return;
+  event.preventDefault();
+  switchView(card.dataset.statTarget);
+});
 
 function renderWeekGrid(containerId, week){
   const grid = document.getElementById(containerId);
