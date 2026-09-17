@@ -9,7 +9,7 @@
  *   const patientMgr = new PatientTableManager({ state: AdminState });
  *   patientMgr.init();
  */
-/* global Modal, showToast, escapeHtml, nameCell, statusTag, eyeIcon, pencilIcon, trashIcon, wireChips, setChipGroup, Popover */
+/* global Modal, showToast, escapeHtml, nameCell, statusTag, eyeIcon, pencilIcon, trashIcon, wireChips, setChipGroup, Popover, apiFetch */
 window.PatientTableManager = class PatientTableManager {
   constructor ({ state, onSwitchView = null } = {}) {
     this.state        = state;
@@ -181,10 +181,9 @@ window.PatientTableManager = class PatientTableManager {
     if (!tbody) return;
     const q = this.query.trim().toLowerCase();
     const list = this.state.patients.filter(p => {
-      const okContract = !!p.contract;
       const okStatus   = this.status === 'All' || p.status === this.status;
       const okQuery    = !q || [p.name, p.id, p.contact].some(v => String(v).toLowerCase().includes(q));
-      return okContract && okStatus && okQuery;
+      return okStatus && okQuery;
     });
     this.patientsList = list;
     if (!list.length) {
@@ -208,7 +207,7 @@ window.PatientTableManager = class PatientTableManager {
         <td><div class="row-actions">
           <button class="icon-btn" data-action="view" data-id="${p.id}" aria-label="View ${escapeHtml(p.name)}">${eyeIcon}</button>
           <button class="icon-btn" data-action="edit" data-id="${p.id}" aria-label="Edit ${escapeHtml(p.name)}">${pencilIcon}</button>
-          <button class="icon-btn" data-action="delete" data-id="${p.id}" aria-label="Delete ${escapeHtml(p.name)}" disabled title="Patient deletion is unavailable.">${trashIcon}</button>
+          <button class="icon-btn" data-action="delete" data-id="${p.id}" aria-label="Delete ${escapeHtml(p.name)}">${trashIcon}</button>
         </div></td>
       </tr>`
     ).join('');
@@ -258,11 +257,67 @@ window.PatientTableManager = class PatientTableManager {
    * ----------------------------------------------------------------*/
 
   _bindFormModal () {
-    const button = document.getElementById('addPatientBtn');
-    if (button) { button.disabled = true; button.title = 'Patient editing is unavailable.'; }
+    this._formModal = new Modal('patientFormModal');
+    if (!this._formModal.modal) return;
+
+    document.getElementById('addPatientBtn')?.addEventListener('click', () => this._openAddForm());
+    this._formModal.registerClose(document.getElementById('patientFormClose'));
+    this._formModal.registerClose(document.getElementById('patientFormCancel'));
+    document.getElementById('patientFormSave')?.addEventListener('click', () => this._saveNewPatient());
   }
 
   _openForm (patient) { window.ASDC.openProfileForm(patient); }
+
+  _openAddForm () {
+    this._editingPatient = null;
+    document.getElementById('patientFormTitle').textContent = 'Add Patient';
+    document.querySelector('#patientFormSave .btn-label').textContent = 'Add Patient';
+    document.getElementById('pfName').value = '';
+    document.getElementById('pfContact').value = '';
+    document.getElementById('pfEmail').value = '';
+    ['pfLastVisit', 'pfBalance', 'pfStatus'].forEach(id => {
+      const field = document.getElementById(id);
+      if (field) field.closest('.form-group').hidden = true;
+    });
+    const note = document.getElementById('patientFormNote');
+    if (note) note.hidden = true;
+    this._formModal.open(document.getElementById('addPatientBtn'));
+  }
+
+  async _saveNewPatient () {
+    const saveBtn = document.getElementById('patientFormSave');
+    if (!saveBtn || saveBtn.disabled) return;
+    const note = document.getElementById('patientFormNote');
+    const name = document.getElementById('pfName').value.trim();
+    const contact = document.getElementById('pfContact').value.trim();
+    const email = document.getElementById('pfEmail').value.trim();
+
+    if (name.length < 2) {
+      this._showFormNote('Enter the patient full name.', true);
+      document.getElementById('pfName').focus();
+      return;
+    }
+
+    saveBtn.disabled = true;
+    saveBtn.classList.add('is-loading');
+    if (note) note.hidden = true;
+
+    try {
+      await apiFetch('../backend/api/patients/profile.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, contact_number: contact, email })
+      });
+      this._formModal.close();
+      await this.load();
+      showToast('Patient created.');
+    } catch (error) {
+      this._showFormNote(error.message, true);
+    } finally {
+      saveBtn.disabled = false;
+      saveBtn.classList.remove('is-loading');
+    }
+  }
 
   _showFormNote (msg, isError) {
     const el = document.getElementById('patientFormNote');
@@ -277,8 +332,47 @@ window.PatientTableManager = class PatientTableManager {
    *  Private – delete confirm modal
    * ----------------------------------------------------------------*/
 
-  _bindDeleteModal () {}
-  _openDelete () { showToast('Patient deletion is unavailable.', 'error'); }
+  _bindDeleteModal () {
+    this._deleteModal = new Modal('deleteModal');
+    if (!this._deleteModal.modal) return;
+    this._deleteModal.registerClose(document.getElementById('deleteClose'));
+    this._deleteModal.registerClose(document.getElementById('deleteCancelBtn'));
+    document.getElementById('deleteConfirmBtn')?.addEventListener('click', () => this._confirmDelete());
+  }
+
+  _openDelete (patient) {
+    this._deletingPatient = patient;
+    if (!this._deleteModal.modal) return;
+    document.getElementById('deleteTitle').textContent = 'Delete this patient?';
+    document.getElementById('deleteText').textContent = `This will remove ${patient.name} and related appointments, contracts, records, payments, and notifications. This action can't be undone.`;
+    this._deleteModal.open(document.querySelector(`[data-action="delete"][data-id="${patient.id}"]`));
+  }
+
+  async _confirmDelete () {
+    if (!this._deletingPatient) return;
+    const button = document.getElementById('deleteConfirmBtn');
+    if (!button || button.disabled) return;
+
+    button.disabled = true;
+    button.classList.add('is-loading');
+    try {
+      await apiFetch('../backend/api/patients/profile.php', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ patient_id: Number(this._deletingPatient.pid) })
+      });
+      this._deleteModal.close();
+      const deletedName = this._deletingPatient.name;
+      this._deletingPatient = null;
+      await this.load();
+      showToast(`${deletedName} deleted.`);
+    } catch (error) {
+      showToast(error.message, 'error');
+    } finally {
+      button.disabled = false;
+      button.classList.remove('is-loading');
+    }
+  }
 
   /* ------------------------------------------------------------------
    *  Private – helpers

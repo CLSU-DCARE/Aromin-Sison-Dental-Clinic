@@ -57,11 +57,12 @@ window.AppointmentActions = class AppointmentActions {
       }
 
       const action = button.dataset.requestAction;
-      if (action === 'reject') {
+      if (['reject', 'cancel'].includes(action)) {
+        const actionLabel = action === 'reject' ? 'Reject' : 'Cancel';
         const confirmed = await ASDC.confirmAction({
-          title: 'Reject Booking Request',
-          message: `Reject the booking request from ${request.patient_name}?`,
-          confirmLabel: 'Reject',
+          title: `${actionLabel} Booking Request`,
+          message: `${actionLabel} the booking request from ${request.patient_name}?`,
+          confirmLabel: actionLabel,
           tone: 'danger'
         });
         if (!confirmed) return;
@@ -73,7 +74,12 @@ window.AppointmentActions = class AppointmentActions {
 
       try {
         await this.run(action, 'request', requestId);
-        showToast(action === 'approve' ? 'Booking request approved and added to the schedule' : 'Booking request rejected', action === 'approve' ? 'success' : 'error');
+        const messages = {
+          approve: 'Booking request approved and added to the schedule',
+          reject: 'Booking request rejected',
+          cancel: 'Booking request cancelled'
+        };
+        showToast(messages[action] || 'Booking request updated', action === 'approve' ? 'success' : 'error');
       } catch (error) {
         showToast(error.code === 'slot_unavailable' ? 'That appointment slot is already booked.' : error.message, 'error');
         rowButtons.forEach(b => { b.disabled = false; });

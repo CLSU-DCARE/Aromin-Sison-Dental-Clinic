@@ -236,6 +236,7 @@ window.AppointmentScheduler = class AppointmentScheduler {
           `<button type="button" class="btn btn-sm btn-approve" data-request-action="approve" data-request-id="${Number(request.request_id)}">Approve</button>` +
           `<button type="button" class="btn btn-sm btn-outline" data-request-action="reschedule" data-request-id="${Number(request.request_id)}">Reschedule</button>` +
           `<button type="button" class="btn btn-sm btn-reject" data-request-action="reject" data-request-id="${Number(request.request_id)}">Reject</button>` +
+          `<button type="button" class="btn btn-sm btn-reject" data-request-action="cancel" data-request-id="${Number(request.request_id)}">Cancel</button>` +
           `</div></td></tr>`;
       }).join('')
       : '<tr><td colspan="6" class="empty-cell">No pending booking requests for this week.</td></tr>';

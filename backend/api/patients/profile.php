@@ -3,9 +3,19 @@ require_once __DIR__ . '/../../autoload.php';
 require_once __DIR__ . '/../../config/headers.php';
 require_once __DIR__ . '/../../config/auth.php';
 require_role('patient', 'receptionist');
-\ASDC\ApiResponse::method('PATCH');
+$method = \ASDC\ApiResponse::method('PATCH', 'POST', 'DELETE');
 \ASDC\CsrfToken::requireValid();
 $body = \ASDC\ApiResponse::requireJson();
+if ($method === 'POST') {
+    require_role('receptionist');
+    \ASDC\ApiResponse::ok(\ASDC\PatientService::create($body), 'Patient created.', 201);
+}
+if ($method === 'DELETE') {
+    require_role('receptionist');
+    $patientId = \ASDC\InputValidator::positiveId($body['patient_id'] ?? null);
+    if (!$patientId) \ASDC\ApiResponse::error(422, 'validation_failed', 'Choose a valid patient.');
+    \ASDC\ApiResponse::ok(\ASDC\PatientService::delete($patientId), 'Patient deleted.');
+}
 $patientId = $_SESSION['role'] === 'patient' ? \ASDC\PatientService::resolvePatientId((int) $_SESSION['user_id']) : \ASDC\InputValidator::positiveId($body['patient_id'] ?? null);
 $name = is_string($body['name'] ?? null) ? trim($body['name']) : '';
 $contact = is_string($body['contact_number'] ?? null) ? trim($body['contact_number']) : '';

@@ -70,7 +70,5 @@ window.InventoryTableManager = class InventoryTableManager {
    * ----------------------------------------------------------------*/
 
   _bindFormModal () {
-    const button = document.getElementById('addInventoryBtn');
-    if (button) { button.disabled = true; button.title = 'Inventory management is unavailable.'; }
   }
 };
