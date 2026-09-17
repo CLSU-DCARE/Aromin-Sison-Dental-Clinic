@@ -2034,7 +2034,21 @@ header.scrolled .nav-toggle:hover{border-color:var(--gold);background:var(--ivor
 @media (max-width:900px){
   .dentist-profile, .dentist-profile.alt-side{grid-template-columns:1fr;gap:36px;padding:50px 0;}
   .dentist-profile.alt-side .dentist-photo{order:0;}
-  .dentist-photo{width:100%;max-width:320px;margin:0 auto;position:static;}
+  .dentist-profile{isolation:isolate;min-width:0;}
+  .dentist-photo{
+    width:100%;max-width:320px;margin:0 auto;position:static;
+    /* A transformed layer inside a clipped, rounded image forces costly
+       repaints during touch scrolling. Let mobile browsers paint the
+       portrait normally instead. */
+    transition:box-shadow .25s ease;
+  }
+  .dentist-photo img{
+    transform:none;
+    transition:none;
+    backface-visibility:visible;
+  }
+  .dentist-photo:hover{transform:none;}
+  .dentist-photo:hover img{transform:none;}
   .dentist-name{text-align:center;}
   .dentist-title{text-align:center;border-bottom:none;padding-bottom:0;}
   .dentist-title::after{left:50%;transform:translateX(-50%);}
@@ -2167,6 +2181,48 @@ footer{
 }
 @media (max-width:640px){
   html,body{overflow-x:hidden;width:100%;}
+  /* Dentist page: preserve the editorial hero, but give the first portrait
+     a deliberate, phone-sized frame instead of a near full-screen image. */
+  .dentist-hero{height:auto;min-height:0;padding:126px 0 42px;}
+  .dentist-hero .wrap{position:relative;z-index:1;}
+  .dentist-hero-bg-word{
+    top:auto;bottom:20px;
+    transform:translateX(-50%);
+    font-size:42vw;
+  }
+  .dentist-hero h1{font-size:clamp(36px,10.5vw,46px);margin:16px 0 20px;}
+  .dentist-hero-divider{margin-bottom:20px;}
+  .dentist-hero p{font-size:15px;line-height:1.6;}
+  .dentist-profiles-section{padding:34px 0 48px;}
+  .dentist-profile,.dentist-profile.alt-side{
+    display:flex;
+    flex-direction:column;
+    align-items:stretch;
+    gap:26px;
+    padding:34px 0 46px;
+  }
+  .dentist-photo{
+    position:relative;
+    inset:auto;
+    flex:none;
+    width:100%;
+    max-width:300px;
+    aspect-ratio:4 / 5;
+    margin:0 auto;
+  }
+  .dentist-photo img{
+    position:absolute;
+    inset:0;
+    display:block;
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    object-position:top center;
+  }
+  .dentist-profile > div:not(.dentist-photo){position:relative;z-index:1;min-width:0;}
+  .dentist-bio p{font-size:15px;line-height:1.7;}
+  .dentist-quote{font-size:18px;margin:20px 0;}
+  .cred-list li,.award-list li{font-size:14px;padding:12px 0;}
   .banner-visual{display:none;}
   .foot-grid{grid-template-columns:1fr;}
   .foot-bottom{flex-direction:column;}
