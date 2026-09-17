@@ -193,7 +193,7 @@
         <div class="page-head">
           <div>
             <div class="eyebrow">Patients</div>
-            <p>Orthodontic patients with a current braces contract.</p>
+            <p>Patient records and orthodontic contract status.</p>
           </div>
           <button class="btn btn-gold" id="addPatientBtn">+ Add Patient</button>
         </div>
@@ -360,7 +360,7 @@
             <div class="eyebrow">Marketing</div>
             <p>Live campaigns and featured offers.</p>
           </div>
-          <button class="btn btn-gold" id="addPromoBtn">+ New Promotion</button>
+          <span class="feature-unavailable-note">Feature unavailable in current version</span>
         </div>
         <div class="promo-grid" id="promoGrid"></div>
       </section>
@@ -435,7 +435,7 @@
             <div class="eyebrow">Operations</div>
             <p>Supplies, stock levels, and reorder points.</p>
           </div>
-          <button class="btn btn-gold" id="addInventoryBtn">+ Add Item</button>
+          <span class="feature-unavailable-note">Feature unavailable in current version</span>
         </div>
         <div class="panel">
           <div class="toolbar">
@@ -469,7 +469,7 @@
         <div class="page-head">
           <div>
             <div class="eyebrow">Operations</div>
-            <p>Email and SMS notifications sent to patients.</p>
+            <p>Email notifications sent to patients.</p>
           </div>
           <button class="btn btn-gold" id="sendNotifBtn">+ Send Notification</button>
         </div>
@@ -478,7 +478,6 @@
             <div class="toolbar-left" role="group" aria-label="Filter notifications">
               <button class="filter-chip active" aria-pressed="true">All</button>
               <button class="filter-chip" aria-pressed="false">Email</button>
-              <button class="filter-chip" aria-pressed="false">SMS</button>
               <button class="filter-chip" aria-pressed="false">Failed</button>
             </div>
           </div>
@@ -620,6 +619,10 @@
     <div class="form-group">
       <label for="pfContact">Contact Number</label>
       <input type="tel" id="pfContact" autocomplete="off">
+    </div>
+    <div class="form-group">
+      <label for="pfEmail">Email Address</label>
+      <input type="email" id="pfEmail" autocomplete="off">
     </div>
     <div class="form-group">
       <label for="pfLastVisit">Last Visit</label>
@@ -899,9 +902,7 @@
     <div class="form-group">
       <label for="snChannel">Channel</label>
       <select id="snChannel">
-        <option value="both">Email + SMS</option>
         <option value="email">Email only</option>
-        <option value="sms">SMS only</option>
       </select>
     </div>
     <div class="form-group">
@@ -946,10 +947,10 @@
 <script src="../shared/js/state/admin.js?v=20260916-integration" defer></script>
 <script src="../shared/js/core/ContractFormat.js?v=20260916-integration" defer></script>
 <script src="assets/js/NotificationManager.js?v=20260916-integration" defer></script>
-<script src="assets/js/AppointmentScheduler.js?v=20260916-integration" defer></script>
+<script src="assets/js/AppointmentScheduler.js?v=20260916-public-booking" defer></script>
 <script src="assets/js/AppointmentActions.js?v=20260916-appointment-dialogs" defer></script>
 <script src="assets/js/PaymentApprovalManager.js?v=20260916-integration" defer></script>
-<script src="assets/js/PatientTableManager.js?v=20260916-integration" defer></script>
+<script src="assets/js/PatientTableManager.js?v=20260916-patient-delete" defer></script>
 <script src="assets/js/RecordTableManager.js?v=20260916-integration" defer></script>
 <script src="assets/js/InventoryTableManager.js?v=20260916-integration" defer></script>
 <script src="../patient-dashboard/assets/js/PatientLiveSync.js?v=20260916-integration" defer></script>

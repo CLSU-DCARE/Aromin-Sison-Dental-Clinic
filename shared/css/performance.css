@@ -1,0 +1,23 @@
+/* Lightweight public-site treatment. Loaded after the page stylesheet so
+   it can selectively turn off nonessential motion on touch-sized screens. */
+
+@media (max-width:960px){
+  html{scroll-behavior:auto;}
+  .site-enter{display:none;}
+  header,.mobile-menu,.nav-icon-btn,.nav-toggle,.lightbox,.lb-close,.lb-prev,.lb-next,.lb-meta{
+    -webkit-backdrop-filter:none !important;
+    backdrop-filter:none !important;
+  }
+  header{background:rgba(17,17,16,.94);}
+  header.scrolled{background:rgba(247,243,236,.97);}
+  .tooth-track{animation:none;transform:none;width:100%;flex-wrap:wrap;}
+  .tooth-item{flex:0 0 min(190px,calc(50% - 8px));}
+  [data-reveal]{opacity:1;transform:none;transition:none;}
+  .carousel-cell,.carousel-stage,.lightbox,.lb-stage img{animation:none !important;transition:none !important;}
+}
+
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto;}
+  .site-enter{display:none;}
+  .tooth-track{animation:none;transform:none;}
+}

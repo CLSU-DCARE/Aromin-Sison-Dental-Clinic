@@ -404,6 +404,34 @@ text-transform:uppercase;color:rgba(27,27,25,0.65);
 .panel{background:var(--glass-solid);border:1px solid var(--glass-border);border-radius:var(--r-md);overflow:hidden;box-shadow:var(--glass-shadow);}
 .panel-head{display:flex;justify-content:space-between;align-items:center;padding:22px 24px;border-bottom:1px solid var(--line);}
 .panel-head h3{font-family:'Fraunces',serif;font-size:18px;font-weight:600;letter-spacing:-0.01em;}
+body.dentist-dashboard .panel-head-actions{display:flex;align-items:center;justify-content:flex-end;gap:12px;flex-wrap:wrap;}
+body.dentist-dashboard .date-control{
+  display:inline-flex;align-items:center;gap:10px;
+  min-height:40px;
+  padding:4px 4px 4px 13px;
+  border:1px solid var(--line);
+  border-radius:var(--r-pill);
+  background:rgba(255,255,255,0.62);
+  box-shadow:var(--shadow-xs);
+  color:rgba(27,27,25,0.62);
+  font-family:var(--font-ui);
+  font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;
+  white-space:nowrap;
+  transition:border-color .2s ease, background .2s ease, box-shadow .2s ease;
+}
+body.dentist-dashboard .date-control:focus-within{border-color:rgba(156,139,62,0.55);background:var(--white);box-shadow:var(--ring-soft);}
+body.dentist-dashboard .date-control input[type="date"]{
+  width:142px;height:32px;
+  border:0;border-radius:var(--r-pill);
+  background:var(--ivory-2);
+  color:var(--ink);
+  font-family:inherit;font-size:13px;font-weight:600;
+  padding:0 10px;
+  appearance:none;-webkit-appearance:none;
+}
+body.dentist-dashboard .date-control input[type="date"]:focus{outline:none;background:var(--white);}
+body.dentist-dashboard .date-control input[type="date"]::-webkit-calendar-picker-indicator{cursor:pointer;opacity:.62;}
+body.dentist-dashboard .date-control input[type="date"]::-webkit-calendar-picker-indicator:hover{opacity:.9;}
 
 .grid-2{display:grid;grid-template-columns:1.6fr 1fr;gap:22px;}
 
@@ -674,6 +702,20 @@ background:var(--ivory-2);color:rgba(27,27,25,0.65);padding:13px 10px;min-height
 
 /* ---- Table empty state (no search/filter matches) ---- */
 .empty-cell{padding:36px 24px;text-align:center;color:rgba(27,27,25,0.65);font-size:14px;}
+.feature-unavailable-note{
+  display:inline-flex;
+  align-items:center;
+  min-height:36px;
+  padding:8px 14px;
+  border:1px solid var(--line);
+  border-radius:var(--r-pill);
+  background:rgba(255,255,255,0.58);
+  color:rgba(27,27,25,0.58);
+  font-size:12.5px;
+  font-weight:600;
+  line-height:1.3;
+  white-space:nowrap;
+}
 
 /* ---- Modal form fields (Add/Edit patient) ---- */
 .form-group{margin-bottom:16px;}
@@ -775,6 +817,10 @@ body.modal-open{overflow:hidden;}
   .promo-viewer-content{padding:34px 24px 20px;}
   .receipt-grid{grid-template-columns:1fr;}
   .pay-actions{justify-content:flex-start;}
+  body.dentist-dashboard #view-appointments .panel-head{align-items:flex-start;flex-direction:column;gap:14px;}
+  body.dentist-dashboard .panel-head-actions{justify-content:flex-start;width:100%;}
+  body.dentist-dashboard .date-control{width:100%;justify-content:space-between;}
+  body.dentist-dashboard .date-control input[type="date"]{width:150px;}
 }
 
 @media (max-width:1250px){

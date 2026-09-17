@@ -50,22 +50,22 @@ class NotificationService
         $renderedBody    = TemplateRenderer::render($template['body'], $replacements);
         $renderedSubject = $template['subject'] ? TemplateRenderer::render($template['subject'], $replacements) : null;
 
-        $channels = ($template['channel'] === 'both') ? ['email', 'sms'] : [$template['channel']];
+        $channels = ['email'];
         $results  = [];
 
         foreach ($channels as $ch) {
-            $recipient = ($ch === 'email') ? $patient['email'] : $patient['contact_number'];
+            $recipient = $patient['email'];
             $status    = 'pending';
             $error     = null;
 
             if (!$recipient) {
                 $status = 'failed';
-                $error  = 'Patient has no ' . ($ch === 'email' ? 'email' : 'phone') . ' on file.';
+                $error  = 'Patient has no email on file.';
             } else {
                 if ($ch === 'email') {
                     $r = Mailer::sendEmail($recipient, $renderedSubject ?: 'Notification — Aromin-Sison Dental Clinic', $renderedBody);
                 } else {
-                    $r = SmsGateway::sendSms($recipient, $renderedBody);
+                    $r = ['ok' => false, 'error' => 'Unsupported notification channel.'];
                 }
                 $status = $r['ok'] ? 'sent' : 'failed';
                 $error  = $r['error'] ?? null;
@@ -77,7 +77,7 @@ class NotificationService
                 $template['template_id'],
                 $ch,
                 $recipient ?? '',
-                $ch === 'email' ? $renderedSubject : null,
+                $renderedSubject,
                 $renderedBody,
                 $status,
                 $error,

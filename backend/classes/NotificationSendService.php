@@ -2,7 +2,7 @@
 /**
  * Notification sending service: Aromin-Sison Dental Clinic System.
  *
- * Sends notifications via email/SMS to patients, with template resolution
+ * Sends email notifications to patients, with template resolution
  * and result logging.
  *
  * Usage:
@@ -40,7 +40,7 @@ class NotificationSendService
         }
 
         $templateKey  = trim($data['template_key'] ?? '');
-        $channel      = strtolower(trim($data['channel'] ?? ''));
+        $channel      = 'email';
         $subject      = trim($data['subject'] ?? '');
         $body         = trim($data['body'] ?? '');
         $replacements = $data['replacements'] ?? [];
@@ -53,15 +53,11 @@ class NotificationSendService
                 return ['success' => false, 'error' => "Template '$templateKey' not found or inactive.", 'code' => 404];
             }
             $templateId = $template['template_id'];
-            if (!$channel) $channel = $template['channel'];
             if (!$subject) $subject = $template['subject'];
             if (!$body)    $body    = $template['body'];
         }
 
         // Validate
-        if (!$channel || !in_array($channel, ['email', 'sms', 'both'], true)) {
-            return ['success' => false, 'error' => 'channel must be "email", "sms", or "both".', 'code' => 400];
-        }
         if (!$body) {
             return ['success' => false, 'error' => 'body is required (or provide template_key).', 'code' => 400];
         }
@@ -73,22 +69,22 @@ class NotificationSendService
         $renderedBody    = TemplateRenderer::render($body, $replacements);
         $renderedSubject = $subject ? TemplateRenderer::render($subject, $replacements) : null;
 
-        $channelsToSend = ($channel === 'both') ? ['email', 'sms'] : [$channel];
+        $channelsToSend = ['email'];
         $results = [];
 
         foreach ($channelsToSend as $ch) {
-            $recipient = ($ch === 'email') ? $patient['email'] : $patient['contact_number'];
+            $recipient = $patient['email'];
             $status    = 'pending';
             $error     = null;
 
             if (!$recipient) {
                 $status = 'failed';
-                $error  = 'Patient has no ' . ($ch === 'email' ? 'email address' : 'contact number') . ' on file.';
+                $error  = 'Patient has no email address on file.';
             } else {
                 if ($ch === 'email') {
                     $r = Mailer::sendEmail($recipient, $renderedSubject ?: 'Notification — Aromin-Sison Dental Clinic', $renderedBody);
                 } else {
-                    $r = SmsGateway::sendSms($recipient, $renderedBody);
+                    $r = ['ok' => false, 'error' => 'Unsupported notification channel.'];
                 }
                 $status = $r['ok'] ? 'sent' : 'failed';
                 $error  = $r['error'] ?? null;
@@ -101,7 +97,7 @@ class NotificationSendService
                 $templateId,
                 $ch,
                 $recipient ?? '',
-                $ch === 'email' ? $renderedSubject : null,
+                $renderedSubject,
                 $renderedBody,
                 $status,
                 $error,

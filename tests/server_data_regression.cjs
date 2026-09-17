@@ -134,11 +134,11 @@ function load(ctx, file) { vm.runInContext(fs.readFileSync(path.join(root, file)
   load(c, 'admin-system/assets/js/NotificationManager.js');
   const notifications = new c.ASDC.NotificationManager();
   notifications._initSendModal();
-  c.get('snPatient').value = '1'; c.get('snBody').value = 'Reminder'; c.get('snChannel').value = 'sms';
+  c.get('snPatient').value = '1'; c.get('snBody').value = 'Reminder'; c.get('snChannel').value = 'email';
   await c.get('sendNotifSave').handlers.click();
   assert.equal(c.get('sendNotifNote').hidden, false);
   assert.ok(!c.messages.some(m => m.message.startsWith('Notification sent')));
-  c.apiFetch = async () => ({ success: true, results: [{ channel: 'sms', status: 'failed' }] });
+  c.apiFetch = async () => ({ success: true, results: [{ channel: 'email', status: 'failed' }] });
   await c.get('sendNotifSave').handlers.click();
   assert.match(c.get('sendNotifNote').textContent, /could not be delivered/);
 

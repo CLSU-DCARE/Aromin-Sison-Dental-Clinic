@@ -61,9 +61,11 @@
   --glass-rail: rgba(28,28,26,0.76);
   --glass-border: rgba(27,27,25,0.08);
   --glass-border-light: rgba(250,250,247,0.12);
-  --glass-blur: saturate(160%) blur(20px);
-  --glass-blur-strong: saturate(180%) blur(28px);
-  --glass-shadow: 0 1px 2px rgba(17,17,16,0.04), 0 10px 28px rgba(17,17,16,0.06);
+  /* Kept deliberately light: these surfaces remain recognisably frosted
+     without forcing expensive, large-area backdrop compositing. */
+  --glass-blur: saturate(125%) blur(10px);
+  --glass-blur-strong: saturate(135%) blur(14px);
+  --glass-shadow: 0 1px 2px rgba(17,17,16,0.04), 0 6px 18px rgba(17,17,16,0.06);
 
   /* ---- Accessible text variants (additive) ----
      --gold-text: darker tone of the brand gold for small labels on light

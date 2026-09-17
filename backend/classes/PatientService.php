@@ -17,6 +17,87 @@ use PDO;
 class PatientService
 {
     /**
+     * Create a walk-in/admin-managed patient record.
+     *
+     * @param array{name: string, contact_number?: string, email?: string} $data
+     * @return array{patient_id: int}
+     */
+    public static function create(array $data): array
+    {
+        $name = isset($data['name']) && is_string($data['name']) ? trim($data['name']) : '';
+        $contact = isset($data['contact_number']) && is_string($data['contact_number']) ? trim($data['contact_number']) : '';
+        $email = isset($data['email']) && is_string($data['email']) ? trim($data['email']) : '';
+
+        $fields = [];
+        if (mb_strlen($name) < 2 || mb_strlen($name) > 150) {
+            $fields['name'] = 'Enter the patient full name.';
+        }
+        if ($contact !== '' && (strlen($contact) > 20 || !preg_match('/^[+0-9() .-]{7,20}$/', $contact))) {
+            $fields['contact_number'] = 'Enter a valid contact number.';
+        }
+        if ($email !== '' && (strlen($email) > 150 || !filter_var($email, FILTER_VALIDATE_EMAIL))) {
+            $fields['email'] = 'Enter a valid email address.';
+        }
+        if ($fields) {
+            ApiResponse::error(422, 'validation_failed', 'Please correct the highlighted fields.', $fields);
+        }
+
+        $parts = preg_split('/\s+/', $name, 2);
+        $firstName = $parts[0] ?? '';
+        $lastName = $parts[1] ?? '';
+        if ($lastName === '') {
+            ApiResponse::error(422, 'validation_failed', 'Enter both first and last name.', ['name' => 'Enter both first and last name.']);
+        }
+
+        $stmt = Database::pdo()->prepare(
+            'INSERT INTO patients (first_name, last_name, contact_number, email) VALUES (?, ?, ?, ?)'
+        );
+        $stmt->execute([$firstName, $lastName, $contact ?: null, $email ?: null]);
+
+        $patientId = (int) Database::pdo()->lastInsertId();
+        PortalEvent::patient($patientId, 'Patient profile created', 'A new patient record was added.');
+        return ['patient_id' => $patientId];
+    }
+
+    /**
+     * Delete a patient record and its dependent clinical records.
+     *
+     * @return array{patient_id: int}
+     */
+    public static function delete(int $patientId): array
+    {
+        if ($patientId < 1) {
+            ApiResponse::error(422, 'validation_failed', 'Choose a valid patient.');
+        }
+
+        $pdo = Database::pdo();
+        $pdo->beginTransaction();
+        try {
+            $stmt = $pdo->prepare('SELECT user_id FROM patients WHERE patient_id = ? FOR UPDATE');
+            $stmt->execute([$patientId]);
+            $row = $stmt->fetch();
+            if (!$row) {
+                $pdo->rollBack();
+                ApiResponse::error(404, 'not_found', 'Patient not found.');
+            }
+
+            $userId = $row['user_id'] ? (int) $row['user_id'] : null;
+            $pdo->prepare('DELETE FROM patients WHERE patient_id = ?')->execute([$patientId]);
+
+            if ($userId) {
+                $pdo->prepare("DELETE FROM users WHERE user_id = ? AND role = 'patient'")->execute([$userId]);
+            }
+
+            $pdo->commit();
+            return ['patient_id' => $patientId];
+        } catch (\Throwable $e) {
+            if ($pdo->inTransaction()) $pdo->rollBack();
+            error_log('Patient deletion failed: ' . $e->getMessage());
+            ApiResponse::error(500, 'delete_failed', 'Unable to delete patient.');
+        }
+    }
+
+    /**
      * List all patients (admin dashboard).
      * Dentists see only patients who have appointments with them.
      *

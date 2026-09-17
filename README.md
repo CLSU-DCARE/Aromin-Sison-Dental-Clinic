@@ -54,7 +54,7 @@ asdc_v2/
 │   ├── config/
 │   │   ├── db.php            PDO connection: include this at the top of every endpoint
 │   │   ├── auth.php          Session helper: require_login(), require_role(), secure_session_start()
-│   │   ├── mail.php          Email/SMS helpers: send_email(), send_sms(), render_template()
+│   │   ├── mail.php          Email helpers: send_email(), render_template()
 │   │   └── notifications.php Auto-trigger helper: notify_event($pdo, $event, $patientId, $replacements)
 │   └── api/
 │       ├── auth/
@@ -63,7 +63,7 @@ asdc_v2/
 │       ├── patients/
 │       │   └── list.php      GET endpoint, returns JSON
 │       └── notifications/
-│           ├── send.php      POST endpoint, sends email/SMS using templates
+│           ├── send.php      POST endpoint, sends email using templates
 │           ├── list.php      GET endpoint, notification history with filters
 │           └── templates.php GET/POST endpoint, manage notification templates
 │
@@ -166,9 +166,9 @@ require_role('admin', 'staff');     // restrict to specific roles
 This starts a hardened session (HttpOnly + SameSite cookie), enforces an idle timeout,
 and centralizes 401/403 JSON responses so every endpoint returns the same shape.
 
-## Notifications (Email / SMS)
+## Notifications (Email)
 
-The clinic can send patients email and SMS notifications for appointment reminders,
+The clinic can send patients email notifications for appointment reminders,
 payment due alerts, confirmations, and more. The system is template-driven so staff
 can reuse pre-written messages with dynamic `{placeholders}`.
 
@@ -198,11 +198,11 @@ Available events: `appointment.booked`, `appointment.cancelled`, `payment.approv
 
 | Template key | Purpose | Channel |
 |---|---|---|
-| `appointment_reminder` | Reminder 24h before an appointment | Email + SMS |
-| `appointment_confirmation` | Confirm a booked appointment | Email + SMS |
-| `appointment_cancellation` | Notify of a cancelled appointment | Email + SMS |
+| `appointment_reminder` | Reminder 24h before an appointment | Email |
+| `appointment_confirmation` | Confirm a booked appointment | Email |
+| `appointment_cancellation` | Notify of a cancelled appointment | Email |
 | `payment_due` | Braces contract payment reminder | Email |
-| `payment_received` | Payment received confirmation | Email + SMS |
+| `payment_received` | Payment received confirmation | Email |
 
 Placeholders: `{patient_name}`, `{date}`, `{time}`, `{service}`, `{dentist}`, `{amount}`, `{balance}`
 
@@ -231,7 +231,7 @@ POST /backend/api/notifications/send.php
 }
 ```
 
-### Mail/SMS configuration
+### Email configuration
 
 Email uses the installed PHPMailer dependency with Gmail SMTP over STARTTLS on
 port 587. Configure these Windows **System environment variables** (do not put
@@ -246,7 +246,6 @@ and restart Apache so PHP inherits the updated environment. If Apache is
 installed as a Windows service, System variables are required because User
 variables may not be visible to the service.
 
-- **SMS**: delivery is unavailable until an SMS provider is implemented. Attempts are recorded as failed.
 
 ## Dashboard data
 

@@ -24,8 +24,8 @@ CREATE TABLE users (
 -- Seed active dentist accounts used by appointment assignment and dentist portal login.
 -- Default password for both seeded dentist accounts: Dentist@ASDC2026!
 INSERT INTO users (role, email, password_hash, full_name, is_active) VALUES
-('dentist', 'arsenia.aromin@arominsison.local', '$2y$10$c44iN9cSY7q4l9IQUFZPk.AevoyTcBntvXW6pvEicISKQh7xfWzb.', 'Dr. Arsenia Aromin', 1),
-('dentist', 'kathrine.sison@arominsison.local', '$2y$10$c44iN9cSY7q4l9IQUFZPk.AevoyTcBntvXW6pvEicISKQh7xfWzb.', 'Dr. Kathrine Sison', 1)
+('dentist', 'arsenia.aromin@arominsison.local', '$2y$12$LP1wcaOrZzlakg1/JOFvi.yLsoI.CWE7DZNViLrBBiaMThjaCqGKy', 'Dr. Arsenia Aromin', 1),
+('dentist', 'kathrine.sison@arominsison.local', '$2y$12$LP1wcaOrZzlakg1/JOFvi.yLsoI.CWE7DZNViLrBBiaMThjaCqGKy', 'Dr. Kathrine Sison', 1)
 ON DUPLICATE KEY UPDATE
     role = VALUES(role),
     password_hash = VALUES(password_hash),
@@ -214,15 +214,15 @@ CREATE TABLE inventory_items (
 -- on `appointments` is enough to generate all report views listed in your scope.
 
 -- ---------- NOTIFICATIONS ----------
--- Stores reusable message templates for email/SMS notifications.
+-- Stores reusable email notification templates.
 -- The {patient_name}, {date}, {time}, {service}, {dentist}, {amount},
 -- {balance} placeholders are replaced at send time by the PHP helper.
 CREATE TABLE notification_templates (
     template_id INT AUTO_INCREMENT PRIMARY KEY,
     template_key VARCHAR(80) UNIQUE NOT NULL,   -- e.g. 'appointment_reminder', 'payment_due'
     name VARCHAR(150) NOT NULL,                 -- human-readable label
-    channel ENUM('email','sms','both') NOT NULL DEFAULT 'both',
-    subject VARCHAR(255) DEFAULT NULL,          -- email subject line (NULL for SMS-only)
+    channel ENUM('email') NOT NULL DEFAULT 'email',
+    subject VARCHAR(255) DEFAULT NULL,
     body TEXT NOT NULL,                          -- message body with {placeholders}
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -231,15 +231,15 @@ CREATE TABLE notification_templates (
 
 -- Seed default templates for common clinic notifications.
 INSERT INTO notification_templates (template_key, name, channel, subject, body) VALUES
-('appointment_reminder', 'Appointment Reminder', 'both',
+('appointment_reminder', 'Appointment Reminder', 'email',
  'Appointment Reminder — Aromin-Sison Dental Clinic',
  'Hi {patient_name}, this is a friendly reminder of your appointment on {date} at {time} for {service}. If you need to reschedule, please call us at least 24 hours in advance. — Aromin-Sison Dental Clinic'),
 
-('appointment_confirmation', 'Appointment Confirmation', 'both',
+('appointment_confirmation', 'Appointment Confirmation', 'email',
  'Appointment Confirmed — Aromin-Sison Dental Clinic',
  'Hi {patient_name}, your appointment has been confirmed for {date} at {time} ({service}) with {dentist}. We look forward to seeing you! — Aromin-Sison Dental Clinic'),
 
-('appointment_cancellation', 'Appointment Cancellation', 'both',
+('appointment_cancellation', 'Appointment Cancellation', 'email',
  'Appointment Cancelled — Aromin-Sison Dental Clinic',
  'Hi {patient_name}, your appointment on {date} at {time} ({service}) has been cancelled. To rebook, please visit our website or call us. — Aromin-Sison Dental Clinic'),
 
@@ -247,26 +247,26 @@ INSERT INTO notification_templates (template_key, name, channel, subject, body) 
  'Payment Reminder — Aromin-Sison Dental Clinic',
  'Hi {patient_name}, this is a reminder that your next braces contract payment of {amount} is due. Your remaining balance is {balance}. Please visit the clinic or contact us for payment options. — Aromin-Sison Dental Clinic'),
 
-('payment_received', 'Payment Received Confirmation', 'both',
+('payment_received', 'Payment Received Confirmation', 'email',
  'Payment Received — Aromin-Sison Dental Clinic',
  'Hi {patient_name}, we have received your payment of {amount}. Your remaining balance is {balance}. Thank you! — Aromin-Sison Dental Clinic'),
 
-('payment_rejected', 'Payment Rejected', 'both',
+('payment_rejected', 'Payment Rejected', 'email',
  'Payment Update - Aromin-Sison Dental Clinic',
  'Hi {patient_name}, your submitted payment of {amount} could not be approved. Your current balance is {balance}. Please contact the clinic or submit a corrected receipt. - Aromin-Sison Dental Clinic'),
 
-('braces_progress_updated', 'Braces Progress Updated', 'both',
+('braces_progress_updated', 'Braces Progress Updated', 'email',
  'Braces Progress Update - Aromin-Sison Dental Clinic',
  'Hi {patient_name}, your braces progress has been updated. Current stage: {stage}. Progress: {progress}%. Next: {next}. - Aromin-Sison Dental Clinic');
 
--- Logs every notification sent (email or SMS) for audit and history.
+-- Logs every email notification. The enum retains sms for legacy audit rows.
 CREATE TABLE notification_logs (
     log_id INT AUTO_INCREMENT PRIMARY KEY,
     patient_id INT NOT NULL,
     template_id INT NULL,
     channel ENUM('email','sms') NOT NULL,
-    recipient VARCHAR(150) NOT NULL,            -- email address or phone number
-    subject VARCHAR(255) DEFAULT NULL,          -- email subject (NULL for SMS)
+    recipient VARCHAR(150) NOT NULL,
+    subject VARCHAR(255) DEFAULT NULL,
     body TEXT NOT NULL,                          -- final rendered message (placeholders replaced)
     status ENUM('sent','failed','pending') DEFAULT 'pending',
     error_message VARCHAR(255) DEFAULT NULL,    -- failure reason if status = 'failed'

@@ -1,9 +1,8 @@
 <?php
 /**
- * Mail / SMS configuration: Aromin-Sison Dental Clinic System.
+ * Email configuration: Aromin-Sison Dental Clinic System.
  *
- * Backward-compatible wrappers around ASDC\Mailer, ASDC\SmsGateway,
- * and ASDC\TemplateRenderer.
+ * Backward-compatible wrappers around ASDC\Mailer and ASDC\TemplateRenderer.
  * Classes are auto-loaded via backend/autoload.php.
  */
 
@@ -11,13 +10,6 @@ if (!function_exists('send_email')) {
     function send_email($to, $subject, $body): array
     {
         return \ASDC\Mailer::sendEmail($to, $subject, $body);
-    }
-}
-
-if (!function_exists('send_sms')) {
-    function send_sms($to, $body): array
-    {
-        return \ASDC\SmsGateway::sendSms($to, $body);
     }
 }
 

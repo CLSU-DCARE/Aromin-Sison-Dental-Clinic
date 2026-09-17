@@ -1,6 +1,6 @@
 /** Poll the authenticated server across devices; preserve the last good snapshot on failure. */
 window.PatientLiveSync = class PatientLiveSync {
-  constructor({ fetchSnapshot, applySnapshot, onStatus = () => {}, interval = 3000, validate = null }) {
+  constructor({ fetchSnapshot, applySnapshot, onStatus = () => {}, interval = 10000, validate = null }) {
     this.validate = validate;
     this.fetchSnapshot = fetchSnapshot;
     this.applySnapshot = applySnapshot;
