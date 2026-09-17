@@ -27,7 +27,11 @@
     `<div class="stat-card">
       <div class="stat-top">
         <div class="stat-icon" style="background:${s.iconBg};color:${s.iconColor};">${s.icon}</div>
-        <span class="stat-trend ${s.trendClass}">${s.trend}</span>
+        ${
+          s.trend
+            ? `<span class="stat-trend ${s.trendClass || ''}">${s.trend}</span>`
+            : ''
+        }
       </div>
       <div class="stat-num">${s.num}</div>
       <div class="stat-label">${s.label}</div>

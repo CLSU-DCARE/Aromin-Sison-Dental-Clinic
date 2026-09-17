@@ -697,23 +697,29 @@ function renderReports(reports){
     {
       iconBg: 'rgba(92,122,92,0.12)',
       iconColor: 'var(--green)',
-      icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>',
+      icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 11 11 14 16 9"/><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>',
       num: String(report.attended || 0),
-      label: 'Attended'
+      label: 'Attended',
+      trend: '',
+      trendClass: ''
     },
     {
       iconBg: 'rgba(180,84,63,0.12)',
       iconColor: 'var(--red)',
-      icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>',
+      icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 12.4-6.7"/><path d="m17 17 4 4"/><path d="m21 17-4 4"/></svg>',
       num: String(report.missed || 0),
-      label: 'Did not attend'
+      label: 'Did not attend',
+      trend: '',
+      trendClass: ''
     },
     {
       iconBg: 'rgba(156,139,62,0.14)',
       iconColor: 'var(--gold)',
-      icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v5l3 3"/><circle cx="12" cy="12" r="10"/></svg>',
+      icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="m7 14 3-3 4 4 5-7"/></svg>',
       num: (report.attendance_rate || 0) + '%',
-      label: 'Attendance rate'
+      label: 'Attendance rate',
+      trend: '',
+      trendClass: ''
     }
   ];
   grid.innerHTML = stats.map(statCard).join('');

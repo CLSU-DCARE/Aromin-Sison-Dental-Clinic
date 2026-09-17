@@ -6,7 +6,8 @@ window.ASDC.startPortalSync = function ({ start = () => '', apply }) {
   const sync = new PatientLiveSync({
     validate: data => data && Array.isArray(data.week?.appointments) && Array.isArray(data.week?.requests) &&
       ['pending','patients','contracts','records','notifications','metrics','payments','inventory','promotions'].every(key => Array.isArray(data[key])) &&
-      data.reports && typeof data.reports === 'object',
+      data.reports && typeof data.reports === 'object' &&
+      ['this_week','last_week','this_month'].every(key => data.reports[key] && Array.isArray(data.reports[key].rows) && Array.isArray(data.reports[key].bars)),
     fetchSnapshot: async () => {
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), 10000);
