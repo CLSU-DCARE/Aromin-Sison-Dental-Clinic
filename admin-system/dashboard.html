@@ -13,7 +13,7 @@
 <link rel="stylesheet" href="../shared/css/variables.css?v=4">
 <link rel="stylesheet" href="../shared/css/buttons.css?v=5">
 <link rel="stylesheet" href="../shared/css/panels.css?v=4">
-<link rel="stylesheet" href="assets/css/admin.css?v=13">
+<link rel="stylesheet" href="assets/css/admin.css?v=17">
 </head>
 <body>
 
@@ -741,7 +741,21 @@
     </div>
     <div class="form-group">
       <label for="pf2Desc">Description</label>
-      <input type="text" id="pf2Desc" autocomplete="off" placeholder="Short offer summary">
+      <textarea id="pf2Desc" rows="4" autocomplete="off" placeholder="Full promotion details"></textarea>
+    </div>
+    <div class="form-group">
+      <label for="pf2Image">Picture (optional)</label>
+      <input type="file" id="pf2Image" accept="image/jpeg,image/png,image/webp">
+    </div>
+    <div class="form-grid-2">
+      <div class="form-group">
+        <label for="pf2Start">Start Date (optional)</label>
+        <input type="date" id="pf2Start">
+      </div>
+      <div class="form-group">
+        <label for="pf2End">End Date (optional)</label>
+        <input type="date" id="pf2End">
+      </div>
     </div>
     <div class="form-group">
       <label for="pf2Status">Status</label>
@@ -754,6 +768,23 @@
         <span class="btn-spinner" aria-hidden="true"></span>
         <span class="btn-label">Save Promotion</span>
       </button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== PROMOTION DETAILS MODAL ===== -->
+<div class="modal-overlay" id="promoDetailModal" hidden>
+  <div class="modal promo-viewer" role="dialog" aria-modal="true" aria-labelledby="promoDetailTitle">
+    <button class="modal-close" id="promoDetailClose" aria-label="Close dialog">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <div class="promo-viewer-media" id="promoDetailMedia" hidden>
+      <img class="promo-detail-img" id="promoDetailImg" alt="" hidden>
+    </div>
+    <div class="promo-viewer-content">
+      <div class="eyebrow" id="promoDetailDates"></div>
+      <h3 id="promoDetailTitle">Promotion</h3>
+      <p id="promoDetailText"></p>
     </div>
   </div>
 </div>
@@ -924,7 +955,7 @@
 <script src="../patient-dashboard/assets/js/PatientLiveSync.js?v=20260916-integration" defer></script>
 <script src="../shared/js/core/PortalSync.js?v=20260916-integration" defer></script>
 <script src="../shared/js/core/PortalForms.js?v=20260916-appointment-dialogs" defer></script>
-<script src="assets/js/admin.js?v=20260916-integration" defer></script>
+<script src="assets/js/admin.js?v=20260917-promotion-delete" defer></script>
 
 </body>
 </html>

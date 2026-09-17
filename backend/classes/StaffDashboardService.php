@@ -27,7 +27,7 @@ class StaffDashboardService
             $metrics = [$monthCount, count(array_unique(array_column(array_filter($contracts, fn($c) => $c['status_code'] === 'active'), 'patient_id'))), $collections, count(array_filter($contracts, fn($c) => $c['status_code'] === 'defaulted'))];
             $payments = $scope->isReceptionist() ? PaymentApprovalService::listAll() : [];
             $logs = $scope->isReceptionist() ? NotificationLogService::list()['logs'] : [];
-            $promotions = $scope->isReceptionist() ? $pdo->query('SELECT promo_id AS id,title,description AS `desc`,status,start_date,end_date FROM promotions ORDER BY promo_id DESC')->fetchAll() : [];
+            $promotions = $scope->isReceptionist() ? $pdo->query('SELECT promo_id AS id,title,description AS `desc`,image_path,status,start_date,end_date FROM promotions ORDER BY promo_id DESC')->fetchAll() : [];
             $inventory = $scope->isReceptionist() ? $pdo->query('SELECT item_id AS id,item_name AS item,category,stock_quantity AS qty,unit,reorder_level,last_restocked FROM inventory_items ORDER BY item_name')->fetchAll() : [];
             $pdo->commit();
             return compact('week', 'pending', 'patients', 'contracts', 'records', 'notifications', 'metrics', 'payments', 'promotions', 'inventory', 'logs');

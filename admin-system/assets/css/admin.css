@@ -631,14 +631,42 @@ background:var(--ivory-2);color:rgba(27,27,25,0.65);padding:13px 10px;min-height
   border-radius:var(--r-md);overflow:hidden;box-shadow:var(--glass-shadow);
   transition:transform .25s var(--ease), box-shadow .25s var(--ease), border-color .25s ease;
 }
+.promo-card-btn{display:block;width:100%;text-align:left;color:inherit;cursor:pointer;}
 .promo-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-hover);border-color:rgba(27,27,25,0.14);}
+.promo-card:focus-visible{outline:3px solid rgba(174,153,67,0.36);outline-offset:3px;}
 .promo-img{height:126px;background:linear-gradient(135deg,#2A2A27,#1C1C1A);position:relative;display:flex;align-items:center;justify-content:center;}
 .promo-img span{font-family:var(--font-ui);font-size:10.5px;letter-spacing:0.06em;text-transform:uppercase;color:rgba(250,250,247,0.55);}
+.promo-img-real{width:100%;height:190px;object-fit:cover;display:block;background:var(--ivory-2);}
 .promo-body{padding:18px 20px;}
 .promo-body h4{font-family:'Fraunces',serif;font-size:16.5px;margin-bottom:5px;}
 .promo-body p{font-size:13px;color:rgba(27,27,25,0.65);margin-bottom:14px;}
 .promo-foot{display:flex;justify-content:space-between;align-items:center;}
 .promo-actions{display:flex;gap:8px;}
+.promo-view{display:inline-block;margin-top:14px;font-size:12px;font-weight:700;color:var(--gold-text);}
+.promo-delete-btn{
+  display:inline-flex;align-items:center;justify-content:center;margin-top:12px;margin-left:12px;
+  padding:7px 12px;border-radius:var(--r-pill);background:rgba(180,84,63,0.1);
+  color:var(--red-text);font-size:12px;font-weight:700;
+}
+.promo-delete-btn:hover{background:rgba(180,84,63,0.18);}
+.promo-viewer{
+  width:min(760px, calc(100vw - 28px));
+  max-width:none;
+  height:auto;
+  max-height:none;
+  padding:0;
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+  background:rgba(250,250,247,0.98);
+}
+.promo-viewer-media{order:2;background:#10100f;display:flex;align-items:center;justify-content:center;max-height:58dvh;}
+.promo-detail-img{width:100%;max-height:58dvh;object-fit:contain;background:#10100f;}
+.promo-viewer-content{order:1;padding:46px 38px 24px;overflow-y:auto;display:flex;flex-direction:column;}
+.promo-viewer-content h3{font-size:28px;line-height:1.15;}
+.promo-viewer-content p{font-size:15px;color:rgba(27,27,25,0.72);white-space:pre-line;}
+.promo-viewer .modal-close{background:rgba(255,255,255,0.88);z-index:2;box-shadow:var(--shadow-xs);}
+.promo-viewer-media[hidden]{display:none;}
 
 /* inventory */
 .stock-bar{width:74px;height:7px;border-radius:var(--r-pill);background:var(--ivory-2);overflow:hidden;display:inline-block;vertical-align:middle;margin-left:9px;}
@@ -650,12 +678,15 @@ background:var(--ivory-2);color:rgba(27,27,25,0.65);padding:13px 10px;min-height
 /* ---- Modal form fields (Add/Edit patient) ---- */
 .form-group{margin-bottom:16px;}
 .form-group label{display:block;font-size:11px;letter-spacing:0.06em;text-transform:uppercase;color:rgba(27,27,25,0.65);margin-bottom:8px;}
-.form-group input,.form-group select{
+.form-group input,.form-group select,.form-group textarea{
   width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:10px;
   font-family:inherit;font-size:16px;color:var(--ink);background:var(--white);
   transition:border-color .2s ease, box-shadow .2s ease, background .2s ease;
 }
-.form-group input:focus,.form-group select:focus{outline:none;border-color:var(--gold);box-shadow:var(--ring-gold);}
+.form-group textarea{resize:vertical;min-height:104px;}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{outline:none;border-color:var(--gold);box-shadow:var(--ring-gold);}
+.form-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+@media (max-width:520px){.form-grid-2{grid-template-columns:1fr;gap:0;}}
 .form-note{margin:2px 0 14px;padding:11px 14px;border-radius:var(--r-sm);font-size:12.5px;line-height:1.5;}
 .form-note.ok{background:rgba(92,122,92,0.12);color:var(--green-text);}
 .form-note.err{background:rgba(180,84,63,0.1);color:var(--red-text);}
@@ -739,6 +770,9 @@ body.modal-open{overflow:hidden;}
 .btn-reject:hover{background:rgba(180,84,63,0.22);}
 
 @media (max-width:640px){
+  .promo-viewer{width:calc(100vw - 18px);max-height:calc(100dvh - 18px);}
+  .promo-viewer-media,.promo-detail-img{max-height:48dvh;}
+  .promo-viewer-content{padding:34px 24px 20px;}
   .receipt-grid{grid-template-columns:1fr;}
   .pay-actions{justify-content:flex-start;}
 }

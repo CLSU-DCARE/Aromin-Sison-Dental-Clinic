@@ -706,14 +706,17 @@ function renderAnnouncementMinis(rows) {
   list.innerHTML =
     rows.map(row => {
       return (
-        `<div class="promo-mini">` +
+        `<button type="button" class="promo-mini promo-mini-btn" data-promo-id="${Number(row.id)}" aria-label="View promotion details for ${escapeHtml(row.title)}">` +
+        `${row.image_path ? `<img class="promo-mini-img" src="../backend/${escapeHtml(row.image_path)}" alt="">` : ''}` +
+        `<div class="promo-mini-copy">` +
         `<div class="t">` +
         `${escapeHtml(row.title)}` +
         `</div>` +
         `<div class="s">` +
         `${escapeHtml(row.sub)}` +
         `</div>` +
-        `</div>`
+        `</div>` +
+        `</button>`
       );
     }).join('');
 }
@@ -944,15 +947,74 @@ function renderPromoCards(cards) {
   grid.innerHTML =
     cards.map(card => {
       return (
-        `<div class="promo-card">` +
+        `<div class="promo-card promo-card-btn" role="button" tabindex="0" data-promo-id="${Number(card.id)}" aria-label="View promotion details for ${escapeHtml(card.title)}">` +
+        `${card.image_path ? `<img class="promo-img-real" src="../backend/${escapeHtml(card.image_path)}" alt="${escapeHtml(card.title)}">` : ''}` +
         `<div class="promo-body">` +
         `<h4>${escapeHtml(card.title)}</h4>` +
         `<p>${escapeHtml(card.desc)}</p>` +
+        `<div class="promo-foot">` +
+        `<span class="tag tag-green">${escapeHtml(card.status || 'Live')}</span>` +
+        `<div class="promo-actions"><span>${escapeHtml(card.start_date || '')} - ${escapeHtml(card.end_date || '')}</span></div>` +
+        `</div>` +
+        `<span class="promo-view">View details</span>` +
         `</div>` +
         `</div>`
       );
     }).join('');
 }
+
+function formatPromoRange(card) {
+  if (card.start_date && card.end_date) return card.start_date + ' to ' + card.end_date;
+  if (card.start_date) return 'Starts ' + card.start_date;
+  if (card.end_date) return 'Until ' + card.end_date;
+  return 'Clinic promotion';
+}
+
+const promoDetailModal = new Modal('promoDetailModal');
+if (promoDetailModal.modal) {
+  promoDetailModal.registerClose(document.getElementById('promoDetailClose'));
+  promoDetailModal.registerClose(document.getElementById('promoDetailCancel'));
+}
+
+function openPromotionDetail(id, trigger) {
+  const promo = PatientState.promoCards.find(card => Number(card.id) === Number(id));
+  if (!promo || !promoDetailModal.modal) return;
+  const img = document.getElementById('promoDetailImg');
+  const media = document.getElementById('promoDetailMedia');
+  document.getElementById('promoDetailTitle').textContent = promo.title;
+  document.getElementById('promoDetailText').textContent = promo.desc;
+  document.getElementById('promoDetailDates').textContent = formatPromoRange(promo);
+  if (promo.image_path) {
+    img.src = '../backend/' + promo.image_path;
+    img.alt = promo.title;
+    img.hidden = false;
+    media.hidden = false;
+  } else {
+    img.removeAttribute('src');
+    img.alt = '';
+    img.hidden = true;
+    media.hidden = true;
+  }
+  promoDetailModal.open(trigger);
+}
+
+document.getElementById('promoGrid')?.addEventListener('click', event => {
+  const card = event.target.closest('[data-promo-id]');
+  if (card) openPromotionDetail(card.dataset.promoId, card);
+});
+
+document.getElementById('promoGrid')?.addEventListener('keydown', event => {
+  if (!['Enter', ' '].includes(event.key)) return;
+  const card = event.target.closest('[data-promo-id]');
+  if (!card) return;
+  event.preventDefault();
+  openPromotionDetail(card.dataset.promoId, card);
+});
+
+document.getElementById('announceMiniList')?.addEventListener('click', event => {
+  const item = event.target.closest('[data-promo-id]');
+  if (item) openPromotionDetail(item.dataset.promoId, item);
+});
 
 const fmtDate = date => {
   return date.toLocaleDateString(
@@ -1093,7 +1155,7 @@ function applyPatientSnapshot(data, changed) {
     if ([...dentistSelect.options].some(o => o.value === selected)) dentistSelect.value = selected;
     dentistSelect.dataset.version = dentistVersion;
   }
-  PatientState.promoCards = (data.announcements || []).map(a => ({ ...a, title: a.title, tag: 'green', status: 'Live', eyebrow: 'Clinic announcement', meta: a.start_date || '' }));
+  PatientState.promoCards = (data.announcements || []).map(a => ({ ...a, title: a.title, tag: 'green', status: a.status === 'scheduled' ? 'Scheduled' : 'Live', eyebrow: 'Clinic announcement', meta: a.start_date || '' }));
   PatientState.dashboard.announcements = PatientState.promoCards.map(a => ({ ...a, sub: a.desc }));
   renderPromoCards(PatientState.promoCards); renderAnnouncementMinis(PatientState.dashboard.announcements);
   const dentist = (braces.contract.summary || []).find(item => item.l === 'Treating Dentist');

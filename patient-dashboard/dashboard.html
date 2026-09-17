@@ -12,7 +12,7 @@
 <link rel="stylesheet" href="../shared/css/variables.css?v=4">
 <link rel="stylesheet" href="../shared/css/buttons.css?v=5">
 <link rel="stylesheet" href="../shared/css/panels.css?v=4">
-<link rel="stylesheet" href="assets/css/patient.css?v=10">
+<link rel="stylesheet" href="assets/css/patient.css?v=16">
 </head>
 <body>
 
@@ -144,7 +144,7 @@
           </div>
 
           <div class="panel">
-            <div class="panel-head"><h3>Clinic Announcements</h3><a href="#" class="btn btn-link btn-sm" onclick="switchView('announcements');return false;">See all →</a></div>
+            <div class="panel-head"><h3>Clinic Announcements</h3><a href="#" class="btn btn-link btn-sm" onclick="switchView('announcements');return false;">See more promotions →</a></div>
             <div id="announceMiniList"></div>
           </div>
         </div>
@@ -369,8 +369,8 @@
 
       <!-- ===== ANNOUNCEMENTS ===== -->
       <section class="view" id="view-announcements">
-        <div class="page-head">
-          <div><div class="eyebrow">Clinic</div><h1 class="serif view-title">Announcements &amp; Promotions</h1></div>
+        <div class="page-head promo-feed-head">
+          <div><div class="eyebrow">Clinic</div><h1 class="serif view-title">Promotions Feed</h1><p>Scroll through current clinic announcements and offers.</p></div>
         </div>
         <div class="promo-grid" id="promoGrid"></div>
       </section>
@@ -444,6 +444,21 @@
         <span class="btn-spinner" aria-hidden="true"></span>
         <span class="btn-label">Save Changes</span>
       </button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== PROMOTION DETAILS MODAL ===== -->
+<div class="modal-overlay" id="promoDetailModal" hidden>
+  <div class="modal promo-viewer" role="dialog" aria-modal="true" aria-labelledby="promoDetailTitle">
+    <button type="button" class="modal-close" id="promoDetailClose" aria-label="Close dialog">&times;</button>
+    <div class="promo-viewer-media" id="promoDetailMedia" hidden>
+      <img class="promo-detail-img" id="promoDetailImg" alt="" hidden>
+    </div>
+    <div class="promo-viewer-content">
+      <div class="eyebrow" id="promoDetailDates"></div>
+      <h3 id="promoDetailTitle">Promotion</h3>
+      <p id="promoDetailText"></p>
     </div>
   </div>
 </div>
@@ -523,7 +538,7 @@
 <script src="assets/js/PatientProfileEditor.js?v=20260916-integration" defer></script>
 <script src="assets/js/PatientPaymentSubmission.js?v=20260916-integration" defer></script>
 <script src="assets/js/PatientLiveSync.js?v=20260916-integration" defer></script>
-<script src="assets/js/patient.js?v=20260916-appointment-dialogs" defer></script>
+<script src="assets/js/patient.js?v=20260917-promotion-admin-cards" defer></script>
 
 </body>
 </html>

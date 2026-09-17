@@ -346,12 +346,18 @@ if (contractFormModal.modal){
 // =====================================================================
 // PROMOTIONS: create live/scheduled clinic announcements
 const promoFormModal = new Modal('promoFormModal');
+const promoDetailModal = new Modal('promoDetailModal');
+const promoDeleteModal = new Modal('promoDeleteModal');
+let deletingPromotion = null;
 if (promoFormModal.modal){
   const addPromoBtn = document.getElementById('addPromoBtn');
   const promoNote = document.getElementById('promoFormNote');
   const promoSaveBtn = document.getElementById('promoFormSave');
   const promoTitle = document.getElementById('pf2Title');
   const promoDesc = document.getElementById('pf2Desc');
+  const promoImage = document.getElementById('pf2Image');
+  const promoStart = document.getElementById('pf2Start');
+  const promoEnd = document.getElementById('pf2End');
   const promoStatus = document.getElementById('pf2Status');
 
   promoFormModal.registerClose(document.getElementById('promoFormClose'));
@@ -360,6 +366,9 @@ if (promoFormModal.modal){
   addPromoBtn?.addEventListener('click', () => {
     promoTitle.value = '';
     promoDesc.value = '';
+    promoImage.value = '';
+    promoStart.value = '';
+    promoEnd.value = '';
     promoStatus.value = 'Live';
     promoNote.hidden = true;
     promoSaveBtn.classList.remove('loading');
@@ -371,8 +380,16 @@ if (promoFormModal.modal){
     const title = promoTitle.value.trim();
     const description = promoDesc.value.trim();
     const status = promoStatus.value.toLowerCase();
+    const startDate = promoStart.value;
+    const endDate = promoEnd.value;
     if (!title || !description){
       promoNote.textContent = 'Enter a title and description.';
+      promoNote.classList.add('err'); promoNote.classList.remove('ok');
+      promoNote.hidden = false;
+      return;
+    }
+    if (startDate && endDate && endDate < startDate){
+      promoNote.textContent = 'End date must be after the start date.';
       promoNote.classList.add('err'); promoNote.classList.remove('ok');
       promoNote.hidden = false;
       return;
@@ -381,10 +398,16 @@ if (promoFormModal.modal){
     promoSaveBtn.classList.add('loading');
     promoSaveBtn.disabled = true;
     try {
+      const formData = new FormData();
+      formData.append('title', title);
+      formData.append('description', description);
+      formData.append('status', status);
+      if (startDate) formData.append('start_date', startDate);
+      if (endDate) formData.append('end_date', endDate);
+      if (promoImage.files[0]) formData.append('image', promoImage.files[0]);
       await apiFetch('../backend/api/promotions/promotions.php', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, description, status })
+        body: formData
       });
       promoFormModal.close();
       showToast('Promotion saved');
@@ -399,6 +422,81 @@ if (promoFormModal.modal){
     }
   });
 }
+
+if (promoDetailModal.modal){
+  promoDetailModal.registerClose(document.getElementById('promoDetailClose'));
+  promoDetailModal.registerClose(document.getElementById('promoDetailCancel'));
+}
+
+if (promoDeleteModal.modal){
+  promoDeleteModal.registerClose(document.getElementById('promoDeleteClose'));
+  promoDeleteModal.registerClose(document.getElementById('promoDeleteCancel'));
+  document.getElementById('promoDeleteConfirm')?.addEventListener('click', async () => {
+    if (!deletingPromotion) return;
+    const button = document.getElementById('promoDeleteConfirm');
+    button.disabled = true;
+    button.classList.add('loading');
+    try {
+      await apiFetch('../backend/api/promotions/promotions.php', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ promo_id: Number(deletingPromotion.id) })
+      });
+      promoDeleteModal.close();
+      deletingPromotion = null;
+      showToast('Promotion deleted');
+      if (window.staffLiveSync) await window.staffLiveSync.refetch();
+    } catch (error) {
+      showToast(error.message, 'error');
+    } finally {
+      button.disabled = false;
+      button.classList.remove('loading');
+    }
+  });
+}
+
+function formatPromoRange(promo){
+  if (promo.start_date && promo.end_date) return promo.start_date + ' to ' + promo.end_date;
+  if (promo.start_date) return 'Starts ' + promo.start_date;
+  if (promo.end_date) return 'Until ' + promo.end_date;
+  return 'No date range set';
+}
+
+function openPromotionDetail(id, trigger){
+  const promo = AdminState.promotions.find(item => String(item.id) === String(id));
+  if (!promo || !promoDetailModal.modal) return;
+  const img = document.getElementById('promoDetailImg');
+  const media = document.getElementById('promoDetailMedia');
+  document.getElementById('promoDetailTitle').textContent = promo.title;
+  document.getElementById('promoDetailText').textContent = promo.desc || '';
+  document.getElementById('promoDetailDates').textContent = formatPromoRange(promo);
+  if (promo.image_path){
+    img.src = '../backend/' + promo.image_path;
+    img.alt = promo.title;
+    img.hidden = false;
+    media.hidden = false;
+  } else {
+    img.removeAttribute('src');
+    img.alt = '';
+    img.hidden = true;
+    media.hidden = true;
+  }
+  promoDetailModal.open(trigger);
+}
+
+document.getElementById('promoGrid')?.addEventListener('click', event => {
+  const deleteBtn = event.target.closest('[data-action="delete-promo"]');
+  if (deleteBtn) {
+    event.stopPropagation();
+    deletingPromotion = AdminState.promotions.find(item => String(item.id) === String(deleteBtn.dataset.promoId));
+    if (!deletingPromotion || !promoDeleteModal.modal) return;
+    document.getElementById('promoDeleteName').textContent = deletingPromotion.title;
+    promoDeleteModal.open(deleteBtn);
+    return;
+  }
+  const card = event.target.closest('[data-promo-id]');
+  if (card) openPromotionDetail(card.dataset.promoId, card);
+});
 
 // INVENTORY: add item (delegated to InventoryTableManager)
 // =====================================================================
@@ -562,7 +660,8 @@ function renderPromotions(promotions){
     return;
   }
   grid.innerHTML = promotions.map((p, i) =>
-    `<div class="promo-card">
+    `<div class="promo-card promo-card-btn" role="button" tabindex="0" data-promo-id="${Number(p.id)}" aria-label="View promotion details for ${escapeHtml(p.title)}">
+      ${p.image_path ? `<img class="promo-img-real" src="../backend/${escapeHtml(p.image_path)}" alt="${escapeHtml(p.title)}">` : ''}
       <div class="promo-body">
         <h4>${escapeHtml(p.title)}</h4>
         <p>${escapeHtml(p.desc)}</p>
@@ -572,10 +671,21 @@ function renderPromotions(promotions){
             <span>${escapeHtml(p.start_date || '')} – ${escapeHtml(p.end_date || '')}</span>
           </div>
         </div>
+        <span class="promo-view">View details</span>
+        <button type="button" class="promo-delete-btn" data-action="delete-promo" data-promo-id="${Number(p.id)}">Delete</button>
       </div>
     </div>`
   ).join('');
 }
+
+document.getElementById('promoGrid')?.addEventListener('keydown', event => {
+  if (!['Enter', ' '].includes(event.key)) return;
+  if (event.target.closest('[data-action="delete-promo"]')) return;
+  const card = event.target.closest('[data-promo-id]');
+  if (!card) return;
+  event.preventDefault();
+  openPromotionDetail(card.dataset.promoId, card);
+});
 
 function renderReports(reports){
   const grid = document.getElementById('reportStats');
