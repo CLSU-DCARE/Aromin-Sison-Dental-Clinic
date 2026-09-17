@@ -24,8 +24,8 @@ CREATE TABLE users (
 -- Seed active dentist accounts used by appointment assignment and dentist portal login.
 -- Default password for both seeded dentist accounts: Dentist@ASDC2026!
 INSERT INTO users (role, email, password_hash, full_name, is_active) VALUES
-('dentist', 'arsenia.aromin@arominsison.local', '$2y$10$c44iN9cSY7q4l9IQUFZPk.AevoyTcBntvXW6pvEicISKQh7xfWzb.', 'Dr. Arsenia Aromin', 1),
-('dentist', 'kathrine.sison@arominsison.local', '$2y$10$c44iN9cSY7q4l9IQUFZPk.AevoyTcBntvXW6pvEicISKQh7xfWzb.', 'Dr. Kathrine Sison', 1)
+('dentist', 'arsenia.aromin@arominsison.local', '$2y$12$LP1wcaOrZzlakg1/JOFvi.yLsoI.CWE7DZNViLrBBiaMThjaCqGKy', 'Dr. Arsenia Aromin', 1),
+('dentist', 'kathrine.sison@arominsison.local', '$2y$12$LP1wcaOrZzlakg1/JOFvi.yLsoI.CWE7DZNViLrBBiaMThjaCqGKy', 'Dr. Kathrine Sison', 1)
 ON DUPLICATE KEY UPDATE
     role = VALUES(role),
     password_hash = VALUES(password_hash),
