@@ -13,7 +13,7 @@
 <link rel="stylesheet" href="../shared/css/variables.css?v=4">
 <link rel="stylesheet" href="../shared/css/buttons.css?v=5">
 <link rel="stylesheet" href="../shared/css/panels.css?v=4">
-<link rel="stylesheet" href="assets/css/admin.css?v=19">
+<link rel="stylesheet" href="assets/css/admin.css?v=20">
 </head>
 <body>
 
@@ -464,8 +464,9 @@
             <div class="eyebrow">Operations</div>
             <p>Supplies, stock levels, and reorder points.</p>
           </div>
-          <span class="feature-unavailable-note">Feature unavailable in current version</span>
+          <button class="btn btn-gold" id="addInventoryBtn">+ Add Supply</button>
         </div>
+        <div class="stat-grid stat-grid-3" id="inventoryStats"></div>
         <div class="panel">
           <div class="toolbar">
             <div class="toolbar-left" role="group" aria-label="Filter inventory">
@@ -483,8 +484,10 @@
                   <th>Item</th>
                   <th>Category</th>
                   <th>Stock</th>
-                  <th>Level</th>
+                  <th>Unit</th>
+                  <th>Last Restocked</th>
                   <th>Status</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody id="inventoryBody"></tbody>
@@ -855,6 +858,20 @@
       <label for="ivStock">Stock Quantity</label>
       <input type="number" id="ivStock" min="0" autocomplete="off" placeholder="e.g. 12">
     </div>
+    <div class="form-grid-2">
+      <div class="form-group">
+        <label for="ivUnit">Unit</label>
+        <input type="text" id="ivUnit" maxlength="30" autocomplete="off" placeholder="box, pack, pcs">
+      </div>
+      <div class="form-group">
+        <label for="ivReorder">Reorder Point</label>
+        <input type="number" id="ivReorder" min="0" autocomplete="off" placeholder="e.g. 10">
+      </div>
+    </div>
+    <div class="form-group">
+      <label for="ivRestocked">Last Restocked</label>
+      <input type="date" id="ivRestocked">
+    </div>
     <p class="form-note" id="inventoryFormNote" role="status" hidden></p>
     <div class="modal-actions">
       <button type="button" class="btn btn-secondary" id="inventoryFormCancel">Cancel</button>
@@ -981,11 +998,11 @@
 <script src="assets/js/PaymentApprovalManager.js?v=20260916-integration" defer></script>
 <script src="assets/js/PatientTableManager.js?v=20260916-patient-delete" defer></script>
 <script src="assets/js/RecordTableManager.js?v=20260916-integration" defer></script>
-<script src="assets/js/InventoryTableManager.js?v=20260916-integration" defer></script>
+<script src="assets/js/InventoryTableManager.js?v=20260918-inventory-stock" defer></script>
 <script src="../patient-dashboard/assets/js/PatientLiveSync.js?v=20260916-integration" defer></script>
 <script src="../shared/js/core/PortalSync.js?v=20260918-attendance-sync" defer></script>
 <script src="../shared/js/core/PortalForms.js?v=20260916-appointment-dialogs" defer></script>
-<script src="assets/js/admin.js?v=20260918-attendance-polish" defer></script>
+<script src="assets/js/admin.js?v=20260918-inventory-sync" defer></script>
 
 </body>
 </html>

@@ -815,9 +815,7 @@ window.staffLiveSync = ASDC.startPortalSync({
     renderDashboardStats(AdminState.dashboard.stats);
     AdminState.promotions = data.promotions.map(p => ({ ...p, tag: p.status === 'live' ? 'green' : 'amber' }));
     renderPromotions(AdminState.promotions);
-    AdminState.inventory = data.inventory.map(i => ({ ...i, initials: '', stock: i.qty + ' ' + (i.unit || ''),
-      width: Math.min(100, i.qty / Math.max(1, i.reorder_level) * 50), fill: 'var(--green)',
-      status: i.qty <= i.reorder_level ? 'Low' : 'Available', tag: i.qty <= i.reorder_level ? 'red' : 'green' }));
+    AdminState.inventory = data.inventory.map(i => inventoryMgr.normalize(i));
     inventoryMgr.apply();
   }
 });
