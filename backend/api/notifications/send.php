@@ -1,7 +1,7 @@
 <?php
 /**
  * POST /backend/api/notifications/send.php
- * Sends a notification to a patient via email/SMS.
+ * Sends an email notification to a patient.
  */
 
 require_once __DIR__ . '/../../autoload.php';

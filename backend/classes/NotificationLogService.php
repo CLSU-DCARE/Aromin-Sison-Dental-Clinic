@@ -38,7 +38,7 @@ class NotificationLogService
             $where[]  = 'nl.patient_id = ?';
             $params[] = $patientId;
         }
-        if ($channel && in_array($channel, ['email', 'sms'], true)) {
+        if ($channel === 'email') {
             $where[]  = 'nl.channel = ?';
             $params[] = $channel;
         }

@@ -51,7 +51,6 @@
       try {
         const params = new URLSearchParams();
         if (this._filter === 'Email') params.set('channel', 'email');
-        if (this._filter === 'SMS') params.set('channel', 'sms');
         if (this._filter === 'Failed') params.set('status', 'failed');
         params.set('limit', '50');
         const data = snapshot ? { success: true, logs: snapshot.logs.filter(log => this._filter === 'All' || (this._filter === 'Failed' ? log.status === 'failed' : log.channel === this._filter.toLowerCase())) } : await apiFetch(API_BASE + '/list.php?' + params.toString());
@@ -75,7 +74,7 @@
           const chTag =
             log.channel === 'email'
               ? '<span class="tag tag-blue">Email</span>'
-              : '<span class="tag tag-amber">SMS</span>';
+              : '<span class="tag tag-amber">Legacy</span>';
           const stTag =
             log.status === 'sent'
               ? '<span class="tag tag-green">Sent</span>'
@@ -141,14 +140,14 @@
         if (!key) {
           snSubject.value = '';
           snBody.value = '';
-          snChannel.value = 'both';
+          snChannel.value = 'email';
           return;
         }
         const t = this._templates.find((x) => x.template_key === key);
         if (t) {
           snSubject.value = t.subject || '';
           snBody.value = t.body || '';
-          snChannel.value = t.channel || 'both';
+          snChannel.value = 'email';
         }
       });
 
@@ -158,7 +157,7 @@
         fillTemplateDropdown();
         snSubject.value = '';
         snBody.value = '';
-        snChannel.value = 'both';
+        snChannel.value = 'email';
         snTemplate.value = '';
         this._modal.open();
       });
@@ -185,7 +184,7 @@
 
         const payload = {
           patient_id: parseInt(patientId, 10),
-          channel: snChannel.value,
+          channel: 'email',
           subject: snSubject.value.trim() || null,
           body: snBody.value.trim(),
         };
