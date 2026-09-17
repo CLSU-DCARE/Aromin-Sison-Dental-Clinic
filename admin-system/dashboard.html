@@ -13,7 +13,7 @@
 <link rel="stylesheet" href="../shared/css/variables.css?v=4">
 <link rel="stylesheet" href="../shared/css/buttons.css?v=5">
 <link rel="stylesheet" href="../shared/css/panels.css?v=4">
-<link rel="stylesheet" href="assets/css/admin.css?v=17">
+<link rel="stylesheet" href="assets/css/admin.css?v=18">
 </head>
 <body>
 
@@ -408,7 +408,7 @@
         <div class="page-head">
           <div>
             <div class="eyebrow">Operations</div>
-            <p>Staff attendance and clinic activity this week.</p>
+            <p>Patient attendance based on completed and missed appointments.</p>
           </div>
           <div class="toolbar-left" role="group" aria-label="Report period">
             <button class="filter-chip active" aria-pressed="true">This week</button>
@@ -419,12 +419,41 @@
 
         <div class="stat-grid stat-grid-3" id="reportStats"></div>
 
-        <div class="panel">
-          <div class="panel-head">
-            <h3 id="reportHeading">Attendance: This Week</h3>
-            <span class="tag">Unavailable</span>
+        <div class="report-layout">
+          <div class="panel attendance-chart-panel">
+            <div class="panel-head">
+              <h3 id="reportHeading">Attendance: This Week</h3>
+              <span class="tag tag-green" id="reportRateTag">0%</span>
+            </div>
+            <div class="attendance-donut-wrap">
+              <div class="attendance-donut" id="attendanceDonut" style="--attended:0%;"></div>
+              <div class="attendance-legend">
+                <div><span class="legend-dot attended"></span><b id="attendedCount">0</b> attended</div>
+                <div><span class="legend-dot missed"></span><b id="missedCount">0</b> did not attend</div>
+                <div><span class="legend-dot upcoming"></span><b id="upcomingCount">0</b> upcoming</div>
+              </div>
+            </div>
           </div>
-          <div class="bar-chart" id="reportBars"></div>
+
+          <div class="panel">
+            <div class="panel-head">
+              <h3 id="reportBarsTitle">Daily Attendance</h3>
+            </div>
+            <div class="bar-chart attendance-bars" id="reportBars"></div>
+          </div>
+        </div>
+
+        <div class="panel report-table-panel">
+          <div class="panel-head">
+            <h3>Attendance Records</h3>
+            <span class="tag tag-amber" id="reportRecordCount">0 records</span>
+          </div>
+          <div class="table-scroll">
+            <table class="attendance-table">
+              <thead><tr><th>Patient</th><th>Service</th><th>Schedule</th><th>Dentist</th><th>Attendance</th></tr></thead>
+              <tbody id="attendanceReportBody"></tbody>
+            </table>
+          </div>
         </div>
       </section>
 
@@ -954,9 +983,9 @@
 <script src="assets/js/RecordTableManager.js?v=20260916-integration" defer></script>
 <script src="assets/js/InventoryTableManager.js?v=20260916-integration" defer></script>
 <script src="../patient-dashboard/assets/js/PatientLiveSync.js?v=20260916-integration" defer></script>
-<script src="../shared/js/core/PortalSync.js?v=20260916-integration" defer></script>
+<script src="../shared/js/core/PortalSync.js?v=20260917-attendance-reports" defer></script>
 <script src="../shared/js/core/PortalForms.js?v=20260916-appointment-dialogs" defer></script>
-<script src="assets/js/admin.js?v=20260917-promotion-delete" defer></script>
+<script src="assets/js/admin.js?v=20260917-attendance-reports" defer></script>
 
 </body>
 </html>

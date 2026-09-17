@@ -182,9 +182,10 @@ wireChips(apptGroup, label => appointmentScheduler.setMode(label));
 // REPORTS: period chips update the panel heading (state period switch)
 // =====================================================================
 const reportGroup = document.querySelector('[aria-label="Report period"]');
+let reportPeriod = 'this_week';
 wireChips(reportGroup, label => {
-  const heading = document.getElementById('reportHeading');
-  if (heading) heading.textContent = 'Attendance: ' + label;
+  reportPeriod = { 'This week': 'this_week', 'Last week': 'last_week', 'This month': 'this_month' }[label] || 'this_week';
+  renderReports(AdminState.reports);
 });
 
 // =====================================================================
@@ -690,14 +691,71 @@ document.getElementById('promoGrid')?.addEventListener('keydown', event => {
 function renderReports(reports){
   const grid = document.getElementById('reportStats');
   if (!grid) return;
-  grid.innerHTML = '<p class="empty-cell">Attendance reports are unavailable.</p>';
+  const report = reports?.[reportPeriod] || reports?.this_week || { label: 'This Week', attended: 0, missed: 0, upcoming: 0, total: 0, attendance_rate: 0, missed_rate: 0, bars: [], rows: [] };
+  const label = report.label || 'This Week';
+  const stats = [
+    {
+      iconBg: 'rgba(92,122,92,0.12)',
+      iconColor: 'var(--green)',
+      icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>',
+      num: String(report.attended || 0),
+      label: 'Attended'
+    },
+    {
+      iconBg: 'rgba(180,84,63,0.12)',
+      iconColor: 'var(--red)',
+      icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>',
+      num: String(report.missed || 0),
+      label: 'Did not attend'
+    },
+    {
+      iconBg: 'rgba(156,139,62,0.14)',
+      iconColor: 'var(--gold)',
+      icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v5l3 3"/><circle cx="12" cy="12" r="10"/></svg>',
+      num: (report.attendance_rate || 0) + '%',
+      label: 'Attendance rate'
+    }
+  ];
+  grid.innerHTML = stats.map(statCard).join('');
+
+  const heading = document.getElementById('reportHeading');
+  if (heading) heading.textContent = 'Attendance: ' + label;
+  const rateTag = document.getElementById('reportRateTag');
+  if (rateTag) rateTag.textContent = (report.missed_rate || 0) + '% did not attend';
+  const donut = document.getElementById('attendanceDonut');
+  if (donut) donut.style.setProperty('--attended', (report.attendance_rate || 0) + '%');
+  const set = (id, value) => { const el = document.getElementById(id); if (el) el.textContent = String(value); };
+  set('attendedCount', report.attended || 0);
+  set('missedCount', report.missed || 0);
+  set('upcomingCount', report.upcoming || 0);
+  set('reportRecordCount', (report.rows || []).length + ' records');
 
   const bars = document.getElementById('reportBars');
   if (bars){
-    bars.innerHTML = reports.bars.map(b =>
-      `<div class="bar-col"><div class="bar" style="height:${b.pct}%"></div><span class="bar-label">${b.day}</span></div>`
+    bars.innerHTML = (report.bars || []).map(b => {
+      const total = Number(b.attended || 0) + Number(b.missed || 0);
+      const height = total ? Math.max(12, Math.round((Number(b.attended || 0) / total) * 100)) : 4;
+      return `<div class="bar-col"><div class="bar attendance-bar" style="height:${height}%"><span>${Number(b.attended || 0)}/${total}</span></div><span class="bar-label">${escapeHtml(b.day)}</span></div>`;
+    }
     ).join('');
   }
+
+  const tbody = document.getElementById('attendanceReportBody');
+  if (!tbody) return;
+  const rows = report.rows || [];
+  if (!rows.length){
+    tbody.innerHTML = '<tr><td colspan="5" class="empty-cell">No attendance records for this period.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = rows.map(row =>
+    `<tr>
+      <td>${escapeHtml(row.patient)}</td>
+      <td>${escapeHtml(row.service)}</td>
+      <td>${escapeHtml(row.date)} ${escapeHtml(row.time)}</td>
+      <td>${escapeHtml(row.dentist || 'Unassigned')}</td>
+      <td>${statusTag({ status: row.status, tag: row.tag })}</td>
+    </tr>`
+  ).join('');
 }
 
 function renderInventory(items){
@@ -745,6 +803,8 @@ window.staffLiveSync = ASDC.startPortalSync({
     applyBraces(data); paymentMgr.render(data);
     inbox.setItems(data.notifications);
     notificationManager.renderLog(data);
+    AdminState.reports = data.reports || AdminState.reports;
+    renderReports(AdminState.reports);
     AdminState.dashboard.stats.forEach((stat, index) => { stat.num = index === 2 ? ContractFormat.peso(data.metrics[index]) : String(data.metrics[index]); });
     renderDashboardStats(AdminState.dashboard.stats);
     AdminState.promotions = data.promotions.map(p => ({ ...p, tag: p.status === 'live' ? 'green' : 'amber' }));

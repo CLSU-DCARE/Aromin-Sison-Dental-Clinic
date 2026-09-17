@@ -577,6 +577,28 @@ tbody tr:hover{background:rgba(241,237,227,0.5);}
 }
 .bar-col:hover .bar{filter:brightness(1.06);}
 .bar-label{font-family:var(--font-ui);font-size:11px;color:rgba(27,27,25,0.65);}
+.report-layout{display:grid;grid-template-columns:380px 1fr;gap:22px;margin-bottom:22px;}
+.attendance-chart-panel{min-height:300px;}
+.attendance-donut-wrap{padding:24px;display:flex;align-items:center;gap:24px;min-height:238px;}
+.attendance-donut{
+  width:150px;height:150px;border-radius:50%;flex-shrink:0;
+  background:conic-gradient(var(--green-text) 0 var(--attended), var(--red-text) var(--attended) 100%);
+  position:relative;box-shadow:inset 0 0 0 1px rgba(27,27,25,0.06);
+}
+.attendance-donut::after{
+  content:'';
+  position:absolute;inset:28px;border-radius:50%;
+  background:var(--white);box-shadow:inset 0 0 0 1px var(--line);
+}
+.attendance-legend{display:flex;flex-direction:column;gap:10px;font-size:13px;color:rgba(27,27,25,0.68);}
+.attendance-legend b{font-family:'Fraunces',serif;font-size:20px;color:var(--ink);margin-right:5px;}
+.legend-dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:8px;}
+.legend-dot.attended{background:var(--green-text);}
+.legend-dot.missed{background:var(--red-text);}
+.legend-dot.upcoming{background:var(--amber-text);}
+.attendance-bars .attendance-bar{display:flex;align-items:flex-start;justify-content:center;color:var(--dark-deep);font-size:10.5px;font-weight:700;padding-top:5px;min-height:8px;}
+.attendance-table{min-width:760px;}
+.report-table-panel{margin-bottom:22px;}
 
 /* progress bar */
 .progress-track{width:100%;height:8px;border-radius:var(--r-pill);background:var(--ivory-2);overflow:hidden;}
@@ -826,6 +848,8 @@ body.modal-open{overflow:hidden;}
 @media (max-width:1250px){
   .stat-grid{grid-template-columns:repeat(2,1fr);}
   .grid-2{grid-template-columns:1fr;}
+.report-layout{grid-template-columns:1fr;}
+.attendance-donut-wrap{justify-content:center;flex-wrap:wrap;}
 .promo-grid{grid-template-columns:repeat(2,1fr);}
   .content{padding:28px;}
   .search-box{width:220px;}
