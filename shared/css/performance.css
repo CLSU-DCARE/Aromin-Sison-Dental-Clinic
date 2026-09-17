@@ -10,8 +10,9 @@
   }
   header{background:rgba(17,17,16,.94);}
   header.scrolled{background:rgba(247,243,236,.97);}
-  .tooth-track{animation:none;transform:none;width:100%;flex-wrap:wrap;}
-  .tooth-item{flex:0 0 min(190px,calc(50% - 8px));}
+  /* Keep the Chapter 7 marquee running on touch-sized screens. Its paired
+     image sequence and transform animation provide the seamless loop; the
+     base stylesheet already scales its cards for tablet and phone layouts. */
   [data-reveal]{opacity:1;transform:none;transition:none;}
   .carousel-cell,.carousel-stage,.lightbox,.lb-stage img{animation:none !important;transition:none !important;}
 }
