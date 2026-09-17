@@ -45,7 +45,7 @@ class NotificationTemplateService
     {
         $templateKey = trim($data['template_key'] ?? '');
         $name        = trim($data['name'] ?? '');
-        $channel     = strtolower(trim($data['channel'] ?? 'both'));
+        $channel     = 'email';
         $subject     = isset($data['subject']) ? trim($data['subject']) : null;
         $body        = trim($data['body'] ?? '');
         $isActive    = $data['is_active'] ?? true;
@@ -56,10 +56,6 @@ class NotificationTemplateService
         if (!$body) {
             return ['success' => false, 'error' => 'body is required.', 'code' => 400];
         }
-        if (!in_array($channel, ['email', 'sms', 'both'], true)) {
-            return ['success' => false, 'error' => 'channel must be "email", "sms", or "both".', 'code' => 400];
-        }
-
         if (!$templateKey) {
             $templateKey = preg_replace('/[^a-z0-9]+/', '_', strtolower($name));
             $templateKey = trim($templateKey, '_');

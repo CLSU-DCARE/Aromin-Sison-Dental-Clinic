@@ -1,0 +1,227 @@
+/* =====================================================================
+   ASDC dashboard system
+   Shared visual shell for patient, dentist, and receptionist portals.
+   This file intentionally contains presentation rules only; each portal
+   retains its own views, data, and workflow behaviour.
+   ===================================================================== */
+
+:root{
+  --dash-rail:276px;
+  --dash-rail-collapsed:76px;
+  --dash-rail-inset:16px;
+  --dash-header-height:72px;
+  --dash-content-max:1480px;
+  --dash-space-1:8px;
+  --dash-space-2:12px;
+  --dash-space-3:16px;
+  --dash-space-4:24px;
+  --dash-space-5:32px;
+}
+
+body{min-width:320px;}
+.app{min-height:100dvh;}
+
+/* ---- Application shell ---- */
+.sidebar{
+  width:var(--dash-rail);
+  top:var(--dash-rail-inset);left:var(--dash-rail-inset);bottom:var(--dash-rail-inset);
+  padding:18px 0;
+  border-radius:var(--r-xl);
+  /* Solid clinic-ink rail: deliberately not a frosted/liquid surface. */
+  background:#171716;
+  -webkit-backdrop-filter:none !important;
+  backdrop-filter:none !important;
+  border:1px solid rgba(250,250,247,.10);
+  box-shadow:0 12px 32px rgba(17,17,16,.18);
+}
+.side-brand{min-height:72px;padding:12px 20px;gap:12px;}
+.side-brand img{height:42px;max-width:98px;object-fit:contain;}
+.side-brand-text,.side-brand .txt{min-width:0;}
+.brand-name,.side-brand .txt{font-size:10px;letter-spacing:.08em;}
+.brand-sub{font-size:9.5px;letter-spacing:.09em;}
+.side-nav{padding:12px;}
+.nav-group-label{padding:16px 12px 7px;font-size:10px;letter-spacing:.12em;}
+.nav-item{min-height:42px;padding:10px 12px;gap:12px;border-radius:10px;font-size:14px;}
+.nav-item svg{width:18px;height:18px;}
+.nav-item.active{box-shadow:inset 0 1px 0 rgba(255,255,255,.22),0 4px 12px rgba(0,0,0,.12);}
+.side-foot{min-height:64px;padding:12px 16px;}
+.side-foot-text{min-width:0;}
+.side-foot-name,.side-foot .name{font-size:13px;}
+.side-foot-role,.side-foot .role{font-size:11px;}
+.logout-btn,.logout-link{width:34px;height:34px;}
+
+.main{margin-left:calc(var(--dash-rail) + (var(--dash-rail-inset) * 2));}
+.topbar{
+  height:var(--dash-header-height);
+  padding:0 var(--dash-space-5);
+  background:var(--glass-bar);
+  border-bottom:1px solid var(--glass-border);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.6),0 5px 20px rgba(17,17,16,.045);
+}
+.topbar-left{gap:14px;}
+.topbar-right{gap:10px;}
+.sidebar-toggle,.icon-btn,.user-chip{width:40px;height:40px;}
+.sidebar-toggle{border-radius:10px;}
+.icon-btn,.user-chip{border-color:var(--glass-border);}
+.topbar h1{font-size:20px;}
+.crumb{font-size:10px;letter-spacing:.1em;}
+.content{width:100%;max-width:var(--dash-content-max);margin:0 auto;padding:32px;}
+
+/* ---- Reusable content surfaces ---- */
+.page-head{margin-bottom:28px;gap:var(--dash-space-3);}
+.page-head p{max-width:680px;line-height:1.55;}
+.eyebrow{font-size:10.5px;letter-spacing:.11em;}
+.panel,.stat-card,.profile-card,.promo-card{
+  border:1px solid var(--glass-border);
+  border-radius:var(--r-md);
+  box-shadow:var(--glass-shadow);
+}
+.panel{background:var(--glass-solid);}
+.panel-head{min-height:68px;padding:18px 22px;gap:12px;}
+.panel-head h3{font-size:18px;}
+.panel-head > *{min-width:0;}
+.stat-grid{gap:18px;margin-bottom:24px;}
+.stat-card{padding:22px;}
+.stat-top{margin-bottom:14px;}
+.stat-icon{width:40px;height:40px;border-radius:10px;}
+.stat-num{font-size:30px;}
+.stat-label{font-size:13px;line-height:1.4;}
+.grid-2{gap:18px;}
+.welcome-banner{padding:32px 34px;margin-bottom:24px;border-radius:var(--r-lg);gap:20px;}
+.welcome-banner h2{font-size:clamp(25px,2.4vw,30px);}
+.welcome-banner p{line-height:1.55;}
+
+/* ---- Inputs, tables, status, and small controls ---- */
+.form-group{margin-bottom:20px;}
+.form-group label,.field label{font-size:10.5px;letter-spacing:.08em;margin-bottom:8px;}
+.form-group input,.form-group select,.form-group textarea,
+.field input,.field select,.field textarea{
+  min-height:44px;border-radius:10px;border-color:var(--line);
+}
+.table-scroll{overscroll-behavior-x:contain;}
+table{min-width:560px;}
+th{padding:13px 20px;font-size:10.5px;letter-spacing:.08em;}
+td{padding:15px 20px;font-size:13.5px;}
+.tag{min-height:28px;padding:5px 10px;font-size:11.5px;white-space:nowrap;}
+.filter-chip{min-height:36px;border-radius:var(--r-pill);}
+
+/* Sync feedback is an unobtrusive, fixed status—not page content. */
+.sync-status,#patientSyncStatus,#portalSyncStatus{
+  position:fixed !important;
+  right:16px !important;
+  bottom:16px !important;
+  z-index:10000 !important;
+  max-width:min(420px,calc(100vw - 32px)) !important;
+  margin:0 !important;
+  padding:8px 12px !important;
+  border:1px solid var(--glass-border) !important;
+  border-radius:var(--r-pill) !important;
+  background:var(--glass-solid) !important;
+  color:rgba(27,27,25,.7) !important;
+  box-shadow:var(--shadow-sm) !important;
+  font-size:12px !important;
+  line-height:1.35 !important;
+  pointer-events:none !important;
+}
+
+/* ---- Dialogs and feedback ---- */
+.modal-overlay{padding:24px;}
+.modal{width:min(100%,520px);padding:30px;border-radius:var(--r-lg);}
+.modal-wide{width:min(100%,760px);}
+.modal h3{font-size:21px;line-height:1.2;}
+.modal-actions{gap:10px;}
+.modal-actions .btn{min-height:44px;}
+.app-toast{z-index:10000;}
+
+@media (min-width:961px){
+  body.sidebar-collapsed .sidebar{width:var(--dash-rail-collapsed);}
+  body.sidebar-collapsed .main{margin-left:calc(var(--dash-rail-collapsed) + (var(--dash-rail-inset) * 2));}
+  body.sidebar-collapsed .side-brand{min-height:58px;}
+}
+
+/* Tablet: one drawer behaviour and consistent, breathable page rhythm. */
+@media (max-width:960px){
+  .sidebar{width:284px;top:0;left:0;bottom:0;padding:0;border-radius:0;}
+  .side-brand{min-height:72px;padding:16px 18px;}
+  .side-brand img{height:40px;}
+  .side-nav{padding:14px 12px;}
+  .side-foot{padding:14px 18px;}
+  .main{margin-left:0;}
+  .topbar{padding:0 22px;}
+  .content{padding:24px;}
+  .grid-2,.profile-grid,.book-grid{grid-template-columns:1fr;}
+  /* Fixed blurred layers are a frequent source of touch-scroll jank on
+     lower-powered devices. Solid translucent surfaces retain the design
+     language while keeping compositing inexpensive. */
+  .sidebar,.topbar,.icon-btn,.user-chip,.sidebar-toggle,.stat-card,.profile-card,.promo-card,.modal{
+    -webkit-backdrop-filter:none !important;
+    backdrop-filter:none !important;
+  }
+  .sidebar{background:rgba(18,18,16,.98);}
+  .topbar{background:rgba(250,250,247,.96);}
+}
+
+/* Phone: controls stay in one predictable header row; cards and dialogs
+   use the same safe-area-aware spacing in every portal. */
+@media (max-width:640px){
+  .topbar{min-height:64px;height:auto;padding:10px 16px;padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env(safe-area-inset-right));}
+  .topbar-left{gap:10px;flex:1 1 auto;min-width:0;}
+  .topbar-right{gap:6px;flex-wrap:nowrap;flex-shrink:0;}
+  .topbar h1{font-size:16px;}
+  .crumb{display:none;}
+  .sidebar-toggle,.icon-btn,.user-chip{width:38px;height:38px;}
+  .topbar-right .btn{width:38px;height:38px;min-height:38px;padding:0;border-radius:50%;flex:0 0 38px;}
+  .topbar-right .btn .btn-text{display:none;}
+  .topbar-right .btn svg{width:17px;height:17px;}
+  .content{padding:18px;padding-bottom:calc(18px + env(safe-area-inset-bottom));}
+  .page-head{margin-bottom:22px;}
+  .page-head .btn{width:100%;}
+  .welcome-banner{padding:26px 22px;margin-bottom:20px;}
+  .welcome-banner .actions{width:100%;}
+  .welcome-banner .actions .btn{flex:1;}
+  .panel-head{min-height:auto;padding:16px;align-items:flex-start;flex-wrap:wrap;}
+  .panel-head h3{font-size:17px;}
+  /* Long filter sets remain a single horizontal control rather than
+     wrapping one item onto a second row inside the segmented track. */
+  .toolbar{padding:14px 16px;}
+  .toolbar-left{
+    display:flex;
+    flex-wrap:nowrap;
+    width:100%;
+    max-width:100%;
+    min-width:0;
+    overflow-x:auto;
+    overscroll-behavior-x:contain;
+    -webkit-overflow-scrolling:touch;
+    scrollbar-width:none;
+  }
+  .toolbar-left::-webkit-scrollbar{display:none;}
+  .toolbar-left .filter-chip{flex:0 0 auto;padding:8px 12px;font-size:12px;}
+  .stat-grid{grid-template-columns:1fr;gap:14px;margin-bottom:20px;}
+  .stat-card{padding:18px;}
+  .table-scroll::after{width:22px;}
+  th{padding:12px 16px;}
+  td{padding:14px 16px;}
+  .modal-overlay{padding:16px;align-items:flex-end;}
+  .modal{padding:26px 22px;border-radius:var(--r-lg) var(--r-lg) var(--r-md) var(--r-md);}
+  .modal-actions{flex-direction:column-reverse;}
+  .modal-actions .btn{width:100%;}
+  .sync-status,#patientSyncStatus,#portalSyncStatus{
+    right:auto !important;
+    left:50% !important;
+    bottom:max(12px,env(safe-area-inset-bottom)) !important;
+    width:max-content !important;
+    max-width:calc(100vw - 32px) !important;
+    transform:translateX(-50%) !important;
+    text-align:center;
+  }
+}
+
+@media (max-width:380px){
+  .topbar-right{gap:4px;}
+  .topbar h1{font-size:15px;}
+}
+
+@media (prefers-reduced-motion:reduce){
+  .sidebar,.main,.nav-item,.stat-card,.panel,.modal{transition:none;}
+}

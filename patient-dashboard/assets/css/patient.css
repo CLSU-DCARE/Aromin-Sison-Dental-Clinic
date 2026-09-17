@@ -595,7 +595,17 @@ body.modal-open{overflow:hidden;}
   .promo-grid{grid-template-columns:1fr;}
 }
 @media (max-width:960px){
-  .sidebar{transform:translateX(-100%);visibility:hidden;box-shadow:var(--shadow-lg);transition:transform .3s var(--ease), visibility .3s;}
+  .sidebar{
+    transform:translateX(-100%);visibility:hidden;
+    box-shadow:var(--shadow-lg);
+    transition:transform .3s var(--ease), visibility .3s;
+    top:0;left:0;bottom:0;
+    border-radius:0;
+    width:284px;
+    padding:0;
+    align-items:stretch;
+    border:none;
+  }
   .sidebar.open{transform:translateX(0);visibility:visible;}
   .sidebar-backdrop{display:block;}
   .sidebar-close{display:flex;}
@@ -616,21 +626,32 @@ body.sidebar-open{overflow:hidden;}
 @media (max-width:640px){
   .topbar{
     height:auto;
-    min-height:70px;
-    flex-wrap:wrap;
-    padding:14px 16px;
+    min-height:64px;
+    flex-wrap:nowrap;
+    padding:10px 16px;
     padding-left:max(16px, env(safe-area-inset-left));
     padding-right:max(16px, env(safe-area-inset-right));
-    row-gap:12px;
   }
-  .topbar-left{flex:1 1 auto;min-width:0;gap:12px;}
-  .topbar h1{font-size:17.5px;}
+  .topbar-left{flex:1 1 auto;min-width:0;gap:10px;}
+  .topbar h1{font-size:16.5px;}
   .crumb{display:none;}
-  .sidebar-toggle{width:40px;height:40px;}
+  .sidebar-toggle{width:38px;height:38px;flex-shrink:0;}
   .sidebar-toggle svg{width:18px;height:18px;}
-  .topbar-right{width:100%;order:3;gap:10px;flex-wrap:wrap;}
-  .icon-btn{width:40px;height:40px;flex-shrink:0;}
-  .topbar-right .btn{flex:1 1 100%;justify-content:center;white-space:nowrap;}
+  /* Every action stays a compact, equally-sized icon on one row instead
+     of wrapping onto its own line — a full-width text button ("Book
+     Appointment") used to force a whole extra row by itself here. */
+  .topbar-right{width:auto;order:0;gap:6px;flex-wrap:nowrap;flex-shrink:0;}
+  .icon-btn{width:38px;height:38px;flex-shrink:0;}
+  .topbar-right .btn{
+    flex:0 0 auto;
+    width:38px;height:38px;
+    padding:0;
+    justify-content:center;
+    border-radius:50%;
+  }
+  .topbar-right .btn .btn-text{display:none;}
+  .topbar-right .btn svg{width:17px;height:17px;}
+  .user-chip{flex-shrink:0;}
   .content{padding:18px;}
   .content{padding-bottom:calc(18px + env(safe-area-inset-bottom));}
   .side-brand{padding-top:max(20px, env(safe-area-inset-top));}
@@ -643,7 +664,8 @@ body.sidebar-open{overflow:hidden;}
   .slot-grid{grid-template-columns:repeat(2,1fr);}
 }
 @media (max-width:380px){
-  .topbar h1{font-size:16px;}
+  .topbar h1{font-size:15px;}
+  .topbar-right{gap:4px;}
 }
 
 /* ---- Confirm Logout / modal: full mobile scaling ---- */

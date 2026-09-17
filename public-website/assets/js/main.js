@@ -9,12 +9,23 @@
   'use strict';
 
   var header = document.getElementById('siteHeader');
+  var ticking = false;
+  var isScrolled = null;
   function updateHeader(){
-    if (window.scrollY > 40) header.classList.add('scrolled');
-    else header.classList.remove('scrolled');
+    var next = window.scrollY > 40;
+    if (next !== isScrolled){
+      header.classList.toggle('scrolled', next);
+      isScrolled = next;
+    }
+    ticking = false;
   }
   if (header){
-    window.addEventListener('scroll', updateHeader, { passive: true });
+    window.addEventListener('scroll', function(){
+      if (!ticking){
+        ticking = true;
+        requestAnimationFrame(updateHeader);
+      }
+    }, { passive: true });
     updateHeader();
   }
 })();

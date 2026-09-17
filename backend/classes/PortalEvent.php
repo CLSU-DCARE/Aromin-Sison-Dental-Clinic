@@ -126,7 +126,6 @@ class PortalEvent
 
         if ($row['contact_number']) $lines[] = 'Contact number: ' . $row['contact_number'];
         if ($row['email']) $lines[] = 'Email: ' . $row['email'];
-        if ($row['notes']) $lines[] = 'Notes: ' . $row['notes'];
 
         return implode("\n", $lines);
     }

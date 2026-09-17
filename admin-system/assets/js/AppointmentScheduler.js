@@ -203,8 +203,9 @@ window.AppointmentScheduler = class AppointmentScheduler {
           appt => appt.scheduled_date === day && String(appt.scheduled_time).slice(0, 5) === time
         );
         return items.length
-          ? '<div class="cell">' + items.map(item => `<div class="appt-block"><strong>${escapeHtml(item.patient_name)}</strong>` +
+          ? '<div class="cell">' + items.map(item => `<div class="appt-block${String(item.status).toLowerCase() === 'completed' ? ' appt-completed' : ''}"><strong>${escapeHtml(item.patient_name)}</strong>` +
             `<span class="t">${escapeHtml(item.service_type)} · ${escapeHtml(item.status)}</span>` +
+            `${String(item.status).toLowerCase() === 'completed' ? '<span class="appt-status">Completed</span>' : ''}` +
             `${this._actionControls(item, true)}</div>`).join('') + '</div>'
           : '<div class="cell"></div>';
       }).join('');

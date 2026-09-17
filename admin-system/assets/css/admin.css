@@ -609,6 +609,34 @@ background:var(--ivory-2);color:rgba(27,27,25,0.65);padding:13px 10px;min-height
   border-radius:var(--r-sm);padding:6px 8px;font-size:11.5px;font-weight:600;color:var(--dark);margin-bottom:4px;
 }
 .appt-block .t{font-weight:400;color:rgba(27,27,25,0.65);font-size:10.5px;margin-left:5px;}
+.appt-block.appt-completed{
+  background:rgba(92,122,92,0.13);
+  border-left-color:var(--green-text);
+  color:var(--green-text);
+}
+.appt-block.appt-completed .t{
+  color:rgba(54,83,55,0.78);
+}
+.appt-status{
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  margin-top:6px;
+  padding:3px 7px;
+  border-radius:var(--r-pill);
+  background:rgba(92,122,92,0.14);
+  color:var(--green-text);
+  font-family:var(--font-ui);
+  font-size:10px;
+  font-weight:700;
+}
+.appt-status::before{
+  content:'';
+  width:6px;
+  height:6px;
+  border-radius:50%;
+  background:var(--green-text);
+}
 .appointment-card-actions{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px;}
 .appointment-card-actions .btn{min-height:28px;padding:5px 8px;font-size:10px;line-height:1.2;white-space:nowrap;}
 .appointment-week-nav{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap;}
@@ -827,21 +855,32 @@ body.sidebar-open{overflow:hidden;}
 @media (max-width:640px){
   .topbar{
     height:auto;
-    min-height:70px;
-    flex-wrap:wrap;
-    padding:14px 16px;
+    min-height:64px;
+    flex-wrap:nowrap;
+    padding:10px 16px;
     padding-left:max(16px, env(safe-area-inset-left));
     padding-right:max(16px, env(safe-area-inset-right));
-    row-gap:12px;
   }
-  .topbar-left{flex:1 1 auto;min-width:0;gap:12px;}
-  .topbar h1{font-size:17.5px;}
+  .topbar-left{flex:1 1 auto;min-width:0;gap:10px;}
+  .topbar h1{font-size:16.5px;}
   .crumb{display:none;}
-  .sidebar-toggle{width:40px;height:40px;}
+  .sidebar-toggle{width:38px;height:38px;flex-shrink:0;}
   .sidebar-toggle svg{width:18px;height:18px;}
-  .topbar-right{width:100%;order:3;gap:10px;flex-wrap:wrap;}
-  .icon-btn{width:40px;height:40px;flex-shrink:0;}
-  .topbar-right .btn{flex:1 1 100%;justify-content:center;white-space:nowrap;}
+  /* Every action stays a compact, equally-sized icon on one row instead
+     of wrapping onto its own line — a full-width text button ("View
+     Public Site") used to force a whole extra row by itself here. */
+  .topbar-right{width:auto;order:0;gap:6px;flex-wrap:nowrap;flex-shrink:0;}
+  .icon-btn{width:38px;height:38px;flex-shrink:0;}
+  .topbar-right .btn{
+    flex:0 0 auto;
+    width:38px;height:38px;
+    padding:0;
+    justify-content:center;
+    border-radius:50%;
+  }
+  .topbar-right .btn .btn-text{display:none;}
+  .topbar-right .btn svg{width:17px;height:17px;}
+  .user-chip{flex-shrink:0;}
   .content{padding:18px;}
   .content{padding-bottom:calc(18px + env(safe-area-inset-bottom));}
   .side-foot{
@@ -861,7 +900,11 @@ body.sidebar-open{overflow:hidden;}
   .appointment-request-panel .panel-head{align-items:flex-start;}
 }
 @media (max-width:380px){
-  .topbar h1{font-size:16px;}
+  .topbar h1{font-size:15px;}
+  /* At the very narrowest phone widths, the avatar is the one control
+     that can safely step aside — everything else is already a minimal
+     icon, and the account menu is still reachable from the sidebar. */
+  .topbar-right{gap:4px;}
 }
 
 /* ---- Confirm Logout / modal: full mobile scaling ---- */

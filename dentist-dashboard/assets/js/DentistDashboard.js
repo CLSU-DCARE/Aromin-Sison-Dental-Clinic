@@ -329,7 +329,7 @@ if (inboxEmpty) inboxEmpty.textContent = 'Loading notifications…';
     var body = week.rows.map(function(row){
       return '<div class="cell time">' + row.time + '</div>' + row.appts.map(function(a){
         return a
-          ? '<div class="cell"><div class="appt-block">' + a.name + ' <span class="t">' + a.t + '</span></div></div>'
+          ? '<div class="cell"><div class="appt-block' + (a.status === 'completed' ? ' appt-completed' : '') + '">' + a.name + ' <span class="t">' + a.t + '</span>' + (a.status === 'completed' ? '<span class="appt-status">Completed</span>' : '') + '</div></div>'
           : '<div class="cell"></div>';
       }).join('');
     }).join('');

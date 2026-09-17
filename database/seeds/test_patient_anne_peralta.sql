@@ -9,7 +9,7 @@ INSERT INTO users (role, email, password_hash, full_name, is_active)
 VALUES (
     'patient',
     'anneperalta023@gmail.com',
-    '$2y$10$7V6bzH3UJk1Q.DBY9ol0GeQASmEbUN..JJuhwavOXoCjKyIYMZ4s6',
+    '$2y$12$Se8xqGqf9TPor9GjzUwmT.0TAwCf.phonNSHmJbwSLbeXdk54XIaO',
     'Anne Peralta',
     1
 )

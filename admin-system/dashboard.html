@@ -13,7 +13,7 @@
 <link rel="stylesheet" href="../shared/css/variables.css?v=4">
 <link rel="stylesheet" href="../shared/css/buttons.css?v=5">
 <link rel="stylesheet" href="../shared/css/panels.css?v=4">
-<link rel="stylesheet" href="assets/css/admin.css?v=14">
+<link rel="stylesheet" href="assets/css/admin.css?v=13">
 </head>
 <body>
 
@@ -126,7 +126,7 @@
         </button>
         <a href="../public-website/index.html" class="btn btn-secondary btn-sm">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-          View Public Site
+          <span class="btn-text">View Public Site</span>
         </a>
         <button class="icon-btn" id="fullscreenToggle" aria-label="Toggle fullscreen">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
@@ -469,7 +469,7 @@
         <div class="page-head">
           <div>
             <div class="eyebrow">Operations</div>
-            <p>Email and SMS notifications sent to patients.</p>
+            <p>Email notifications sent to patients.</p>
           </div>
           <button class="btn btn-gold" id="sendNotifBtn">+ Send Notification</button>
         </div>
@@ -478,7 +478,6 @@
             <div class="toolbar-left" role="group" aria-label="Filter notifications">
               <button class="filter-chip active" aria-pressed="true">All</button>
               <button class="filter-chip" aria-pressed="false">Email</button>
-              <button class="filter-chip" aria-pressed="false">SMS</button>
               <button class="filter-chip" aria-pressed="false">Failed</button>
             </div>
           </div>
@@ -872,9 +871,7 @@
     <div class="form-group">
       <label for="snChannel">Channel</label>
       <select id="snChannel">
-        <option value="both">Email + SMS</option>
         <option value="email">Email only</option>
-        <option value="sms">SMS only</option>
       </select>
     </div>
     <div class="form-group">

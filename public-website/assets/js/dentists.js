@@ -73,7 +73,7 @@
 
   grid.innerHTML = DENTISTS.map(d =>
     `<div class="dentist-profile${d.alt ? ' alt-side' : ''}">
-      <div class="dentist-photo">${d.photo ? `<img src="${d.photo}" alt="${d.name}" style="width:100%;height:100%;object-fit:cover;">` : `<span class="team-mono" aria-hidden="true">${d.initials}</span>`}</div>
+      <div class="dentist-photo">${d.photo ? `<img src="${d.photo}" alt="${d.name}" loading="lazy" decoding="async" style="width:100%;height:100%;object-fit:cover;">` : `<span class="team-mono" aria-hidden="true">${d.initials}</span>`}</div>
       <div>
         <div class="dentist-name">${d.name}</div>
         <div class="dentist-title">${d.title}</div>

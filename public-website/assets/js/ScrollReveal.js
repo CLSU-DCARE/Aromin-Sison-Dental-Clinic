@@ -6,7 +6,10 @@
 (function(){
   'use strict';
 
-  var prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // Scroll reveals and count-up loops add little on a touch viewport but
+  // consume frame budget while the page is moving. Keep them for desktop
+  // only, and respect an explicit reduced-motion preference everywhere.
+  var prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce), (max-width: 960px)').matches;
 
   // =====================================================================
   // SCROLL REVEAL (fade + rise)
