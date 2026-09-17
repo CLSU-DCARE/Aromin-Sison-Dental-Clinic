@@ -1,1 +1,9 @@
-Require all denied
+# Promotion images must be web-viewable in the patient/admin portals.
+# Keep scripts blocked and directory listing disabled.
+<IfModule mod_php.c>
+  php_flag engine off
+</IfModule>
+<FilesMatch "\.(php|phtml|php\d)$">
+  Require all denied
+</FilesMatch>
+Options -Indexes

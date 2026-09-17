@@ -524,7 +524,7 @@ tbody tr:hover{background:rgba(241,237,227,0.5);}
 }
 
 .promo-feed-head{align-items:center;justify-content:flex-start;}
-.promo-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:20px;}
+.promo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;}
 .promo-card{
   background:var(--glass-card);
   -webkit-backdrop-filter:var(--glass-blur);
@@ -618,7 +618,7 @@ body.modal-open{overflow:hidden;}
   .profile-grid{grid-template-columns:1fr;}
 .book-grid{grid-template-columns:1fr;}
   .contract-summary{grid-template-columns:1fr;}
-  .promo-grid{grid-template-columns:1fr;}
+  .promo-grid{grid-template-columns:repeat(2,1fr);}
   .promo-viewer{width:calc(100vw - 18px);max-height:calc(100dvh - 18px);}
   .promo-viewer-media,.promo-detail-img{max-height:48dvh;}
   .promo-viewer-content{padding:34px 24px 20px;}
@@ -690,6 +690,7 @@ body.sidebar-open{overflow:hidden;}
   /* Below phone width, drop stat cards to a single column so numbers
      and labels have room to breathe instead of squeezing. */
   .stat-grid{grid-template-columns:1fr;}
+  .promo-grid{grid-template-columns:1fr;}
   .slot-grid{grid-template-columns:repeat(2,1fr);}
 }
 @media (max-width:380px){
