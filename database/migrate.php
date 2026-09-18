@@ -49,6 +49,65 @@ function column_type(PDO $pdo, string $table, string $column): ?string
     return $row['COLUMN_TYPE'] ?? null;
 }
 
+function template_keys_exist(PDO $pdo, array $keys): bool
+{
+    if ($keys === []) return true;
+    $placeholders = implode(',', array_fill(0, count($keys), '?'));
+    $stmt = $pdo->prepare("SELECT COUNT(DISTINCT template_key) FROM notification_templates WHERE template_key IN ({$placeholders})");
+    $stmt->execute($keys);
+    return (int) $stmt->fetchColumn() === count($keys);
+}
+
+function template_keys_are_inactive(PDO $pdo, array $keys): bool
+{
+    if (!template_keys_exist($pdo, $keys)) return false;
+    $placeholders = implode(',', array_fill(0, count($keys), '?'));
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM notification_templates WHERE template_key IN ({$placeholders}) AND is_active = 1");
+    $stmt->execute($keys);
+    return (int) $stmt->fetchColumn() === 0;
+}
+
+function template_bodies_exclude_contact_details(PDO $pdo, array $keys): bool
+{
+    if (!template_keys_exist($pdo, $keys)) return false;
+    $placeholders = implode(',', array_fill(0, count($keys), '?'));
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM notification_templates WHERE template_key IN ({$placeholders}) AND (body LIKE '%Contact Number: {contact_number}%' OR body LIKE '%Email: {email}%')");
+    $stmt->execute($keys);
+    return (int) $stmt->fetchColumn() === 0;
+}
+
+function seed_dentist_passwords_are_current(PDO $pdo): bool
+{
+    $stmt = $pdo->prepare(
+        'SELECT COUNT(*) FROM users WHERE '
+        . '(email = ? AND password_hash = ?) OR (email = ? AND password_hash = ?)'
+    );
+    $stmt->execute([
+        'arsenia.aromin@arominsison.local',
+        '$2y$10$aVmuy8aQ9w1VbY91LlcD4ONT9I9IZ2YQ694XLk.qgR3ePUthErE1S',
+        'kathrine.sison@arominsison.local',
+        '$2y$10$jOr5I6WA7hTzNFnn4KaHBOfJ2UQc7t4k0/zvDY.jRczfI3z9x05Ua',
+    ]);
+    return (int) $stmt->fetchColumn() === 2;
+}
+
+const APPOINTMENT_TEMPLATE_KEYS = [
+    'appointment_request_submitted_patient', 'appointment_request_submitted_staff',
+    'appointment_confirmed_patient', 'appointment_confirmed_staff',
+    'appointment_cancelled_patient', 'appointment_cancelled_staff',
+    'appointment_rescheduled_patient', 'appointment_rescheduled_staff',
+    'appointment_rejected_patient', 'appointment_reminder_patient',
+    'appointment_completed_patient', 'appointment_no_show_patient',
+];
+const BILLING_TEMPLATE_KEYS = [
+    'balance_updated_patient', 'payment_recorded_patient', 'balance_due_reminder_patient',
+    'balance_fully_paid_patient', 'payment_received_staff', 'balance_fully_paid_staff',
+];
+const LEGACY_TEMPLATE_KEYS = [
+    'appointment_reminder', 'appointment_confirmation', 'appointment_cancellation',
+    'payment_due', 'payment_received',
+];
+
 function migration_already_present(PDO $pdo, string $name): bool
 {
     return match ($name) {
@@ -65,6 +124,12 @@ function migration_already_present(PDO $pdo, string $name): bool
         '009_promotion_images_dates.sql' => has_columns($pdo, 'promotions', ['image_path', 'start_date', 'end_date']),
         '010_patient_archival.sql' => has_columns($pdo, 'patients', ['archived_at', 'archived_by', 'retention_note']),
         '011_remove_sms_notifications.sql' => column_type($pdo, 'notification_templates', 'channel') === "enum('email')",
+        '012_rotate_seed_dentist_passwords.sql' => seed_dentist_passwords_are_current($pdo),
+        '013_appointment_audience_templates.sql' => template_keys_exist($pdo, APPOINTMENT_TEMPLATE_KEYS),
+        '014_billing_audience_templates.sql' => template_keys_exist($pdo, BILLING_TEMPLATE_KEYS),
+        '015_deactivate_redundant_email_templates.sql' => template_keys_are_inactive($pdo, LEGACY_TEMPLATE_KEYS),
+        '016_remove_contact_email_from_notification_templates.sql' => template_bodies_exclude_contact_details($pdo, array_merge(APPOINTMENT_TEMPLATE_KEYS, BILLING_TEMPLATE_KEYS)),
+        '017_user_profile_pictures.sql' => has_columns($pdo, 'users', ['profile_image_path']),
         default => false,
     };
 }
