@@ -221,15 +221,14 @@ class BracesService
                     'status' => $pay['status'],
                 ];
             }
+            $approvedCount = count(array_filter($payments, fn($pay) => ($pay['status'] ?? '') === 'approved'));
+            $dueDate = self::nextDueDate($contractRow['start_date'], (int) $contractRow['duration_months'], $approvedCount, $balance);
 
             $summary = [
                 ['v' => self::fmtMoney($total), 'l' => 'Total Contract Amount'],
                 ['v' => self::fmtMoney($balance), 'l' => 'Remaining Balance'],
-                ['v' => self::fmtDate($contractRow['start_date']), 'l' => 'Contract Start Date'],
+                ['v' => $dueDate, 'l' => 'Due Date'],
             ];
-            if (!empty($contractRow['dentist_name'])) {
-                $summary[] = ['v' => $contractRow['dentist_name'], 'l' => 'Treating Dentist'];
-            }
 
             $contract = [
                 'active'  => true,
@@ -286,5 +285,16 @@ class BracesService
         if (!$value) return '';
         $time = DateTime::createFromFormat('H:i:s', $value);
         return $time ? $time->format('g:i A') : $value;
+    }
+
+    private static function nextDueDate(string $startDate, int $durationMonths, int $approvedPayments, float $balance): string
+    {
+        if ($balance <= 0) return 'Fully paid';
+        $start = DateTime::createFromFormat('Y-m-d', $startDate);
+        if (!$start) return 'Not set';
+        $monthIndex = min(max(1, $approvedPayments + 1), max(1, $durationMonths));
+        $due = clone $start;
+        $due->modify('+' . $monthIndex . ' months');
+        return self::fmtDate($due->format('Y-m-d'));
     }
 }

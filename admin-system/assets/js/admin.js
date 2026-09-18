@@ -259,13 +259,14 @@ async function applyBraces(snapshot = null){
     id: c.id, initials: c.initials, name: c.name,
     plan: c.plan, monthly: ContractFormat.peso(c.monthly),
     paid: ContractFormat.peso(c.paid), balance: ContractFormat.peso(c.balance),
+    dueDate: c.dueDate || 'Not set', dueStatus: c.dueStatus || 'upcoming',
     status: c.status, tag: c.tag
   }));
 
   const list = bracesFilter ? all.filter(c => c.status === bracesFilter) : all;
   bracesList = list;
   if (!list.length){
-    tbody.innerHTML = `<tr><td colspan="6" class="empty-cell">No contracts match this filter.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="8" class="empty-cell">No contracts match this filter.</td></tr>`;
     return;
   }
   renderBraces(list);
@@ -661,6 +662,7 @@ if (exportBracesBtn){
         { label: 'Monthly', value: c => c.monthly },
         { label: 'Paid', value: c => c.paid },
         { label: 'Balance', value: c => c.balance },
+        { label: 'Due', value: c => c.dueDate },
         { label: 'Status', value: c => c.status }
       ],
       rows: bracesList
@@ -774,10 +776,21 @@ function renderBraces(contracts){
       <td>${c.monthly}</td>
       <td>${c.paid}</td>
       <td>${c.balance}</td>
+      <td>${dueTag(c)}</td>
       <td>${statusTag(c)}</td>
       <td><button class="btn btn-outline btn-sm" data-action="edit-contract" data-contract-id="${c.id}">Edit</button></td>
     </tr>`
   ).join('');
+}
+
+function dueTag(item){
+  const tag = {
+    overdue: 'red',
+    'due-today': 'amber',
+    paid: 'green',
+    upcoming: 'blue'
+  }[item.dueStatus] || 'blue';
+  return `<span class="tag tag-${tag}">${escapeHtml(item.dueDate || 'Not set')}</span>`;
 }
 
 function renderPromotions(promotions){

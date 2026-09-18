@@ -88,7 +88,8 @@ class PaymentApprovalService
     public static function listForPatient(int $patientId): array
     {
         $stmt = Database::pdo()->prepare(
-            "SELECT cp.* FROM contract_payments cp
+            "SELECT cp.*, c.start_date, c.duration_months, c.balance_amount
+             FROM contract_payments cp
              JOIN braces_contracts c ON c.contract_id = cp.contract_id
              WHERE c.patient_id = ?
              ORDER BY cp.created_at DESC, cp.payment_id DESC"
@@ -107,7 +108,8 @@ class PaymentApprovalService
     public static function listAll(): array
     {
         $stmt = Database::pdo()->query(
-            "SELECT cp.*, p.first_name, p.last_name, p.patient_id
+            "SELECT cp.*, c.start_date, c.duration_months, c.balance_amount,
+                    p.first_name, p.last_name, p.patient_id
              FROM contract_payments cp
              JOIN braces_contracts c ON c.contract_id = cp.contract_id
              JOIN patients p ON p.patient_id = c.patient_id
@@ -120,7 +122,8 @@ class PaymentApprovalService
     private static function listByStatus(string $status): array
     {
         $stmt = Database::pdo()->prepare(
-            "SELECT cp.*, p.first_name, p.last_name, p.patient_id
+            "SELECT cp.*, c.start_date, c.duration_months, c.balance_amount,
+                    p.first_name, p.last_name, p.patient_id
              FROM contract_payments cp
              JOIN braces_contracts c ON c.contract_id = cp.contract_id
              JOIN patients p ON p.patient_id = c.patient_id
@@ -349,6 +352,7 @@ class PaymentApprovalService
     private static function present(array $row): array
     {
         $name = trim(($row['first_name'] ?? '') . ' ' . ($row['last_name'] ?? ''));
+        $due = self::dueDateForRow($row);
         return [
             'id'         => (int) $row['payment_id'],
             'contract_id' => (int) $row['contract_id'],
@@ -356,6 +360,8 @@ class PaymentApprovalService
             'patient'    => $name ?: null,
             'amount'     => '₱' . number_format((float) $row['amount_paid'], 2),
             'method'     => ucwords(str_replace('_', ' ', $row['payment_method'])),
+            'dueDate'    => $due['date'],
+            'dueStatus'  => $due['status'],
             'note'       => $row['note'] ?? '',
             'receipt_url' => $row['receipt_path'] ? '../backend/api/payments/receipt.php?payment_id=' . (int) $row['payment_id'] : null,
             'status'     => $row['status'],
@@ -363,6 +369,47 @@ class PaymentApprovalService
             'reviewedAt'  => $row['reviewed_at'] ? self::fmtDateTime($row['reviewed_at']) : null,
             'orNumber'    => $row['or_number'] ?? null,
         ];
+    }
+
+    private static function dueDateForRow(array $row): array
+    {
+        if (isset($row['balance_amount']) && (float) $row['balance_amount'] <= 0) {
+            return ['date' => 'Fully paid', 'status' => 'paid'];
+        }
+
+        if (empty($row['start_date']) || empty($row['duration_months']) || empty($row['contract_id'])) {
+            return ['date' => 'Not set', 'status' => 'upcoming'];
+        }
+
+        $start = \DateTime::createFromFormat('Y-m-d', $row['start_date']);
+        if (!$start) {
+            return ['date' => 'Not set', 'status' => 'upcoming'];
+        }
+
+        $approvedPayments = self::approvedPaymentCount((int) $row['contract_id']);
+        $durationMonths = max(1, (int) $row['duration_months']);
+        $monthIndex = min(max(1, $approvedPayments + 1), $durationMonths);
+        $due = clone $start;
+        $due->modify('+' . $monthIndex . ' months');
+
+        $today = new \DateTime('today');
+        $status = 'upcoming';
+        if ($due < $today) {
+            $status = 'overdue';
+        } elseif ($due->format('Y-m-d') === $today->format('Y-m-d')) {
+            $status = 'due-today';
+        }
+
+        return ['date' => $due->format('M j, Y'), 'status' => $status];
+    }
+
+    private static function approvedPaymentCount(int $contractId): int
+    {
+        $stmt = Database::pdo()->prepare(
+            "SELECT COUNT(*) FROM contract_payments WHERE contract_id = ? AND status = 'approved'"
+        );
+        $stmt->execute([$contractId]);
+        return (int) $stmt->fetchColumn();
     }
 
     private static function fmtDateTime(?string $value): ?string

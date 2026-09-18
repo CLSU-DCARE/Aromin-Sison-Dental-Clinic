@@ -381,6 +381,7 @@
                   <th>Monthly</th>
                   <th>Paid</th>
                   <th>Balance</th>
+                  <th>Due</th>
                   <th>Status</th>
                   <th></th>
                 </tr>
@@ -428,6 +429,7 @@
                   <th>Patient</th>
                   <th>Amount</th>
                   <th>Method</th>
+                  <th>Due Date</th>
                   <th>Submitted</th>
                   <th>Receipt</th>
                   <th>Status</th>
@@ -608,6 +610,7 @@
         <div class="field"><label>Patient</label><div class="val" id="rcPatient"></div></div>
         <div class="field"><label>Amount</label><div class="val" id="rcAmount"></div></div>
         <div class="field"><label>Method</label><div class="val" id="rcMethod"></div></div>
+        <div class="field"><label>Due Date</label><div class="val" id="rcDueDate"></div></div>
         <div class="field"><label>Submitted</label><div class="val" id="rcSubmitted"></div></div>
         <div class="field" id="rcNoteField" hidden><label>Patient Note</label><div class="val" id="rcNote"></div></div>
         <p class="pay-hint">Confirm the receipt matches the amount before approving.</p>
@@ -1035,14 +1038,14 @@
 <script src="assets/js/NotificationManager.js?v=20260916-integration" defer></script>
 <script src="assets/js/AppointmentScheduler.js?v=20260916-public-booking" defer></script>
 <script src="assets/js/AppointmentActions.js?v=20260916-appointment-dialogs" defer></script>
-<script src="assets/js/PaymentApprovalManager.js?v=20260916-integration" defer></script>
+<script src="assets/js/PaymentApprovalManager.js?v=20260919-due-date" defer></script>
 <script src="assets/js/PatientTableManager.js?v=20260916-patient-delete" defer></script>
 <script src="assets/js/RecordTableManager.js?v=20260916-integration" defer></script>
 <script src="assets/js/InventoryTableManager.js?v=20260918-inventory-stock" defer></script>
 <script src="../patient-dashboard/assets/js/PatientLiveSync.js?v=20260916-integration" defer></script>
 <script src="../shared/js/core/PortalSync.js?v=20260918-attendance-sync" defer></script>
 <script src="../shared/js/core/PortalForms.js?v=20260916-appointment-dialogs" defer></script>
-<script src="assets/js/admin.js?v=20260918-inventory-sync" defer></script>
+<script src="assets/js/admin.js?v=20260919-contract-due" defer></script>
 
 </body>
 </html>

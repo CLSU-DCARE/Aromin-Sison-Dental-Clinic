@@ -80,6 +80,7 @@ window.PaymentApprovalManager = class PaymentApprovalManager {
         <td>${nameCell(initials, s.patient, s.pid)}</td>
         <td>${escapeHtml(s.amount)}</td>
         <td>${escapeHtml(s.method)}</td>
+        <td>${this._dueTag(s)}</td>
         <td>${escapeHtml(s.submittedAt)}</td>
         <td><button class="btn btn-outline btn-sm" data-pay-action="view" data-pay-id="${escapeHtml(s.id)}">View</button></td>
         <td><span class="tag tag-${this.TAG[s.status]}">${this.LABEL[s.status]}</span></td>
@@ -110,6 +111,8 @@ window.PaymentApprovalManager = class PaymentApprovalManager {
     document.getElementById('rcPatient').textContent   = s.patient + ' · ' + s.pid;
     document.getElementById('rcAmount').textContent    = s.amount;
     document.getElementById('rcMethod').textContent    = s.method;
+    const dueEl = document.getElementById('rcDueDate');
+    if (dueEl) dueEl.innerHTML = this._dueTag(s);
     document.getElementById('rcSubmitted').textContent = s.submittedAt;
 
     const noteField = document.getElementById('rcNoteField');
@@ -142,6 +145,16 @@ window.PaymentApprovalManager = class PaymentApprovalManager {
 
   _approve (s) { return this._review(s, 'approve'); }
   _reject (s) { return this._review(s, 'reject'); }
+
+  _dueTag (s) {
+    const tag = {
+      overdue: 'red',
+      'due-today': 'amber',
+      paid: 'green',
+      upcoming: 'blue'
+    }[s.dueStatus] || 'blue';
+    return `<span class="tag tag-${tag}">${escapeHtml(s.dueDate || 'Not set')}</span>`;
+  }
 
   /* ------------------------------------------------------------------
    *  Private – event bindings

@@ -44,11 +44,18 @@ class ContractService
                     c.total_amount, c.downpayment, c.monthly_payment, c.balance_amount,
                     c.duration_months, c.start_date, c.estimated_completion_date, c.status,
                     c.current_stage, c.progress_pct, c.progress_note, c.next_note, c.progress_updated_at,
+                    COALESCE(pay.approved_count, 0) AS approved_payment_count,
                     p.first_name, p.last_name,
                     du.full_name AS dentist_name
              FROM braces_contracts c
              JOIN patients p ON p.patient_id = c.patient_id
              LEFT JOIN users du ON du.user_id = c.dentist_id
+             LEFT JOIN (
+                SELECT contract_id, COUNT(*) AS approved_count
+                FROM contract_payments
+                WHERE status = 'approved'
+                GROUP BY contract_id
+             ) pay ON pay.contract_id = c.contract_id
              WHERE {$where}
              ORDER BY (c.status = 'active') DESC, c.contract_id DESC"
         );
@@ -285,6 +292,7 @@ class ContractService
             'completed' => 'Completed', 'cancelled' => 'Cancelled',
         ][$row['status']] ?? ucfirst($row['status']);
         $tag = ['Current' => 'amber', 'Overdue' => 'red', 'Completed' => 'green', 'Cancelled' => 'red'][$statusLabel] ?? 'amber';
+        $due = self::dueDateForRow($row);
 
         return [
             'id'        => '#B-' . $row['contract_id'],
@@ -302,6 +310,8 @@ class ContractService
             'total'     => (float) $row['total_amount'],
             'paid'      => max(0, (float) $row['total_amount'] - (float) $row['balance_amount']),
             'balance'   => (float) $row['balance_amount'],
+            'dueDate'   => $due['date'],
+            'dueStatus' => $due['status'],
             'status'    => $statusLabel,
             'status_code' => $row['status'],
             'tag'       => $tag,
@@ -320,5 +330,37 @@ class ContractService
         $parts = preg_split('/\s+/', trim($name));
         $letters = array_map(fn ($p) => mb_strtoupper(mb_substr($p, 0, 1)), array_slice($parts, 0, 2));
         return implode('', $letters) ?: '?';
+    }
+
+    private static function dueDateForRow(array $row): array
+    {
+        if ((float) ($row['balance_amount'] ?? 0) <= 0 || ($row['status'] ?? '') === 'completed') {
+            return ['date' => 'Fully paid', 'status' => 'paid'];
+        }
+
+        if (empty($row['start_date']) || empty($row['duration_months'])) {
+            return ['date' => 'Not set', 'status' => 'upcoming'];
+        }
+
+        $start = \DateTime::createFromFormat('Y-m-d', $row['start_date']);
+        if (!$start) {
+            return ['date' => 'Not set', 'status' => 'upcoming'];
+        }
+
+        $durationMonths = max(1, (int) $row['duration_months']);
+        $approvedPayments = max(0, (int) ($row['approved_payment_count'] ?? 0));
+        $monthIndex = min(max(1, $approvedPayments + 1), $durationMonths);
+        $due = clone $start;
+        $due->modify('+' . $monthIndex . ' months');
+
+        $today = new \DateTime('today');
+        $status = 'upcoming';
+        if ($due < $today) {
+            $status = 'overdue';
+        } elseif ($due->format('Y-m-d') === $today->format('Y-m-d')) {
+            $status = 'due-today';
+        }
+
+        return ['date' => $due->format('M j, Y'), 'status' => $status];
     }
 }
