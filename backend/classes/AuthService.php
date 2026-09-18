@@ -22,7 +22,7 @@ use PDOException;
 class AuthService
 {
     private const LOGIN_MAX_ATTEMPTS = 5;
-    private const LOGIN_LOCKOUT_SECONDS = 900; // 15 minutes
+    private const LOGIN_LOCKOUT_SECONDS = 30;
     private const RESET_MAX_ATTEMPTS = 3;
     private const RESET_WINDOW_SECONDS = 900;
     private const ALLOWED_ROLES = ['dentist', 'receptionist', 'patient'];
@@ -68,7 +68,7 @@ class AuthService
             $ipRemaining = RateLimiter::lockoutRemaining('ip:' . AuthMiddleware::getClientIp());
             $wait = max($remaining, $ipRemaining);
             if ($wait > 0) {
-                return ['success' => false, 'error' => 'Too many failed attempts. This account is locked for 15 minutes.', 'code' => 429];
+                return ['success' => false, 'error' => 'Too many failed attempts. This account is locked for 30 seconds.', 'code' => 429];
             }
             return ['success' => false, 'error' => 'Invalid email or password.', 'code' => 401];
         }

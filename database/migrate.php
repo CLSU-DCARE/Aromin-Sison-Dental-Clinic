@@ -84,9 +84,9 @@ function seed_dentist_passwords_are_current(PDO $pdo): bool
     );
     $stmt->execute([
         'arsenia.aromin@arominsison.local',
-        '$2y$10$aVmuy8aQ9w1VbY91LlcD4ONT9I9IZ2YQ694XLk.qgR3ePUthErE1S',
+        '$2y$10$eEgqJjPStpt5rIRJpGMzDOnxsxUBV9v1SQyJERi3hs.7bj0Zkhzsi',
         'kathrine.sison@arominsison.local',
-        '$2y$10$jOr5I6WA7hTzNFnn4KaHBOfJ2UQc7t4k0/zvDY.jRczfI3z9x05Ua',
+        '$2y$10$eEgqJjPStpt5rIRJpGMzDOnxsxUBV9v1SQyJERi3hs.7bj0Zkhzsi',
     ]);
     return (int) $stmt->fetchColumn() === 2;
 }
