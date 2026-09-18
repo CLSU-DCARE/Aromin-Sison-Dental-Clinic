@@ -65,7 +65,13 @@ class PaymentApprovalService
         ]);
 
         $result = self::present(self::findRaw((int) $pdo->lastInsertId()) + self::patientInfo($patientId));
-        PortalEvent::patient($patientId, 'Payment submitted', 'A payment receipt is awaiting review.', 'pay');
+        PortalEvent::patient($patientId, 'Payment submitted', 'Your payment receipt was submitted and is awaiting review.', 'pay');
+        PortalEvent::staffNotice(
+            'Payment receipt submitted',
+            trim(($result['patient'] ?? 'A patient') . ' submitted a payment receipt for ' . ($result['amount'] ?? 'review') . '.'),
+            'pay',
+            $patientId
+        );
         $pdo->commit();
         return $result;
         } catch (\Throwable $e) { if ($pdo->inTransaction()) $pdo->rollBack(); throw $e; }
@@ -170,14 +176,41 @@ class PaymentApprovalService
             $stmt->execute([$status, $reviewerId, $orNumber, $paymentId]);
             if ($approve) ContractService::applyPayment((int) $row['contract_id'], (float) $row['amount_paid']);
             $contract = ContractService::findRaw((int) $row['contract_id']);
-            PortalEvent::patient((int) $contract['patient_id'], 'Payment ' . $status, 'Payment review completed. View your billing details for the receipt and balance.', 'pay');
+            if ($approve) {
+                $billing = self::billingContext((int) $row['contract_id'], (float) $row['amount_paid']);
+                $fullyPaid = (float) ($billing['raw_balance'] ?? 0) <= 0;
+                PortalEvent::patient(
+                    (int) $contract['patient_id'],
+                    $fullyPaid ? 'Balance Fully Paid' : 'Payment Recorded',
+                    self::renderTemplate($fullyPaid ? 'balance_fully_paid_patient' : 'payment_recorded_patient', $billing['message_fallback'], $billing['replacements']),
+                    'pay',
+                    true
+                );
+                PortalEvent::staffNotice(
+                    $fullyPaid ? 'Balance Fully Paid' : 'Payment Received',
+                    self::renderTemplate($fullyPaid ? 'balance_fully_paid_staff' : 'payment_received_staff', $billing['message_fallback'], $billing['replacements']),
+                    'pay',
+                    (int) $contract['patient_id'],
+                    true
+                );
+            } else {
+                PortalEvent::patient((int) $contract['patient_id'], 'Payment rejected', 'Your payment submission could not be approved. Please review your billing details and contact the clinic if needed.', 'pay', true);
+            }
             $pdo->commit();
         } catch (\Throwable $error) {
             if ($pdo->inTransaction()) $pdo->rollBack();
             throw $error;
         }
         // Delivery runs after the status and balance have committed together.
-        self::notifyPatient((int) $row['contract_id'], $approve ? 'payment_received' : 'payment_rejected', [
+        if ($approve) {
+            $billing = self::billingContext((int) $row['contract_id'], (float) $row['amount_paid']);
+            self::notifyPatient(
+                (int) $row['contract_id'],
+                ((float) ($billing['raw_balance'] ?? 0) <= 0) ? 'balance_fully_paid_patient' : 'payment_recorded_patient',
+                $billing['replacements']
+            );
+        }
+        if (!$approve) self::notifyPatient((int) $row['contract_id'], 'payment_rejected', [
             'amount' => '₱' . number_format((float) $row['amount_paid'], 2),
         ]);
         return self::present(self::findRaw($paymentId));
@@ -258,6 +291,59 @@ class PaymentApprovalService
         } catch (\Throwable $e) {
             error_log('Payment notification failed: ' . $e->getMessage());
         }
+    }
+
+    private static function billingContext(int $contractId, float $paymentAmount = 0): array
+    {
+        $stmt = Database::pdo()->prepare(
+            "SELECT c.contract_id, c.patient_id, c.total_amount, c.balance_amount, c.current_stage,
+                    p.first_name, p.last_name, p.contact_number, p.email
+             FROM braces_contracts c
+             JOIN patients p ON p.patient_id = c.patient_id
+             WHERE c.contract_id = ?"
+        );
+        $stmt->execute([$contractId]);
+        $row = $stmt->fetch() ?: [];
+
+        $total = (float) ($row['total_amount'] ?? 0);
+        $balance = max(0, (float) ($row['balance_amount'] ?? 0));
+        $paid = max(0, $total - $balance);
+        $patientName = trim(($row['first_name'] ?? '') . ' ' . ($row['last_name'] ?? ''));
+
+        $replacements = [
+            'patient_id' => '#P-' . ($row['patient_id'] ?? ''),
+            'patient_name' => $patientName,
+            'service_treatment' => $row['current_stage'] ?: 'Braces Contract',
+            'payment_amount' => 'PHP ' . number_format($paymentAmount, 2),
+            'total_amount' => 'PHP ' . number_format($total, 2),
+            'amount_paid' => 'PHP ' . number_format($paid, 2),
+            'remaining_balance' => 'PHP ' . number_format($balance, 2),
+            'contact_number' => $row['contact_number'] ?: 'Not provided',
+            'email' => $row['email'] ?: 'Not provided',
+        ];
+
+        return [
+            'raw_balance' => $balance,
+            'replacements' => $replacements,
+            'message_fallback' => implode("\n", [
+                'Patient ID: ' . $replacements['patient_id'],
+                'Patient: ' . $replacements['patient_name'],
+                'Service/Treatment: ' . $replacements['service_treatment'],
+                'Payment Amount: ' . $replacements['payment_amount'],
+                'Total Amount: ' . $replacements['total_amount'],
+                'Amount Paid: ' . $replacements['amount_paid'],
+                'Remaining Balance: ' . $replacements['remaining_balance'],
+                'Contact Number: ' . $replacements['contact_number'],
+                'Email: ' . $replacements['email'],
+            ]),
+        ];
+    }
+
+    private static function renderTemplate(string $templateKey, string $fallback, array $replacements): string
+    {
+        $template = NotificationTemplateService::getByKey($templateKey);
+        if (!$template || empty($template['body'])) return $fallback;
+        return TemplateRenderer::render($template['body'], $replacements);
     }
 
     private static function present(array $row): array

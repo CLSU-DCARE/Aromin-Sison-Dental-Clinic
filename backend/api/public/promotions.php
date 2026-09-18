@@ -12,7 +12,6 @@ $stmt = \ASDC\Database::pdo()->query(
     "SELECT promo_id AS id, title, description AS `desc`, image_path, status, start_date, end_date
      FROM promotions
      WHERE status IN ('live','scheduled')
-       AND (start_date IS NULL OR start_date <= CURRENT_DATE())
        AND (end_date IS NULL OR end_date >= CURRENT_DATE())
      ORDER BY promo_id DESC"
 );

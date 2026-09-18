@@ -146,7 +146,9 @@ Either works: both give you Apache + MySQL + PHP locally, no hosting needed for 
 1. Install [Laragon](https://laragon.org/), click **Start All**
 2. Copy the whole `asdc_v2/` folder into `C:\laragon\www\`
 3. Right-click the Laragon tray icon → **MySQL** → **phpMyAdmin** (or **HeidiSQL**), create a database, import `database/schema.sql`
-4. Test: `http://asdc-v2.test/backend/api/patients/list.php` (Laragon auto-generates the `.test` domain) or `http://localhost/asdc_v2/backend/api/patients/list.php`
+4. Apply migrations: `php database/migrate.php`
+5. Create a receptionist account with `database/bootstrap_receptionist.php`
+6. Test: `http://asdc-v2.test/backend/api/patients/list.php` (Laragon auto-generates the `.test` domain) or `http://localhost/asdc_v2/backend/api/patients/list.php`
 
 Either way you should get a JSON response (empty array is fine until you add data).
 

@@ -169,7 +169,7 @@ class AppointmentService
                 $stmt->execute([$date, $time, (int) $_SESSION['user_id'], $id]);
             } else {
                 $stmt = $pdo->prepare(
-                    "SELECT a.appointment_id, a.dentist_id FROM appointments a
+                    "SELECT a.appointment_id, a.dentist_id, a.scheduled_date, a.scheduled_time FROM appointments a
                      JOIN patients p ON p.patient_id=a.patient_id
                      WHERE a.appointment_id=? AND a.status IN ('pending','confirmed') AND p.archived_at IS NULL FOR UPDATE"
                 );
@@ -193,7 +193,10 @@ class AppointmentService
                 $stmt->execute([$date, $time, $id]);
             }
 
-            if ($type === 'appointment') PortalEvent::appointment($id, 'rescheduled');
+            if ($type === 'appointment') PortalEvent::appointment($id, 'rescheduled', [
+                'previous_date' => $apptRow['scheduled_date'] ?? null,
+                'previous_time' => $apptRow['scheduled_time'] ?? null,
+            ]);
             else PortalEvent::appointmentRequest($id, 'rescheduled');
             $pdo->commit();
         } catch (Throwable $e) {

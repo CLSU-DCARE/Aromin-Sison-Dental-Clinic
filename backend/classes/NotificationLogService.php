@@ -88,4 +88,29 @@ class NotificationLogService
             'logs'    => $logs,
         ];
     }
+
+    public static function delete(int $logId): array
+    {
+        if ($logId <= 0) {
+            return ['success' => false, 'error' => 'Choose a valid notification log.', 'code' => 422];
+        }
+
+        $pdo = Database::pdo();
+        [$scopeWhere, $scopeParams] = DataScope::current()->patientFilter();
+        $check = $pdo->prepare(
+            "SELECT nl.log_id
+             FROM notification_logs nl
+             JOIN patients p ON p.patient_id = nl.patient_id
+             WHERE nl.log_id = ? AND $scopeWhere"
+        );
+        $check->execute(array_merge([$logId], $scopeParams));
+        if (!$check->fetchColumn()) {
+            return ['success' => false, 'error' => 'Notification log not found.', 'code' => 404];
+        }
+
+        $stmt = $pdo->prepare('DELETE FROM notification_logs WHERE log_id = ?');
+        $stmt->execute([$logId]);
+
+        return ['success' => true, 'log_id' => $logId];
+    }
 }

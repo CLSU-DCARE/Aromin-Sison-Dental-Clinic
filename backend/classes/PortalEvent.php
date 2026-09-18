@@ -12,11 +12,13 @@ class PortalEvent
         bool $includeActor = false
     ): void {
         $pdo = Database::pdo();
-        $stmt = $pdo->prepare("SELECT user_id FROM users WHERE is_active=1 AND (
-            role='receptionist' OR user_id IN (SELECT user_id FROM patients WHERE patient_id=?)
-            OR (role='dentist' AND (user_id IN (SELECT dentist_id FROM appointments WHERE patient_id=?)
-            OR user_id IN (SELECT dentist_id FROM braces_contracts WHERE patient_id=?))))");
-        $stmt->execute([$patientId, $patientId, $patientId]);
+        $stmt = $pdo->prepare(
+            "SELECT u.user_id
+             FROM patients p
+             JOIN users u ON u.user_id = p.user_id
+             WHERE p.patient_id = ? AND u.is_active = 1"
+        );
+        $stmt->execute([$patientId]);
         foreach ($stmt->fetchAll(\PDO::FETCH_COLUMN) as $userId) {
             if ($includeActor || (int) $userId !== (int) ($_SESSION['user_id'] ?? 0)) {
                 UserNotificationService::create((int) $userId, $title, $message, $type, $patientId);
@@ -24,7 +26,7 @@ class PortalEvent
         }
     }
 
-    public static function appointment(int $id, string $action): void
+    public static function appointment(int $id, string $action, array $context = []): void
     {
         $stmt = Database::pdo()->prepare(
             "SELECT a.appointment_id, a.patient_id, a.service_type, a.scheduled_date,
@@ -41,19 +43,43 @@ class PortalEvent
         $row = $stmt->fetch();
         if (!$row) return;
 
-        $title = match ($action) {
-            'requested' => 'Appointment request received',
-            'confirmed' => 'Appointment approved',
-            'rescheduled' => 'Appointment rescheduled',
-            'reschedule requested' => 'Appointment reschedule requested',
-            'cancelled' => 'Appointment cancelled',
-            'rejected' => 'Appointment rejected',
-            'completed' => 'Appointment completed',
-            'no_show' => 'Appointment marked as no-show',
+        $patientTitle = match ($action) {
+            'requested' => 'Appointment Request Submitted',
+            'confirmed' => 'Appointment Confirmed',
+            'rescheduled', 'reschedule requested' => 'Appointment Rescheduled',
+            'cancelled' => 'Appointment Cancelled',
+            'rejected' => 'Appointment Rejected',
+            'completed' => 'Appointment Completed',
+            'no_show' => 'Did Not Attend / No-Show',
             default => 'Appointment ' . self::label($action),
         };
+        $replacements = self::appointmentReplacements($row, $context);
+        $patientTemplate = self::templateKeyForAppointment($action, 'patient');
+        self::patient(
+            (int) $row['patient_id'],
+            $patientTitle,
+            self::renderTemplate($patientTemplate, self::appointmentMessage($row, $action, 'patient', $context), $replacements),
+            'appt',
+            true
+        );
+        self::emailPatientForAppointment($row, $action, $context);
 
-        self::patient((int) $row['patient_id'], $title, self::appointmentMessage($row, $action), 'appt', true);
+        if (in_array($action, ['requested', 'confirmed', 'rescheduled', 'reschedule requested', 'cancelled'], true)) {
+            $staffTitle = match ($action) {
+                'requested' => 'New Appointment Request',
+                'confirmed' => 'Appointment Confirmed',
+                'rescheduled', 'reschedule requested' => 'Appointment Rescheduled',
+                'cancelled' => 'Appointment Cancelled',
+                default => 'Appointment ' . self::label($action),
+            };
+            self::staff(
+                $staffTitle,
+                self::renderTemplate(self::templateKeyForAppointment($action, 'staff'), self::appointmentMessage($row, $action, 'staff', $context), $replacements),
+                'appt',
+                (int) $row['patient_id'],
+                $action === 'confirmed'
+            );
+        }
     }
 
     public static function appointmentRequest(int $id, string $action): void
@@ -70,36 +96,45 @@ class PortalEvent
         $row = $stmt->fetch();
         if (!$row) return;
 
-        $patientName = trim(($row['first_name'] ?? '') . ' ' . ($row['last_name'] ?? ''));
-        $message = implode("\n", array_filter([
-            'Patient: ' . ($patientName ?: 'Walk-in request'),
-            'Service: ' . $row['service_type'],
-            'Requested schedule: ' . self::fmtDate($row['requested_date']) . ' at ' . self::fmtTime($row['requested_time']),
-            'Preferred dentist: ' . ($row['dentist_name'] ?: 'Clinic assignment'),
-            'Status: ' . self::label($row['status']),
-            $row['contact_number'] ? 'Contact number: ' . $row['contact_number'] : null,
-            $row['email'] ? 'Email: ' . $row['email'] : null,
-            $row['notes'] ? 'Message: ' . $row['notes'] : null,
-        ]));
-
-        self::staff('Appointment request ' . self::label($action), $message, 'appt');
+        $message = self::renderTemplate(
+            'appointment_request_submitted_staff',
+            self::requestMessage($row, 'staff'),
+            self::requestReplacements($row)
+        );
+        self::staff('New Appointment Request', $message, 'appt');
+        if ($action === 'received') {
+            self::emailRequestSubmitter($row);
+        }
     }
 
-    private static function staff(string $title, string $message, string $type): void
+    public static function staffNotice(string $title, string $message, string $type = 'general', ?int $patientId = null, bool $includeActor = false): void
     {
-        $stmt = Database::pdo()->query("SELECT user_id FROM users WHERE is_active=1 AND role IN ('receptionist','dentist')");
+        self::staff($title, $message, $type, $patientId, $includeActor);
+    }
+
+    private static function staff(string $title, string $message, string $type, ?int $patientId = null, bool $includeActor = false): void
+    {
+        $stmt = Database::pdo()->query("SELECT user_id FROM users WHERE is_active=1 AND role='receptionist'");
         foreach ($stmt->fetchAll(\PDO::FETCH_COLUMN) as $userId) {
-            if ((int) $userId !== (int) ($_SESSION['user_id'] ?? 0)) {
-                UserNotificationService::create((int) $userId, $title, $message, $type);
+            if ($includeActor || (int) $userId !== (int) ($_SESSION['user_id'] ?? 0)) {
+                UserNotificationService::create((int) $userId, $title, $message, $type, $patientId);
             }
         }
     }
 
-    private static function appointmentMessage(array $row, string $action): string
+    private static function appointmentMessage(array $row, string $action, string $audience = 'patient', array $context = []): string
     {
         $lines = [];
 
-        if ($action === 'requested') {
+        if ($audience === 'staff') {
+            $lines[] = match ($action) {
+                'requested' => 'A new appointment request has been submitted by a patient and is ready for review.',
+                'confirmed' => "The patient's appointment has been successfully confirmed.",
+                'rescheduled', 'reschedule requested' => "An appointment has been rescheduled and the patient's schedule has been updated.",
+                'cancelled' => 'An appointment has been cancelled and the schedule has been updated.',
+                default => 'Please review the appointment details.',
+            };
+        } elseif ($action === 'requested') {
             $lines[] = 'Your appointment request was received by the clinic and is waiting for approval.';
         } elseif ($action === 'confirmed') {
             $lines[] = 'Your appointment has been approved. Please arrive on time or contact the clinic if you need changes.';
@@ -115,19 +150,142 @@ class PortalEvent
             $lines[] = 'Please review the appointment details.';
         }
 
-        $lines = array_merge($lines, [
-            'Patient: ' . $row['patient_name'],
-            'Service: ' . $row['service_type'],
-            'Schedule: ' . self::fmtDate($row['scheduled_date']) . ' at ' . self::fmtTime($row['scheduled_time']),
-            'Dentist: ' . ($row['dentist_name'] ?: 'Clinic assignment'),
-            'Status: ' . self::label($row['status']),
-            'Appointment ID: #' . $row['appointment_id'],
-        ]);
+        $lines[] = 'Appointment ID: #' . $row['appointment_id'];
+        if ($audience === 'staff') $lines[] = 'Patient: ' . $row['patient_name'];
+        $lines[] = 'Service: ' . $row['service_type'];
+        if (!empty($context['previous_date']) || !empty($context['previous_time'])) {
+            $lines[] = 'Previous date: ' . self::fmtDate($context['previous_date'] ?? null);
+            $lines[] = 'Previous time: ' . self::fmtTime($context['previous_time'] ?? null);
+            $lines[] = 'New date: ' . self::fmtDate($row['scheduled_date']);
+            $lines[] = 'New time: ' . self::fmtTime($row['scheduled_time']);
+        } else {
+            $lines[] = 'Date: ' . self::fmtDate($row['scheduled_date']);
+            $lines[] = 'Time: ' . self::fmtTime($row['scheduled_time']);
+        }
+        $lines[] = 'Dentist: ' . ($row['dentist_name'] ?: 'To be assigned');
 
         if ($row['contact_number']) $lines[] = 'Contact number: ' . $row['contact_number'];
         if ($row['email']) $lines[] = 'Email: ' . $row['email'];
+        if (!empty($context['reason'])) $lines[] = 'Reason: ' . $context['reason'];
 
         return implode("\n", $lines);
+    }
+
+    private static function requestMessage(array $row, string $audience): string
+    {
+        $patientName = trim(($row['first_name'] ?? '') . ' ' . ($row['last_name'] ?? ''));
+        $lines = [
+            $audience === 'staff'
+                ? 'A new appointment request has been submitted by a patient and is ready for review.'
+                : 'Your appointment request has been successfully submitted and is now waiting for the clinic review.',
+            'Appointment ID: #' . $row['request_id'],
+        ];
+        if ($audience === 'staff') $lines[] = 'Patient: ' . ($patientName ?: 'Walk-in request');
+        $lines[] = 'Service: ' . $row['service_type'];
+        $lines[] = 'Date: ' . self::fmtDate($row['requested_date']);
+        $lines[] = 'Time: ' . self::fmtTime($row['requested_time']);
+        $lines[] = 'Dentist: ' . ($row['dentist_name'] ?: 'To be assigned');
+        if ($row['contact_number']) $lines[] = 'Contact number: ' . $row['contact_number'];
+        if ($row['email']) $lines[] = 'Email: ' . $row['email'];
+        if ($row['notes']) $lines[] = 'Message: ' . $row['notes'];
+        return implode("\n", $lines);
+    }
+
+    private static function emailPatientForAppointment(array $row, string $action, array $context): void
+    {
+        $templateKey = self::templateKeyForAppointment($action, 'patient');
+        if (!$templateKey) return;
+        try {
+            NotificationSendService::send((int) $row['patient_id'], [
+                'template_key' => $templateKey,
+                'replacements' => self::appointmentReplacements($row, $context),
+            ]);
+        } catch (\Throwable $e) {
+            error_log('Appointment email notification failed: ' . $e->getMessage());
+        }
+    }
+
+    private static function emailRequestSubmitter(array $row): void
+    {
+        if (empty($row['email']) || !filter_var($row['email'], FILTER_VALIDATE_EMAIL)) return;
+        $template = NotificationTemplateService::getByKey('appointment_request_submitted_patient');
+        if (!$template) return;
+        $replacements = self::requestReplacements($row);
+        try {
+            Mailer::sendEmail(
+                $row['email'],
+                TemplateRenderer::render($template['subject'] ?: 'Appointment Request Submitted - Aromin-Sison Dental Clinic', $replacements),
+                TemplateRenderer::render($template['body'], $replacements)
+            );
+        } catch (\Throwable $e) {
+            error_log('Public request email notification failed: ' . $e->getMessage());
+        }
+    }
+
+    private static function appointmentReplacements(array $row, array $context = []): array
+    {
+        return [
+            'appointment_id' => '#' . $row['appointment_id'],
+            'patient_name' => $row['patient_name'] ?? '',
+            'service' => $row['service_type'] ?? '',
+            'appointment_date' => self::fmtDate($row['scheduled_date'] ?? null),
+            'appointment_time' => self::fmtTime($row['scheduled_time'] ?? null),
+            'previous_date' => self::fmtDate($context['previous_date'] ?? null),
+            'previous_time' => self::fmtTime($context['previous_time'] ?? null),
+            'new_date' => self::fmtDate($row['scheduled_date'] ?? null),
+            'new_time' => self::fmtTime($row['scheduled_time'] ?? null),
+            'dentist_name' => $row['dentist_name'] ?: 'To be assigned',
+            'contact_number' => $row['contact_number'] ?: 'Not provided',
+            'email' => $row['email'] ?: 'Not provided',
+            'reason' => $context['reason'] ?? 'No reason provided',
+        ];
+    }
+
+    private static function templateKeyForAppointment(string $action, string $audience): ?string
+    {
+        if ($audience === 'staff') {
+            return match ($action) {
+                'requested' => 'appointment_request_submitted_staff',
+                'confirmed' => 'appointment_confirmed_staff',
+                'cancelled' => 'appointment_cancelled_staff',
+                'rescheduled', 'reschedule requested' => 'appointment_rescheduled_staff',
+                default => null,
+            };
+        }
+        return match ($action) {
+            'requested' => 'appointment_request_submitted_patient',
+            'confirmed' => 'appointment_confirmed_patient',
+            'cancelled' => 'appointment_cancelled_patient',
+            'rescheduled', 'reschedule requested' => 'appointment_rescheduled_patient',
+            'rejected' => 'appointment_rejected_patient',
+            'completed' => 'appointment_completed_patient',
+            'no_show' => 'appointment_no_show_patient',
+            default => null,
+        };
+    }
+
+    private static function renderTemplate(?string $templateKey, string $fallback, array $replacements): string
+    {
+        if (!$templateKey) return $fallback;
+        $template = NotificationTemplateService::getByKey($templateKey);
+        if (!$template || empty($template['body'])) return $fallback;
+        return TemplateRenderer::render($template['body'], $replacements);
+    }
+
+    private static function requestReplacements(array $row): array
+    {
+        $patientName = trim(($row['first_name'] ?? '') . ' ' . ($row['last_name'] ?? ''));
+        return [
+            'appointment_id' => '#' . $row['request_id'],
+            'patient_name' => $patientName,
+            'service' => $row['service_type'] ?? '',
+            'appointment_date' => self::fmtDate($row['requested_date'] ?? null),
+            'appointment_time' => self::fmtTime($row['requested_time'] ?? null),
+            'dentist_name' => $row['dentist_name'] ?: 'To be assigned',
+            'contact_number' => $row['contact_number'] ?: 'Not provided',
+            'email' => $row['email'] ?: 'Not provided',
+            'reason' => $row['notes'] ?: 'No reason provided',
+        ];
     }
 
     private static function fmtDate(?string $value): string

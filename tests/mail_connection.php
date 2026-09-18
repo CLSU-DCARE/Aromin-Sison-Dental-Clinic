@@ -1,35 +1,28 @@
 <?php
-// CLI diagnostic: authenticate with Gmail SMTP without sending a message.
+// CLI diagnostic: verify the same mailer path used by app notifications.
 if (PHP_SAPI !== 'cli') {
     http_response_code(404);
     exit;
 }
-require_once __DIR__ . '/../vendor/autoload.php';
-$address = trim((string) getenv('ASDC_GMAIL_ADDRESS'));
-$password = trim((string) getenv('ASDC_GMAIL_APP_PASSWORD'));
-if (!filter_var($address, FILTER_VALIDATE_EMAIL) || $password === '') {
-    fwrite(STDERR, "FAIL: Gmail environment variables are missing or invalid.\n");
+
+require_once __DIR__ . '/../backend/autoload.php';
+
+$to = $argv[1] ?? getenv('ASDC_GMAIL_ADDRESS') ?: '';
+if (!filter_var($to, FILTER_VALIDATE_EMAIL)) {
+    fwrite(STDERR, "FAIL: pass a recipient email, e.g. php tests\\mail_connection.php patient@example.com\n");
     exit(1);
 }
-$mail = new \PHPMailer\PHPMailer\PHPMailer(true);
-$mail->isSMTP();
-$mail->Host = 'smtp.gmail.com';
-$mail->Port = 587;
-$mail->SMTPAuth = true;
-$mail->SMTPSecure = \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
-$mail->Username = $address;
-$mail->Password = $password;
-$mail->Timeout = 15;
-$mail->SMTPDebug = 0;
-try {
-    if (!$mail->smtpConnect()) throw new RuntimeException('SMTP connection failed.');
-    echo "PASS: Gmail SMTP connection, TLS, and authentication. No email was sent.\n";
-} catch (Throwable $error) {
-    // Never print credentials, SMTP transcripts, or message content.
-    $smtp = $mail->getSMTPInstance()->getError();
-    $code = (string) ($smtp['smtp_code'] ?? '');
-    fwrite(STDERR, 'FAIL: Gmail SMTP connection/authentication failed' . ($code ? ' (SMTP ' . $code . ')' : '') . ".\n");
-    exit(1);
-} finally {
-    $mail->smtpClose();
+
+$result = \ASDC\Mailer::sendEmail(
+    $to,
+    'Aromin-Sison Dental Clinic Email Test',
+    "This is a test email from Aromin-Sison Dental Clinic.\n\nIf you received this, notification email delivery is working."
+);
+
+if ($result['ok'] ?? false) {
+    echo "PASS: test email sent to {$to}.\n";
+    exit(0);
 }
+
+fwrite(STDERR, 'FAIL: ' . ($result['error'] ?? 'Email delivery failed.') . "\n");
+exit(1);

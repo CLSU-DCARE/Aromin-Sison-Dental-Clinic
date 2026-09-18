@@ -16,10 +16,10 @@ use PDO;
 class NotificationService
 {
     private const EVENT_MAP = [
-        'appointment.booked'    => 'appointment_confirmation',
-        'appointment.cancelled' => 'appointment_cancellation',
-        'payment.approved'      => 'payment_received',
-        'payment.due'           => 'payment_due',
+        'appointment.booked'    => 'appointment_confirmed_patient',
+        'appointment.cancelled' => 'appointment_cancelled_patient',
+        'payment.approved'      => 'payment_recorded_patient',
+        'payment.due'           => 'balance_due_reminder_patient',
     ];
 
     /**

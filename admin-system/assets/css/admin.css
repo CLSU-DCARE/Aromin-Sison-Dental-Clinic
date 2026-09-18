@@ -298,6 +298,22 @@ text-transform:uppercase;color:rgba(27,27,25,0.65);
 .icon-btn:hover{background:rgba(255,255,255,0.92);border-color:rgba(156,139,62,0.45);color:var(--gold);}
 .icon-btn:active{transform:scale(.94);}
 .icon-btn svg{width:18px;height:18px;}
+.notif-delete{
+  width:34px;
+  height:34px;
+  background:rgba(180,84,63,0.08);
+  border-color:rgba(180,84,63,0.18);
+  color:var(--red-text);
+}
+.notif-delete:hover{
+  background:rgba(180,84,63,0.14);
+  border-color:rgba(180,84,63,0.34);
+  color:var(--red-text);
+}
+.notif-delete:focus-visible{
+  outline:3px solid rgba(180,84,63,0.24);
+  outline-offset:2px;
+}
 .badge-dot{position:absolute;top:8px;right:9px;width:7px;height:7px;border-radius:50%;background:var(--red);border:1.5px solid var(--white);}
 /* Minimal profile button: a small circular avatar with the user's
    initials only; opens the account menu popover. */

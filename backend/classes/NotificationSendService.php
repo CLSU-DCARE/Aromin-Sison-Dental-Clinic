@@ -48,6 +48,9 @@ class NotificationSendService
         // Load template if provided
         $templateId = null;
         if ($templateKey) {
+            if (!self::isPatientEmailTemplate($templateKey)) {
+                return ['success' => false, 'error' => 'This template is not available for patient email notifications.', 'code' => 400];
+            }
             $template = NotificationTemplateService::getByKey($templateKey);
             if (!$template) {
                 return ['success' => false, 'error' => "Template '$templateKey' not found or inactive.", 'code' => 404];
@@ -62,8 +65,8 @@ class NotificationSendService
             return ['success' => false, 'error' => 'body is required (or provide template_key).', 'code' => 400];
         }
 
-        // Default replacements
-        $defaults = ['patient_name' => $patient['first_name'] . ' ' . $patient['last_name']];
+        // Default replacements for manual sends. Specific workflow sends can override these.
+        $defaults = self::defaultReplacements($pdo, $patient);
         $replacements = array_merge($defaults, $replacements);
 
         $renderedBody    = TemplateRenderer::render($body, $replacements);
@@ -113,5 +116,124 @@ class NotificationSendService
         }
 
         return ['success' => true, 'patient_id' => $patientId, 'results' => $results];
+    }
+
+    private static function isPatientEmailTemplate(string $templateKey): bool
+    {
+        $key = strtolower(trim($templateKey));
+        if (preg_match('/(?:admin|receptionist|staff)/', $key)) return false;
+        return str_ends_with($key, '_patient') || in_array($key, ['payment_rejected', 'braces_progress_updated'], true);
+    }
+
+    private static function defaultReplacements(PDO $pdo, array $patient): array
+    {
+        $patientName = trim(($patient['first_name'] ?? '') . ' ' . ($patient['last_name'] ?? ''));
+        $defaults = [
+            'patient_id' => '#P-' . ($patient['patient_id'] ?? ''),
+            'patient_name' => $patientName,
+            'contact_number' => $patient['contact_number'] ?: 'Not provided',
+            'email' => $patient['email'] ?: 'Not provided',
+            'appointment_id' => 'Not selected',
+            'service' => 'Not selected',
+            'appointment_date' => 'Not selected',
+            'appointment_time' => 'Not selected',
+            'requested_date' => 'Not selected',
+            'requested_time' => 'Not selected',
+            'previous_date' => 'Not selected',
+            'previous_time' => 'Not selected',
+            'new_date' => 'Not selected',
+            'new_time' => 'Not selected',
+            'dentist_name' => 'To be assigned',
+            'reason' => 'Not provided',
+            'service_treatment' => 'Not selected',
+            'payment_amount' => 'PHP 0.00',
+            'total_amount' => 'PHP 0.00',
+            'amount_paid' => 'PHP 0.00',
+            'remaining_balance' => 'PHP 0.00',
+            'amount' => 'PHP 0.00',
+            'balance' => 'PHP 0.00',
+            'dentist' => 'To be assigned',
+            'date' => 'Not selected',
+            'time' => 'Not selected',
+        ];
+
+        $stmt = $pdo->prepare(
+            "SELECT a.appointment_id, a.service_type, a.scheduled_date, a.scheduled_time,
+                    u.full_name AS dentist_name
+             FROM appointments a
+             LEFT JOIN users u ON u.user_id = a.dentist_id
+             WHERE a.patient_id = ?
+             ORDER BY a.scheduled_date DESC, a.scheduled_time DESC, a.appointment_id DESC
+             LIMIT 1"
+        );
+        $stmt->execute([(int) $patient['patient_id']]);
+        $appointment = $stmt->fetch();
+        if ($appointment) {
+            $dentist = trim((string) ($appointment['dentist_name'] ?? '')) ?: 'To be assigned';
+            $defaults['appointment_id'] = '#A-' . $appointment['appointment_id'];
+            $defaults['service'] = $appointment['service_type'] ?: 'Not selected';
+            $defaults['appointment_date'] = $appointment['scheduled_date'] ?: 'Not selected';
+            $defaults['appointment_time'] = $appointment['scheduled_time'] ?: 'Not selected';
+            $defaults['requested_date'] = $defaults['appointment_date'];
+            $defaults['requested_time'] = $defaults['appointment_time'];
+            $defaults['new_date'] = $defaults['appointment_date'];
+            $defaults['new_time'] = $defaults['appointment_time'];
+            $defaults['dentist_name'] = $dentist;
+            $defaults['dentist'] = $dentist;
+            $defaults['date'] = $defaults['appointment_date'];
+            $defaults['time'] = $defaults['appointment_time'];
+        }
+
+        if (!$appointment) {
+            $stmt = $pdo->prepare(
+                "SELECT r.request_id, r.service_type, r.requested_date, r.requested_time,
+                        u.full_name AS dentist_name
+                 FROM appointment_requests r
+                 LEFT JOIN users u ON u.user_id = r.preferred_dentist_id
+                 WHERE (r.email = ? AND r.email <> '')
+                    OR (r.contact_number = ? AND r.contact_number <> '')
+                 ORDER BY r.requested_date DESC, r.requested_time DESC, r.request_id DESC
+                 LIMIT 1"
+            );
+            $stmt->execute([(string) ($patient['email'] ?? ''), (string) ($patient['contact_number'] ?? '')]);
+            $request = $stmt->fetch();
+            if ($request) {
+                $dentist = trim((string) ($request['dentist_name'] ?? '')) ?: 'To be assigned';
+                $defaults['appointment_id'] = '#R-' . $request['request_id'];
+                $defaults['service'] = $request['service_type'] ?: 'Not selected';
+                $defaults['appointment_date'] = $request['requested_date'] ?: 'Not selected';
+                $defaults['appointment_time'] = $request['requested_time'] ?: 'Not selected';
+                $defaults['requested_date'] = $defaults['appointment_date'];
+                $defaults['requested_time'] = $defaults['appointment_time'];
+                $defaults['new_date'] = $defaults['appointment_date'];
+                $defaults['new_time'] = $defaults['appointment_time'];
+                $defaults['dentist_name'] = $dentist;
+                $defaults['dentist'] = $dentist;
+                $defaults['date'] = $defaults['appointment_date'];
+                $defaults['time'] = $defaults['appointment_time'];
+            }
+        }
+
+        $stmt = $pdo->prepare(
+            "SELECT total_amount, balance_amount, current_stage
+             FROM braces_contracts
+             WHERE patient_id = ?
+             ORDER BY contract_id DESC
+             LIMIT 1"
+        );
+        $stmt->execute([(int) $patient['patient_id']]);
+        $contract = $stmt->fetch();
+        if ($contract) {
+            $total = (float) ($contract['total_amount'] ?? 0);
+            $balance = max(0, (float) ($contract['balance_amount'] ?? 0));
+            $paid = max(0, $total - $balance);
+            $defaults['service_treatment'] = $contract['current_stage'] ?: 'Braces Contract';
+            $defaults['total_amount'] = 'PHP ' . number_format($total, 2);
+            $defaults['amount_paid'] = 'PHP ' . number_format($paid, 2);
+            $defaults['remaining_balance'] = 'PHP ' . number_format($balance, 2);
+            $defaults['balance'] = $defaults['remaining_balance'];
+        }
+
+        return $defaults;
     }
 }

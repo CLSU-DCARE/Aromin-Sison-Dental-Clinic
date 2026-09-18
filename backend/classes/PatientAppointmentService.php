@@ -184,7 +184,7 @@ class PatientAppointmentService
         $pdo->beginTransaction();
 
         $appt = $pdo->prepare(
-            "SELECT appointment_id, dentist_id FROM appointments
+            "SELECT appointment_id, dentist_id, scheduled_date, scheduled_time FROM appointments
              WHERE appointment_id=? AND patient_id=? AND status IN ('pending','confirmed')
              AND TIMESTAMP(scheduled_date,scheduled_time) > NOW()
              LIMIT 1 FOR UPDATE"
@@ -223,7 +223,10 @@ class PatientAppointmentService
              WHERE appointment_id=? AND patient_id=?"
         )->execute([$date, $time, $appointmentId, $patientId]);
 
-        PortalEvent::appointment($appointmentId, 'reschedule requested');
+        PortalEvent::appointment($appointmentId, 'reschedule requested', [
+            'previous_date' => $row['scheduled_date'] ?? null,
+            'previous_time' => $row['scheduled_time'] ?? null,
+        ]);
         $pdo->commit();
         } catch (\Throwable $e) { if ($pdo->inTransaction()) $pdo->rollBack(); throw $e; }
         finally { AppointmentSlotManager::unlock($pdo, $lock); }

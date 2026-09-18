@@ -32,6 +32,26 @@
       }
     }
 
+    _patientEmailTemplates() {
+      const extraPatientKeys = new Set(['payment_rejected', 'braces_progress_updated']);
+      return this._templates.filter((template) => {
+        const key = String(template.template_key || '').toLowerCase();
+        const name = String(template.name || '').toLowerCase();
+        const label = key + ' ' + name;
+        if (key === 'appointment_request_submitted_patient') return false;
+        return String(template.channel || '').toLowerCase() === 'email' &&
+          !/(admin|receptionist|staff)/.test(label) &&
+          (key.endsWith('_patient') || extraPatientKeys.has(key));
+      });
+    }
+
+    _templateLabel(template) {
+      return String(template.name || '')
+        .replace(/\s*-\s*Patient\b/gi, '')
+        .replace(/\s*\(email\)\s*$/i, '')
+        .trim();
+    }
+
     _wireFilter() {
       const group = document.querySelector('#view-notifications .toolbar-left');
       if (!group) return;
@@ -42,7 +62,7 @@
     }
 
     async renderLog(snapshot = null) {
-      snapshot = snapshot || window.staffSnapshot;
+      snapshot = arguments.length ? snapshot : window.staffSnapshot;
       const tbody = document.getElementById('notifLogBody');
       const empty = document.getElementById('notifLogEmpty');
       if (!tbody) return;
@@ -92,13 +112,36 @@
             : '\u2014';
           return `<tr>
             <td>${esc(log.patient_name || '')}</td>
+            <td>${esc(log.recipient || '')}</td>
             <td>${chTag}</td>
             <td>${esc(subject)}</td>
             <td>${stTag}</td>
             <td>${esc(date)}</td>
+            <td><button class="icon-btn notif-delete" data-log-id="${esc(log.log_id || '')}" title="Delete notification" aria-label="Delete notification">${window.trashIcon || 'Delete'}</button></td>
           </tr>`;
         })
         .join('');
+
+      tbody.querySelectorAll('.notif-delete').forEach((button) => {
+        button.addEventListener('click', () => this._deleteLog(button.dataset.logId));
+      });
+    }
+
+    async _deleteLog(logId) {
+      if (!logId) return;
+      if (!window.confirm('Delete this notification log?')) return;
+      try {
+        await apiFetch(API_BASE + '/delete.php', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ log_id: Number(logId) }),
+        });
+        showToast('Notification deleted.');
+        window.staffSnapshot = null;
+        this.renderLog(null);
+      } catch (e) {
+        showToast(e.message || 'Unable to delete notification.', 'error');
+      }
     }
 
     _initSendModal() {
@@ -120,17 +163,21 @@
         snPatient.innerHTML = '';
         try {
           const data = await apiFetch('../backend/api/patients/list.php');
-          snPatient.innerHTML = data.patients.map(p => '<option value="' + p.patient_id + '">' + escapeHtml(p.first_name + ' ' + p.last_name) + '</option>').join('');
+          snPatient.innerHTML = data.patients.map((p) => {
+            const email = p.email ? ' - ' + p.email : ' - no email';
+            return '<option value="' + p.patient_id + '">' + escapeHtml(p.first_name + ' ' + p.last_name + email) + '</option>';
+          }).join('');
         } catch (error) { showToast('Unable to load patients.', 'error'); }
       };
 
       const fillTemplateDropdown = () => {
+        const templates = this._patientEmailTemplates();
         snTemplate.innerHTML =
           '<option value="">Custom message...</option>' +
-          this._templates
+          templates
             .map(
               (t) =>
-                `<option value="${escapeHtml(t.template_key)}">${escapeHtml(t.name)} (${t.channel})</option>`
+                `<option value="${escapeHtml(t.template_key)}">${escapeHtml(this._templateLabel(t))}</option>`
             )
             .join('');
       };
@@ -143,7 +190,7 @@
           snChannel.value = 'email';
           return;
         }
-        const t = this._templates.find((x) => x.template_key === key);
+        const t = this._patientEmailTemplates().find((x) => x.template_key === key);
         if (t) {
           snSubject.value = t.subject || '';
           snBody.value = t.body || '';
@@ -200,20 +247,21 @@
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload),
           });
-          if (data.success) {
-            if (!Array.isArray(data.results) || data.results.some(result => result.status !== 'sent')) {
-              this.renderLog();
-              throw new Error('Some messages could not be delivered. Check the notification log before retrying.');
-            }
-            this._modal.close();
-            showToast(
-              'Notification sent to ' +
-                (snPatient.selectedOptions[0]?.textContent || 'patient')
-            );
-            this.renderLog();
-          } else {
-            throw new Error(data.error || 'send failed');
+          const results = Array.isArray(data.results) ? data.results : [];
+          const sent = results.filter(result => result.status === 'sent');
+          if (!sent.length) {
+            window.staffSnapshot = null;
+            this.renderLog(null);
+            const failed = results.find(result => result.status !== 'sent');
+            throw new Error(failed?.error || 'Some messages could not be delivered. Check the notification log before retrying.');
           }
+          this._modal.close();
+          showToast(
+            'Notification sent to ' +
+              (sent[0]?.recipient || snPatient.selectedOptions[0]?.textContent || 'patient')
+          );
+          window.staffSnapshot = null;
+          this.renderLog(null);
         } catch (e) {
           snNote.textContent = e.message || 'Unable to send notification. Please try again.';
           snNote.classList.add('err');
