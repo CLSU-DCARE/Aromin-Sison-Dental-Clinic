@@ -6,8 +6,6 @@ Thumbs.db
 dist/
 .env
 .env.local
-.env.*
-!.env.example
 *.swp
 *.swo
 *~

@@ -134,26 +134,6 @@ of `schema.sql`).
 
 Either works: both give you Apache + MySQL + PHP locally, no hosting needed for your defense demo.
 
-### Database configuration
-
-Each developer should keep their own database settings in an ignored local environment file:
-
-```sh
-copy .env.example .env.local
-```
-
-Then edit `.env.local` for your machine:
-
-```ini
-ASDC_DB_HOST=127.0.0.1
-ASDC_DB_PORT=
-ASDC_DB_NAME=aromin_sison_dental
-ASDC_DB_USER=root
-ASDC_DB_PASS=
-```
-
-Use your actual local MariaDB port. Some XAMPP installs use `3307`; many XAMPP/Laragon installs use `3306`. Do not commit `.env.local` or real database passwords. If `ASDC_DB_PORT` is left blank, PHP uses the MySQL client default port.
-
 **XAMPP:**
 1. Install [XAMPP](https://www.apachefriends.org/), start **Apache** + **MySQL** from the control panel
 2. Copy the whole `asdc_v2/` folder into `C:\xampp\htdocs\`
@@ -168,31 +148,7 @@ Use your actual local MariaDB port. Some XAMPP installs use `3307`; many XAMPP/L
 
 Either way you should get a JSON response (empty array is fine until you add data).
 
-Database credentials are read by `backend/classes/Database.php` from server environment variables first, then `.env.local`, then `.env`. The repository only includes `.env.example`, which is a template and must not contain shared or production secrets.
-
-### Future shared development database
-
-When D-CARE is ready to use a shared development database, each developer will need these values from the database owner/provider:
-
-- host name or IP address
-- port
-- database name
-- username
-- password
-- SSL requirement and certificate files, if the provider requires encrypted connections
-- allowed source IP/VPN requirements, if access is restricted
-
-To migrate the current `aromin_sison_dental` development data safely:
-
-1. Freeze local writes briefly so no one changes data during export.
-2. Export schema and data from the current source database using phpMyAdmin or `mysqldump`.
-3. Create the shared development database and a least-privilege app user.
-4. Import the dump into the shared database.
-5. Run any pending migrations, such as files in `database/migrations/`.
-6. Give each developer their own `.env.local` values for the shared database.
-7. Keep a backup dump from before and after migration.
-
-Do not commit the shared database password. Share credentials through a password manager or another approved secure channel.
+Check `backend/config/db.php`: the default credentials (`root` / no password) work for both XAMPP and Laragon out of the box, adjust if yours differ.
 
 ### Backend folder pattern
 
