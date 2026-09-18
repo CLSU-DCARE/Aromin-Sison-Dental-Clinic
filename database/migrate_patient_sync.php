@@ -9,6 +9,8 @@ $checks = [
         'contract_payments' => ['status', 'receipt_path', 'note', 'submitted_by', 'reviewed_by', 'reviewed_at', 'created_at'],
     ],
     '005_contract_downpayment_monthly.sql' => ['braces_contracts' => ['downpayment', 'monthly_payment']],
+    '009_promotion_images_dates.sql' => ['promotions' => ['image_path', 'start_date', 'end_date']],
+    '010_patient_archival.sql' => ['patients' => ['archived_at', 'archived_by', 'retention_note']],
 ];
 foreach ($checks as $file => $tables) {
     $present = 0; $expected = 0;

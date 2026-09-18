@@ -75,9 +75,7 @@ class PatientAppointmentService
         $preferred = self::trimmed($input, 'preferred_dentist') ?: 'No preference';
         $time      = InputValidator::time($timeInput);
 
-        $allowedServices = ['Braces Adjustment', 'Cleaning & Check-up', 'Consultation', 'Teeth Whitening'];
-
-        if (!in_array($service, $allowedServices, true)) {
+        if (!ServiceCatalog::isAppointmentService($service)) {
             ApiResponse::error(400, 'request_failed', 'Please choose a valid service.');
         }
         if (!InputValidator::date($date) || $date < date('Y-m-d')) {

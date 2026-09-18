@@ -11,19 +11,27 @@ $password = 'Module3Test!2026';
 $createdUserIds = [];
 $results = [];
 
-function request(string $base, string $path, string $method='GET', ?array $body=null, ?string $session=null): array {
+function request(string $base, string $path, string $method='GET', ?array $body=null, ?array $session=null): array {
     $headers = ['Accept: application/json'];
     if ($body !== null) $headers[] = 'Content-Type: application/json';
-    if ($session) $headers[] = 'Cookie: ASDC_SESSION=' . $session;
+    if ($session) {
+        $headers[] = 'Cookie: ASDC_SESSION=' . $session['cookie'];
+        if ($method !== 'GET') $headers[] = 'X-CSRF-Token: ' . $session['csrf'];
+    }
     $context = stream_context_create(['http'=>['method'=>$method,'header'=>implode("\r\n",$headers),'content'=>$body === null ? '' : json_encode($body),'ignore_errors'=>true]]);
     $raw = file_get_contents($base . $path, false, $context);
     preg_match('/\s(\d{3})\s/', $http_response_header[0] ?? '', $match);
     return [(int)($match[1] ?? 0), json_decode($raw ?: '{}', true), $raw, $http_response_header ?? []];
 }
 
-function login(string $base, string $email, string $password): string {
+function login(string $base, string $email, string $password): array {
     $response=request($base,'/backend/api/auth/login.php','POST',['email'=>$email,'password'=>$password]);
-    foreach($response[3] as $header) if(preg_match('/^Set-Cookie:\s*ASDC_SESSION=([^;]+)/i',$header,$match)) return $match[1];
+    $cookie = null;
+    foreach($response[3] as $header) if(preg_match('/^Set-Cookie:\s*ASDC_SESSION=([^;]+)/i',$header,$match)) $cookie = $match[1];
+    if ($cookie) {
+        $csrf = request($base, '/backend/api/auth/csrf-token.php', 'GET', null, ['cookie' => $cookie, 'csrf' => '']);
+        return ['cookie' => $cookie, 'csrf' => (string) ($csrf[1]['csrf_token'] ?? '')];
+    }
     throw new RuntimeException('Login did not return a session cookie: '.$response[2]);
 }
 
@@ -33,8 +41,8 @@ function check_result(array &$results, string $name, int $expected, array $respo
 }
 
 try {
-    $stmt=$pdo->prepare("INSERT INTO users(role,email,password_hash,full_name,is_active) VALUES('staff',?,?,?,1)");
-    $stmt->execute(["staff-$email",password_hash($password,PASSWORD_DEFAULT),'Module 3 Staff']);
+    $stmt=$pdo->prepare("INSERT INTO users(role,email,password_hash,full_name,is_active) VALUES('receptionist',?,?,?,1)");
+    $stmt->execute(["staff-$email",password_hash($password,PASSWORD_DEFAULT),'Module 3 Receptionist']);
     $staffId=(int)$pdo->lastInsertId(); $createdUserIds[]=$staffId;
     $stmt=$pdo->prepare("INSERT INTO users(role,email,password_hash,full_name,is_active) VALUES('patient',?,?,?,1)");
     $stmt->execute([$email,password_hash($password,PASSWORD_DEFAULT),'Module 3 Patient']);
@@ -80,7 +88,7 @@ try {
     }
     foreach (array_reverse($createdUserIds) as $id) $pdo->prepare('DELETE FROM users WHERE user_id=?')->execute([$id]);
     foreach ([$staffSession ?? null, $patientSession ?? null] as $sessionId) {
-        if ($sessionId) @unlink(__DIR__ . '/sessions/sess_' . $sessionId);
+        if ($sessionId) @unlink(__DIR__ . '/sessions/sess_' . $sessionId['cookie']);
     }
 }
 

@@ -21,8 +21,10 @@ if (!$check->fetchColumn()) \ASDC\ApiResponse::error(403, 'forbidden', 'Patient 
 $result = \ASDC\NotificationSendService::send($patientId, $input);
 
 if ($result['success']) {
-    echo json_encode($result);
+    \ASDC\ApiResponse::ok([
+        'patient_id' => $result['patient_id'],
+        'results' => $result['results'],
+    ], 'Notification processed.');
 } else {
-    http_response_code($result['code']);
-    echo json_encode(['error' => $result['error']]);
+    \ASDC\ApiResponse::error($result['code'], 'notification_failed', $result['error']);
 }

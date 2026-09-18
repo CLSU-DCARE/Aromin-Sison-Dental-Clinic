@@ -28,4 +28,34 @@
     }, { passive: true });
     updateHeader();
   }
+
+  function escapeHtml(value){
+    return String(value || '').replace(/[&<>"']/g, function(ch){
+      return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch];
+    });
+  }
+
+  var promoSection = document.getElementById('promotions');
+  var promoGrid = document.getElementById('publicPromoGrid');
+  if (promoSection && promoGrid && window.fetch){
+    fetch('../backend/api/public/promotions.php', { cache: 'no-store' })
+      .then(function(response){ return response.ok ? response.json() : null; })
+      .then(function(payload){
+        var promotions = payload && payload.success && payload.data && Array.isArray(payload.data.promotions)
+          ? payload.data.promotions
+          : [];
+        if (!promotions.length) return;
+        promoGrid.innerHTML = promotions.map(function(promo){
+          var image = promo.image_path
+            ? '<img src="../backend/' + escapeHtml(promo.image_path) + '" alt="' + escapeHtml(promo.title) + '">'
+            : '';
+          var dates = promo.end_date ? 'Until ' + escapeHtml(promo.end_date) : escapeHtml(promo.status || 'Live');
+          return '<article class="public-promo-card">' + image +
+            '<div class="public-promo-body"><span>' + dates + '</span><h3>' + escapeHtml(promo.title) + '</h3><p>' +
+            escapeHtml(promo.desc || '') + '</p></div></article>';
+        }).join('');
+        promoSection.hidden = false;
+      })
+      .catch(function(){});
+  }
 })();
