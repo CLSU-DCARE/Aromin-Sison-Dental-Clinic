@@ -35,6 +35,16 @@
     _destroyAndRedirect(url) {
       try {
         var xhr = new XMLHttpRequest();
+        if (window.ASDC && !window.ASDC._csrfToken) {
+          xhr.open('GET', '../backend/api/auth/csrf-token.php', false);
+          xhr.setRequestHeader('Accept', 'application/json');
+          xhr.send();
+          if (xhr.status >= 200 && xhr.status < 300) {
+            try {
+              window.ASDC._csrfToken = (JSON.parse(xhr.responseText) || {}).csrf_token || null;
+            } catch (e) {}
+          }
+        }
         xhr.open('POST', '../backend/api/auth/logout.php', false);
         xhr.setRequestHeader('Content-Type', 'application/json');
         if (window.ASDC && window.ASDC._csrfToken) {

@@ -37,7 +37,7 @@ if (!empty($body['dentist_id'])) {
     if (!$check->fetchColumn()) \ASDC\ApiResponse::error(422, 'validation_failed', 'Choose an active dentist.');
 }
 if ($method === 'POST') {
-    $check = \ASDC\Database::pdo()->prepare('SELECT patient_id FROM patients WHERE patient_id=?');
+    $check = \ASDC\Database::pdo()->prepare('SELECT patient_id FROM patients WHERE patient_id=? AND archived_at IS NULL');
     $check->execute([$body['patient_id'] ?? 0]);
     if (!$check->fetchColumn()) \ASDC\ApiResponse::error(422, 'validation_failed', 'Choose an existing patient.');
 }

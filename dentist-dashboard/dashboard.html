@@ -227,22 +227,32 @@
             <div class="eyebrow">Scheduling</div>
             <p>Weekly appointment schedule.</p>
           </div>
+          <button class="btn btn-secondary" id="refreshAppointmentsBtn">Refresh Schedule</button>
         </div>
         <div class="panel">
-          <div class="panel-head">
-            <h3>Weekly Schedule</h3>
-            <div class="panel-head-actions">
-              <label class="date-control" for="dentistWeekStart">
-                <span>Week starting</span>
-                <input type="date" id="dentistWeekStart">
-              </label>
-              <span class="tag tag-amber" id="apptWeekLabel">Loading...</span>
+          <div class="toolbar appointment-toolbar">
+            <div class="toolbar-left" role="group" aria-label="Filter schedule">
+              <button class="filter-chip active" aria-pressed="true">Week</button>
+              <button class="filter-chip" aria-pressed="false">Day</button>
+              <button class="filter-chip" aria-pressed="false">List</button>
+            </div>
+            <div class="appointment-week-nav">
+              <button type="button" class="btn btn-outline btn-sm" id="apptPrevWeek">Previous</button>
+              <button type="button" class="btn btn-outline btn-sm" id="apptCurrentWeek">This Week</button>
+              <button type="button" class="btn btn-outline btn-sm" id="apptNextWeek">Next</button>
+              <span class="tag tag-amber" id="apptModeTag">Loading schedule...</span>
             </div>
           </div>
           <div class="week-scroll">
-            <div class="week-grid" id="apptWeekGrid" aria-live="polite"></div>
+            <div class="week-grid appointment-week-grid" id="apptWeekGrid" aria-live="polite"></div>
           </div>
-          <div id="dentistAppointmentActions" style="padding:16px"></div>
+          <div class="table-scroll" id="apptListView" hidden>
+            <table>
+              <thead><tr><th>Day</th><th>Time</th><th>Patient</th><th>Service</th><th>Status</th><th>Actions</th></tr></thead>
+              <tbody id="apptListBody"></tbody>
+            </table>
+          </div>
+          <p class="form-note err appointment-load-error" id="appointmentLoadError" role="alert" hidden></p>
         </div>
       </section>
 
@@ -264,6 +274,33 @@
     <div class="modal-actions">
       <button class="btn btn-secondary" id="logoutCancelBtn">Cancel</button>
       <button class="btn btn-danger" id="logoutConfirmBtn">Log Out</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== RESCHEDULE APPOINTMENT MODAL ===== -->
+<div class="modal-overlay" id="requestRescheduleModal" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="requestRescheduleTitle">
+    <button class="modal-close" id="requestRescheduleClose" aria-label="Close dialog">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <h3 id="requestRescheduleTitle">Reschedule Appointment</h3>
+    <p class="modal-subtitle" id="requestReschedulePatient"></p>
+    <div class="form-group">
+      <label for="requestRescheduleDate">New Date</label>
+      <input type="date" id="requestRescheduleDate" required>
+    </div>
+    <div class="form-group">
+      <label for="requestRescheduleTime">New Time</label>
+      <input type="time" id="requestRescheduleTime" required>
+    </div>
+    <p class="form-note" id="requestRescheduleNote" role="status" hidden></p>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-secondary" id="requestRescheduleCancel">Cancel</button>
+      <button type="button" class="btn btn-gold" id="requestRescheduleSave">
+        <span class="btn-spinner" aria-hidden="true"></span>
+        <span class="btn-label">Save Schedule</span>
+      </button>
     </div>
   </div>
 </div>
@@ -362,6 +399,8 @@
 <script src="../patient-dashboard/assets/js/PatientLiveSync.js?v=20260916-integration" defer></script>
 <script src="../shared/js/core/PortalSync.js?v=20260916-integration" defer></script>
 <script src="../shared/js/core/PortalForms.js?v=20260916-appointment-dialogs" defer></script>
+<script src="../admin-system/assets/js/AppointmentScheduler.js?v=20260916-public-booking" defer></script>
+<script src="../admin-system/assets/js/AppointmentActions.js?v=20260916-appointment-dialogs" defer></script>
 <script src="assets/js/DentistDashboard.js?v=20260916-integration" defer></script>
 <script src="assets/js/dentist.js?v=20260916-integration" defer></script>
 

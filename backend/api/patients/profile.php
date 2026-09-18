@@ -14,7 +14,7 @@ if ($method === 'DELETE') {
     require_role('receptionist');
     $patientId = \ASDC\InputValidator::positiveId($body['patient_id'] ?? null);
     if (!$patientId) \ASDC\ApiResponse::error(422, 'validation_failed', 'Choose a valid patient.');
-    \ASDC\ApiResponse::ok(\ASDC\PatientService::delete($patientId), 'Patient deleted.');
+    \ASDC\ApiResponse::ok(\ASDC\PatientService::delete($patientId), 'Patient archived.');
 }
 $patientId = $_SESSION['role'] === 'patient' ? \ASDC\PatientService::resolvePatientId((int) $_SESSION['user_id']) : \ASDC\InputValidator::positiveId($body['patient_id'] ?? null);
 $name = is_string($body['name'] ?? null) ? trim($body['name']) : '';
@@ -25,7 +25,7 @@ $parts = preg_split('/\s+/', $name, 2);
 $pdo = \ASDC\Database::pdo();
 $pdo->beginTransaction();
 try {
-    $stmt = $pdo->prepare('SELECT user_id FROM patients WHERE patient_id=? FOR UPDATE'); $stmt->execute([$patientId]);
+    $stmt = $pdo->prepare('SELECT user_id FROM patients WHERE patient_id=? AND archived_at IS NULL FOR UPDATE'); $stmt->execute([$patientId]);
     $row = $stmt->fetch();
     if (!$row) { $pdo->rollBack(); \ASDC\ApiResponse::error(404, 'not_found', 'Patient not found.'); }
     $pdo->prepare('UPDATE patients SET first_name=?,last_name=?,contact_number=? WHERE patient_id=?')->execute([$parts[0], $parts[1] ?? '', $contact ?: null, $patientId]);

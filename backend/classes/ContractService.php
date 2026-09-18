@@ -110,7 +110,12 @@ class ContractService
         $pdo = Database::pdo();
         $pdo->beginTransaction();
         try {
-        $locked = $pdo->prepare('SELECT * FROM braces_contracts WHERE contract_id=? FOR UPDATE');
+        $locked = $pdo->prepare(
+            'SELECT c.* FROM braces_contracts c
+              JOIN patients p ON p.patient_id=c.patient_id
+             WHERE c.contract_id=? AND p.archived_at IS NULL
+             FOR UPDATE'
+        );
         $locked->execute([$contractId]);
         $existing = $locked->fetch();
         if (!$existing) {
@@ -166,7 +171,12 @@ class ContractService
         $pdo = Database::pdo();
         $pdo->beginTransaction();
         try {
-        $locked = $pdo->prepare('SELECT * FROM braces_contracts WHERE contract_id=? FOR UPDATE');
+        $locked = $pdo->prepare(
+            'SELECT c.* FROM braces_contracts c
+              JOIN patients p ON p.patient_id=c.patient_id
+             WHERE c.contract_id=? AND p.archived_at IS NULL
+             FOR UPDATE'
+        );
         $locked->execute([$contractId]);
         $existing = $locked->fetch();
         if (!$existing) {
@@ -233,7 +243,9 @@ class ContractService
     {
         $stmt = Database::pdo()->prepare(
             "SELECT * FROM braces_contracts
-             WHERE patient_id = ? AND status <> 'cancelled'
+             WHERE patient_id = ?
+               AND patient_id IN (SELECT patient_id FROM patients WHERE archived_at IS NULL)
+               AND status <> 'cancelled'
              ORDER BY (status = 'active') DESC, contract_id DESC
              LIMIT 1"
         );

@@ -62,6 +62,11 @@
   }
   const field = (label, input) => `<div class="form-group"><label>${esc(label)}</label>${input}</div>`;
   const write = (url, body, method = 'PATCH') => apiFetch('../backend/api/' + url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  const refreshStaffSnapshot = async () => {
+    if (window.staffLiveSync && typeof window.staffLiveSync.refetch === 'function') {
+      await window.staffLiveSync.refetch();
+    }
+  };
   ASDC.confirmAction = confirmAction;
   ASDC.openProfileForm = patient => form('Edit patient profile',
     field('Full name', `<input name="name" required maxlength="100" value="${esc(patient.name)}">`) +
@@ -90,6 +95,15 @@
     });
   };
 
+  ASDC.approveAppointmentRequest = async request => {
+    const data = await apiFetch('../backend/api/contracts/dentists.php');
+    if (!data.dentists.length) throw new Error('No active dentist is available for assignment.');
+    return new Promise(resolve => {
+      form('Approve request and assign dentist', field('Treating dentist', `<select name="dentist_id" required>${data.dentists.map(d => `<option value="${Number(d.user_id)}" ${Number(d.user_id) === Number(request.preferred_dentist_id) ? 'selected' : ''}>${esc(d.full_name)}</option>`).join('')}</select>`),
+        async values => { await write('appointments/actions.php', { action: 'approve', resource_type: 'request', request_id: request.request_id, dentist_id: Number(values.dentist_id) }, 'POST'); resolve(); });
+    });
+  };
+
   ASDC.renderDentistActions = (container, snapshot) => {
     if (!container) return;
     const appointments = [...new Map(snapshot.week.appointments.concat(snapshot.pending).map(a => [a.appointment_id, a])).values()];
@@ -101,7 +115,7 @@
       const action = button.dataset.clinicalAction;
       const body = { action, appointment_id: appointment.appointment_id, resource_type: 'appointment' };
       if (action === 'reschedule') {
-        form('Reschedule appointment', field('Date', `<input type="date" name="scheduled_date" required value="${esc(appointment.scheduled_date)}">`) + field('Time', `<input type="time" name="scheduled_time" required value="${esc(appointment.scheduled_time.slice(0,5))}">`), values => write('appointments/actions.php', { ...body, ...values }));
+        form('Reschedule appointment', field('Date', `<input type="date" name="scheduled_date" required value="${esc(appointment.scheduled_date)}">`) + field('Time', `<input type="time" name="scheduled_time" required value="${esc(appointment.scheduled_time.slice(0,5))}">`), async values => { await write('appointments/actions.php', { ...body, ...values }); await refreshStaffSnapshot(); });
         return;
       }
       const actionLabel = action.replace('_', '-');
@@ -113,7 +127,7 @@
       });
       if (!confirmed) return;
       button.disabled = true;
-      try { await write('appointments/actions.php', body, 'POST'); ASDC._toast.show('Appointment updated.'); }
+      try { await write('appointments/actions.php', body, 'POST'); await refreshStaffSnapshot(); ASDC._toast.show('Appointment updated.'); }
       catch (error) { ASDC._toast.show(error.message, 'error'); }
       finally { button.disabled = false; }
     };

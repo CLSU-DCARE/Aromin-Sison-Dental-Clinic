@@ -57,6 +57,14 @@ window.AppointmentActions = class AppointmentActions {
       }
 
       const action = button.dataset.requestAction;
+      if (action === 'approve' && window.ASDC.approveAppointmentRequest) {
+        window.ASDC.approveAppointmentRequest(request)
+          .then(() => this.scheduler.loadWeek())
+          .then(() => showToast('Booking request approved and added to the schedule', 'success'))
+          .catch(error => showToast(error.message, 'error'));
+        return;
+      }
+
       if (['reject', 'cancel'].includes(action)) {
         const actionLabel = action === 'reject' ? 'Reject' : 'Cancel';
         const confirmed = await ASDC.confirmAction({
@@ -103,7 +111,16 @@ window.AppointmentActions = class AppointmentActions {
     const action = button.dataset.appointmentAction;
 
     if (action === 'approve' && window.ASDC.approveAppointment) {
-      window.ASDC.approveAppointment(appointment).catch(error => showToast(error.message, 'error'));
+      if (window.ASDCAuthUser?.role === 'dentist') {
+        this.run('approve', 'appointment', appointmentId)
+          .then(() => showToast('Appointment approved and added to the schedule', 'success'))
+          .catch(error => showToast(error.message, 'error'));
+        return;
+      }
+      window.ASDC.approveAppointment(appointment)
+        .then(() => this.scheduler.loadWeek())
+        .then(() => showToast('Appointment approved and added to the schedule', 'success'))
+        .catch(error => showToast(error.message, 'error'));
       return;
     }
 

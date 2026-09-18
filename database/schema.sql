@@ -61,6 +61,11 @@ CREATE TABLE patients (
     emergency_contact_name VARCHAR(150),
     emergency_contact_number VARCHAR(20),
     registered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    archived_at DATETIME NULL,
+    archived_by INT NULL,
+    retention_note VARCHAR(255) NULL,
+    INDEX idx_patients_archived (archived_at),
+    FOREIGN KEY (archived_by) REFERENCES users(user_id) ON DELETE SET NULL,
     FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE SET NULL
 );
 

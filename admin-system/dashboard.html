@@ -48,6 +48,10 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>
         <span class="nav-label">Records &amp; Protocols</span>
       </button>
+      <button class="nav-item" data-view="archived" data-tooltip="Archived">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="4" rx="1"/><path d="M5 7v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7"/><path d="M10 12h4"/></svg>
+        <span class="nav-label">Archived Patients</span>
+      </button>
 
       <div class="nav-group-label">Scheduling</div>
       <button class="nav-item" data-view="appointments" data-tooltip="Appointments">
@@ -222,6 +226,40 @@
               <tbody id="patientsBody"></tbody>
             </table>
           </div>
+        </div>
+      </section>
+
+      <!-- ===== ARCHIVED PATIENTS ===== -->
+      <section class="view" id="view-archived">
+        <div class="page-head">
+          <div>
+            <div class="eyebrow">Archive</div>
+            <p>Inactive patient profiles retained for clinical and billing audit.</p>
+          </div>
+          <button class="btn btn-secondary" id="refreshArchivedBtn">Refresh Archive</button>
+        </div>
+        <div class="panel">
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>Patient</th>
+                  <th>Archived</th>
+                  <th>Retained Records</th>
+                  <th>Archived By</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="archivedPatientsBody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="panel" id="archivedDetailPanel" hidden>
+          <div class="panel-head">
+            <h3 id="archivedDetailTitle">Archived Patient</h3>
+            <button class="btn btn-gold btn-sm" id="archivedRestoreBtn">Restore Patient</button>
+          </div>
+          <div id="archivedDetailBody"></div>
         </div>
       </section>
 

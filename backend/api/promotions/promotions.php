@@ -42,6 +42,8 @@ if ($method === 'DELETE') {
     \ASDC\ApiResponse::ok([], 'Promotion deleted.');
 }
 
+\ASDC\CsrfToken::requireValid();
+
 $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
 $isMultipart = stripos($contentType, 'multipart/form-data') !== false;
 $body = $isMultipart ? $_POST : \ASDC\ApiResponse::requireJson();

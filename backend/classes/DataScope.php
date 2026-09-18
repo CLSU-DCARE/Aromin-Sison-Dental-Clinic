@@ -76,12 +76,13 @@ class DataScope
      */
     public function appointmentFilter(): array
     {
-        if ($this->isPatient()) return ['a.patient_id IN (SELECT patient_id FROM patients WHERE user_id=?)', [$this->userId]];
+        if ($this->isPatient()) return ['a.patient_id IN (SELECT patient_id FROM patients WHERE user_id=? AND archived_at IS NULL)', [$this->userId]];
         if (!$this->hasFullAccess() && !$this->isDentist()) return ['1=0', []];
+        $active = 'a.patient_id IN (SELECT patient_id FROM patients WHERE archived_at IS NULL)';
         if (!$this->isDentist() || !$this->userId) {
-            return ['1=1', []];
+            return [$active, []];
         }
-        return ['a.dentist_id = ?', [$this->userId]];
+        return ["a.dentist_id = ? AND {$active}", [$this->userId]];
     }
 
     /**
@@ -108,13 +109,13 @@ class DataScope
     public function patientFilter(): array
     {
         if ($this->isPatient()) {
-            return ['p.user_id = ?', [$this->userId]];
+            return ['p.user_id = ? AND p.archived_at IS NULL', [$this->userId]];
         }
         if (!$this->isDentist() || !$this->userId) {
-            return ['1=1', []];
+            return ['p.archived_at IS NULL', []];
         }
         return [
-            '(p.patient_id IN (SELECT patient_id FROM appointments WHERE dentist_id = ?) OR p.patient_id IN (SELECT patient_id FROM braces_contracts WHERE dentist_id = ?))',
+            'p.archived_at IS NULL AND (p.patient_id IN (SELECT patient_id FROM appointments WHERE dentist_id = ?) OR p.patient_id IN (SELECT patient_id FROM braces_contracts WHERE dentist_id = ?))',
             [$this->userId, $this->userId],
         ];
     }
@@ -128,12 +129,13 @@ class DataScope
      */
     public function contractFilter(): array
     {
-        if ($this->isPatient()) return ['c.patient_id IN (SELECT patient_id FROM patients WHERE user_id=?)', [$this->userId]];
+        if ($this->isPatient()) return ['c.patient_id IN (SELECT patient_id FROM patients WHERE user_id=? AND archived_at IS NULL)', [$this->userId]];
         if (!$this->hasFullAccess() && !$this->isDentist()) return ['1=0', []];
+        $active = 'c.patient_id IN (SELECT patient_id FROM patients WHERE archived_at IS NULL)';
         if (!$this->isDentist() || !$this->userId) {
-            return ['1=1', []];
+            return [$active, []];
         }
-        return ['c.dentist_id = ?', [$this->userId]];
+        return ["c.dentist_id = ? AND {$active}", [$this->userId]];
     }
 
     /**

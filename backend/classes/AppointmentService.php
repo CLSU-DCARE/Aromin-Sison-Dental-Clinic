@@ -96,6 +96,15 @@ class AppointmentService
                 ApiResponse::error(403, 'forbidden', 'You do not have permission to cancel this appointment.');
             }
         }
+        if ($type === 'appointment') {
+            $check = $pdo->prepare(
+                'SELECT 1 FROM appointments a
+                  JOIN patients p ON p.patient_id=a.patient_id
+                 WHERE a.appointment_id=? AND p.archived_at IS NULL'
+            );
+            $check->execute([$id]);
+            if (!$check->fetchColumn()) ApiResponse::error(409, 'archived_patient', 'Archived patient appointments are retained for history only.');
+        }
 
         if (!in_array($status, ['cancelled', 'rejected', 'completed', 'no_show'], true)
             || ($type === 'request' && !in_array($status, ['cancelled', 'rejected'], true))) ApiResponse::error(422, 'validation_failed', 'Invalid status.');
@@ -160,8 +169,9 @@ class AppointmentService
                 $stmt->execute([$date, $time, (int) $_SESSION['user_id'], $id]);
             } else {
                 $stmt = $pdo->prepare(
-                    "SELECT appointment_id, dentist_id FROM appointments
-                     WHERE appointment_id=? AND status IN ('pending','confirmed') FOR UPDATE"
+                    "SELECT a.appointment_id, a.dentist_id FROM appointments a
+                     JOIN patients p ON p.patient_id=a.patient_id
+                     WHERE a.appointment_id=? AND a.status IN ('pending','confirmed') AND p.archived_at IS NULL FOR UPDATE"
                 );
                 $stmt->execute([$id]);
                 $apptRow = $stmt->fetch();
@@ -208,7 +218,7 @@ class AppointmentService
         if ($type === 'appointment') {
             self::approveAppointment($id, $dentistId);
         } else {
-            self::approveRequest($id);
+            self::approveRequest($id, $dentistId);
         }
     }
 
@@ -223,14 +233,13 @@ class AppointmentService
 
         if ($dentistId !== null) {
             if (!$scope->isReceptionist()) ApiResponse::error(403, 'forbidden', 'Only receptionists can assign dentists.');
-            $dentist = $pdo->prepare("SELECT user_id FROM users WHERE user_id=? AND role='dentist' AND is_active=1");
-            $dentist->execute([$dentistId]);
-            if (!$dentist->fetchColumn()) ApiResponse::error(422, 'validation_failed', 'Choose an active dentist.');
+            if (!self::isActiveDentist($pdo, $dentistId)) ApiResponse::error(422, 'validation_failed', 'Choose an active dentist.');
         }
 
         $stmt = $pdo->prepare(
-            "SELECT scheduled_date, scheduled_time, dentist_id FROM appointments
-             WHERE appointment_id=? AND status='pending'"
+            "SELECT a.scheduled_date, a.scheduled_time, a.dentist_id FROM appointments a
+             JOIN patients p ON p.patient_id=a.patient_id
+             WHERE a.appointment_id=? AND a.status='pending' AND p.archived_at IS NULL"
         );
         $stmt->execute([$id]);
         $row = $stmt->fetch();
@@ -246,8 +255,9 @@ class AppointmentService
         try {
             $pdo->beginTransaction();
             $stmt = $pdo->prepare(
-                "SELECT appointment_id, scheduled_date, scheduled_time FROM appointments
-                 WHERE appointment_id=? AND status='pending' FOR UPDATE"
+                "SELECT a.appointment_id, a.scheduled_date, a.scheduled_time FROM appointments a
+                 JOIN patients p ON p.patient_id=a.patient_id
+                 WHERE a.appointment_id=? AND a.status='pending' AND p.archived_at IS NULL FOR UPDATE"
             );
             $stmt->execute([$id]);
             $locked = $stmt->fetch();
@@ -260,12 +270,18 @@ class AppointmentService
                 ApiResponse::error(409, 'state_changed', 'Appointment state changed; retry the action.');
             }
 
+            $assignedDentistId = $dentistId ?: (int) ($locked['dentist_id'] ?? 0);
+            if (!$assignedDentistId || !self::isActiveDentist($pdo, $assignedDentistId)) {
+                $pdo->rollBack();
+                ApiResponse::error(422, 'validation_failed', 'Choose an active dentist before confirming this appointment.');
+            }
+
             if (AppointmentSlotManager::isTaken($pdo, $row['scheduled_date'], $row['scheduled_time'], $id, null)) {
                 $pdo->rollBack();
                 ApiResponse::error(409, 'slot_unavailable', 'That appointment slot is no longer available.');
             }
 
-            $pdo->prepare("UPDATE appointments SET status='confirmed', dentist_id=COALESCE(?,dentist_id) WHERE appointment_id=?")->execute([$dentistId, $id]);
+            $pdo->prepare("UPDATE appointments SET status='confirmed', dentist_id=? WHERE appointment_id=?")->execute([$assignedDentistId, $id]);
             PortalEvent::appointment($id, 'confirmed');
             $pdo->commit();
         } catch (Throwable $e) {
@@ -278,10 +294,15 @@ class AppointmentService
         ApiResponse::ok(['appointment_id' => $id, 'status' => 'confirmed'], 'Appointment approved.');
     }
 
-    private static function approveRequest(int $id): void
+    private static function approveRequest(int $id, ?int $dentistId = null): void
     {
         $pdo = Database::pdo();
         $scope = DataScope::current();
+
+        if ($dentistId !== null) {
+            if (!$scope->isReceptionist()) ApiResponse::error(403, 'forbidden', 'Only receptionists can assign dentists.');
+            if (!self::isActiveDentist($pdo, $dentistId)) ApiResponse::error(422, 'validation_failed', 'Choose an active dentist.');
+        }
 
         $stmt = $pdo->prepare(
             "SELECT * FROM appointment_requests WHERE request_id=? AND status IN ('pending','rescheduled')"
@@ -322,6 +343,12 @@ class AppointmentService
                 ApiResponse::error(409, 'slot_unavailable', 'That appointment slot is no longer available.');
             }
 
+            $assignedDentistId = $dentistId ?: (int) ($request['preferred_dentist_id'] ?? 0);
+            if (!$assignedDentistId || !self::isActiveDentist($pdo, $assignedDentistId)) {
+                $pdo->rollBack();
+                ApiResponse::error(422, 'validation_failed', 'Choose an active dentist before confirming this appointment request.');
+            }
+
             $patient = self::findOrCreatePatient($pdo, $request);
 
             $insert = $pdo->prepare(
@@ -330,7 +357,7 @@ class AppointmentService
             );
             $insert->execute([
                 (int) $patient,
-                $request['preferred_dentist_id'],
+                $assignedDentistId,
                 $request['service_type'],
                 $request['requested_date'],
                 $request['requested_time'],
@@ -355,17 +382,24 @@ class AppointmentService
         ApiResponse::ok(['request_id' => $id, 'appointment_id' => $appointmentId, 'status' => 'approved'], 'Appointment request approved.');
     }
 
+    private static function isActiveDentist(PDO $pdo, int $dentistId): bool
+    {
+        $stmt = $pdo->prepare("SELECT 1 FROM users WHERE user_id=? AND role='dentist' AND is_active=1");
+        $stmt->execute([$dentistId]);
+        return (bool) $stmt->fetchColumn();
+    }
+
     private static function findOrCreatePatient(PDO $pdo, array $request): int
     {
         if ($request['email']) {
-            $stmt = $pdo->prepare('SELECT patient_id FROM patients WHERE email=? ORDER BY user_id IS NOT NULL DESC LIMIT 1');
+            $stmt = $pdo->prepare('SELECT patient_id FROM patients WHERE email=? AND archived_at IS NULL ORDER BY user_id IS NOT NULL DESC LIMIT 1');
             $stmt->execute([$request['email']]);
             $patient = $stmt->fetchColumn();
             if ($patient) return (int) $patient;
         }
 
         if ($request['contact_number']) {
-            $stmt = $pdo->prepare('SELECT patient_id FROM patients WHERE contact_number=? ORDER BY user_id IS NOT NULL DESC LIMIT 1');
+            $stmt = $pdo->prepare('SELECT patient_id FROM patients WHERE contact_number=? AND archived_at IS NULL ORDER BY user_id IS NOT NULL DESC LIMIT 1');
             $stmt->execute([$request['contact_number']]);
             $patient = $stmt->fetchColumn();
             if ($patient) return (int) $patient;

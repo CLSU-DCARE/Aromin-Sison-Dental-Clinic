@@ -60,7 +60,7 @@ class PatientService
     }
 
     /**
-     * Delete a patient record and its dependent clinical records.
+     * Archive a patient record without removing dependent clinical records.
      *
      * @return array{patient_id: int}
      */
@@ -69,11 +69,10 @@ class PatientService
         if ($patientId < 1) {
             ApiResponse::error(422, 'validation_failed', 'Choose a valid patient.');
         }
-
         $pdo = Database::pdo();
         $pdo->beginTransaction();
         try {
-            $stmt = $pdo->prepare('SELECT user_id FROM patients WHERE patient_id = ? FOR UPDATE');
+            $stmt = $pdo->prepare('SELECT user_id, archived_at FROM patients WHERE patient_id = ? FOR UPDATE');
             $stmt->execute([$patientId]);
             $row = $stmt->fetch();
             if (!$row) {
@@ -81,19 +80,33 @@ class PatientService
                 ApiResponse::error(404, 'not_found', 'Patient not found.');
             }
 
-            $userId = $row['user_id'] ? (int) $row['user_id'] : null;
-            $pdo->prepare('DELETE FROM patients WHERE patient_id = ?')->execute([$patientId]);
-
-            if ($userId) {
-                $pdo->prepare("DELETE FROM users WHERE user_id = ? AND role = 'patient'")->execute([$userId]);
+            if ($row['archived_at']) {
+                $pdo->rollBack();
+                ApiResponse::error(409, 'already_archived', 'Patient is already archived.');
             }
 
+            $userId = $row['user_id'] ? (int) $row['user_id'] : null;
+            AuthMiddleware::secureSessionStart();
+            $archivedBy = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
+            $pdo->prepare(
+                "UPDATE patients
+                    SET archived_at = NOW(),
+                        archived_by = ?,
+                        retention_note = 'Archived by staff; clinical, appointment, contract, and payment records retained for audit.'
+                  WHERE patient_id = ?"
+            )->execute([$archivedBy, $patientId]);
+
+            if ($userId) {
+                $pdo->prepare("UPDATE users SET is_active = 0 WHERE user_id = ? AND role = 'patient'")->execute([$userId]);
+            }
+
+            PortalEvent::patient($patientId, 'Patient record archived', 'This patient record was deactivated and retained for audit.');
             $pdo->commit();
             return ['patient_id' => $patientId];
         } catch (\Throwable $e) {
             if ($pdo->inTransaction()) $pdo->rollBack();
-            error_log('Patient deletion failed: ' . $e->getMessage());
-            ApiResponse::error(500, 'delete_failed', 'Unable to delete patient.');
+            error_log('Patient archival failed: ' . $e->getMessage());
+            ApiResponse::error(500, 'archive_failed', 'Unable to archive patient.');
         }
     }
 
@@ -107,7 +120,6 @@ class PatientService
     {
         $scope = DataScope::current();
         [$where, $params] = $scope->patientFilter();
-
         $stmt = Database::pdo()->prepare(
             "SELECT patient_id, first_name, last_name, contact_number, email, registered_at,
                     (SELECT MAX(a.scheduled_date) FROM appointments a WHERE a.patient_id=p.patient_id AND a.status='completed') AS last_visit
@@ -119,13 +131,84 @@ class PatientService
         return $stmt->fetchAll();
     }
 
+    public static function listArchived(): array
+    {
+        $stmt = Database::pdo()->query(
+            "SELECT p.patient_id, p.first_name, p.last_name, p.contact_number, p.email,
+                    p.registered_at, p.archived_at, p.retention_note, u.full_name AS archived_by_name,
+                    (SELECT COUNT(*) FROM appointments a WHERE a.patient_id=p.patient_id) AS appointment_count,
+                    (SELECT COUNT(*) FROM treatment_records r WHERE r.patient_id=p.patient_id) AS record_count,
+                    (SELECT COUNT(*) FROM braces_contracts c WHERE c.patient_id=p.patient_id) AS contract_count,
+                    (SELECT COUNT(*) FROM contract_payments cp JOIN braces_contracts c ON c.contract_id=cp.contract_id WHERE c.patient_id=p.patient_id) AS payment_count,
+                    (SELECT COUNT(*) FROM user_notifications n WHERE n.patient_id=p.patient_id) AS notification_count
+             FROM patients p
+             LEFT JOIN users u ON u.user_id=p.archived_by
+             WHERE p.archived_at IS NOT NULL
+             ORDER BY p.archived_at DESC, p.patient_id DESC"
+        );
+        return $stmt->fetchAll();
+    }
+
+    public static function archivedDetails(int $patientId): array
+    {
+        $pdo = Database::pdo();
+        $patient = $pdo->prepare(
+            "SELECT p.*, u.full_name AS archived_by_name
+             FROM patients p
+             LEFT JOIN users u ON u.user_id=p.archived_by
+             WHERE p.patient_id=? AND p.archived_at IS NOT NULL"
+        );
+        $patient->execute([$patientId]);
+        $row = $patient->fetch();
+        if (!$row) ApiResponse::error(404, 'not_found', 'Archived patient not found.');
+
+        $queries = [
+            'appointments' => "SELECT a.*, d.full_name AS dentist_name FROM appointments a LEFT JOIN users d ON d.user_id=a.dentist_id WHERE a.patient_id=? ORDER BY a.scheduled_date DESC,a.scheduled_time DESC",
+            'records' => "SELECT r.*, d.full_name AS dentist_name FROM treatment_records r LEFT JOIN users d ON d.user_id=r.dentist_id WHERE r.patient_id=? ORDER BY r.date_recorded DESC,r.record_id DESC",
+            'contracts' => "SELECT c.*, d.full_name AS dentist_name FROM braces_contracts c LEFT JOIN users d ON d.user_id=c.dentist_id WHERE c.patient_id=? ORDER BY c.contract_id DESC",
+            'payments' => "SELECT cp.* FROM contract_payments cp JOIN braces_contracts c ON c.contract_id=cp.contract_id WHERE c.patient_id=? ORDER BY cp.created_at DESC,cp.payment_id DESC",
+            'notifications' => "SELECT notification_id,title,message,type,created_at,read_at FROM user_notifications WHERE patient_id=? ORDER BY notification_id DESC",
+        ];
+        $details = ['patient' => $row];
+        foreach ($queries as $key => $sql) {
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute([$patientId]);
+            $details[$key] = $stmt->fetchAll();
+        }
+        return $details;
+    }
+
+    public static function restore(int $patientId): array
+    {
+        $pdo = Database::pdo();
+        $pdo->beginTransaction();
+        try {
+            $stmt = $pdo->prepare('SELECT user_id, archived_at FROM patients WHERE patient_id=? FOR UPDATE');
+            $stmt->execute([$patientId]);
+            $row = $stmt->fetch();
+            if (!$row) { $pdo->rollBack(); ApiResponse::error(404, 'not_found', 'Patient not found.'); }
+            if (!$row['archived_at']) { $pdo->rollBack(); ApiResponse::error(409, 'not_archived', 'Patient is already active.'); }
+
+            $pdo->prepare('UPDATE patients SET archived_at=NULL, archived_by=NULL, retention_note=NULL WHERE patient_id=?')->execute([$patientId]);
+            if ($row['user_id']) {
+                $pdo->prepare("UPDATE users SET is_active=1 WHERE user_id=? AND role='patient'")->execute([(int) $row['user_id']]);
+            }
+            PortalEvent::patient($patientId, 'Patient record restored', 'This patient record was reactivated.', 'info');
+            $pdo->commit();
+            return ['patient_id' => $patientId, 'status' => 'active'];
+        } catch (\Throwable $e) {
+            if ($pdo->inTransaction()) $pdo->rollBack();
+            throw $e;
+        }
+    }
+
     /**
      * Resolve patient_id from user_id, or respond with 404.
      */
     public static function resolvePatientId(int $userId): int
     {
         $stmt = Database::pdo()->prepare(
-            'SELECT patient_id FROM patients WHERE user_id = ? LIMIT 1'
+            'SELECT patient_id FROM patients WHERE user_id = ? AND archived_at IS NULL LIMIT 1'
         );
         $stmt->execute([$userId]);
         $patient = $stmt->fetch();

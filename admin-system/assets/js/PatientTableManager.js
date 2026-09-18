@@ -343,8 +343,8 @@ window.PatientTableManager = class PatientTableManager {
   _openDelete (patient) {
     this._deletingPatient = patient;
     if (!this._deleteModal.modal) return;
-    document.getElementById('deleteTitle').textContent = 'Delete this patient?';
-    document.getElementById('deleteText').textContent = `This will remove ${patient.name} and related appointments, contracts, records, payments, and notifications. This action can't be undone.`;
+    document.getElementById('deleteTitle').textContent = 'Archive this patient?';
+    document.getElementById('deleteText').textContent = `This will deactivate ${patient.name} and hide the profile from active patient lists. Clinical, appointment, contract, payment, and notification records are retained for audit.`;
     this._deleteModal.open(document.querySelector(`[data-action="delete"][data-id="${patient.id}"]`));
   }
 
@@ -365,7 +365,7 @@ window.PatientTableManager = class PatientTableManager {
       const deletedName = this._deletingPatient.name;
       this._deletingPatient = null;
       await this.load();
-      showToast(`${deletedName} deleted.`);
+      showToast(`${deletedName} archived.`);
     } catch (error) {
       showToast(error.message, 'error');
     } finally {

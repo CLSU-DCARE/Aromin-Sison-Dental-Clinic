@@ -64,6 +64,19 @@ function load(ctx, file) { vm.runInContext(fs.readFileSync(path.join(root, file)
   await assert.rejects(() => actions.run('approve', 'request', 1), /Unable to process/);
 
   c = context();
+  load(c, 'admin-system/assets/js/AppointmentActions.js');
+  let refreshedAfterApprove = false;
+  const approveActions = new c.AppointmentActions({
+    scheduler: {
+      getAppointment: () => ({ appointment_id: 12, patient_name: 'API Patient', service_type: 'Consultation', scheduled_date: '2026-10-20', scheduled_time: '09:00:00' }),
+      loadWeek: async () => { refreshedAfterApprove = true; }
+    }
+  });
+  c.ASDC.approveAppointment = async () => {};
+  await approveActions.handleGridClick({ target: { disabled: false, dataset: { appointmentId: '12', appointmentAction: 'approve' }, closest: selector => selector === '[data-appointment-action]' ? { disabled: false, dataset: { appointmentId: '12', appointmentAction: 'approve' } } : null } });
+  assert.equal(refreshedAfterApprove, true, 'Approving an existing appointment must refresh staff dashboards.');
+
+  c = context();
   load(c, 'patient-dashboard/assets/js/PatientAppointmentBooking.js');
   const slot = element(); slot.dataset.slot = '9:00 AM';
   c.document.querySelector = selector => selector === '.slot.selected' ? slot : null;

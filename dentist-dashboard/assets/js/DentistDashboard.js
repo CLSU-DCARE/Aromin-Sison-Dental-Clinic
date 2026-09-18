@@ -23,6 +23,8 @@ if (typeof window !== 'undefined') !window.ASDC && (window.ASDC = {});
     this.viewCrumb = document.getElementById('viewCrumb');
     this.recordsFilter = 'All';
     this.patientsFilter = 'All';
+    this.appointmentScheduler = null;
+    this.appointmentActions = null;
   }
 
   DentistDashboard.prototype.init = function(){
@@ -338,28 +340,42 @@ if (inboxEmpty) inboxEmpty.textContent = 'Loading notifications…';
 
   DentistDashboard.prototype._loadAppointments = function(){
     var self = this;
-    const weekInput = document.getElementById('dentistWeekStart');
-    weekInput?.addEventListener('change', () => { self.weekStart = weekInput.value; window.staffLiveSync.refetch(); });
+    this.appointmentScheduler = new AppointmentScheduler({
+      apiBase: '../backend/api/appointments',
+      onLoaded: state => {
+        if (state.error) return;
+        const week = ASDC.ScheduleView.week(state.start, state.appointments);
+        self._renderWeekGrid('dashWeekGrid', week);
+        self._renderQueue(ASDC.ScheduleView.queue(state.appointments));
+        const label = document.getElementById('dashWeekLabel');
+        if (label) label.textContent = week.label;
+      }
+    });
+    this.appointmentActions = new AppointmentActions({ scheduler: this.appointmentScheduler });
+    this.appointmentScheduler.init();
+    this.appointmentActions.init();
+    const apptGroup = document.querySelector('#view-appointments [aria-label="Filter schedule"]');
+    if (apptGroup) new ASDC.FilterChipGroup(apptGroup, label => self.appointmentScheduler.setMode(label));
+
     document.getElementById('addClinicalRecord')?.addEventListener('click', () => { if (self.snapshot) ASDC.openClinicalForm(self.snapshot); });
     document.getElementById('recordsBody')?.addEventListener('click', event => {
       const button = event.target.closest('[data-edit-record]');
       const record = self.snapshot?.records.find(r => Number(r.record_id) === Number(button?.dataset.editRecord));
       if (record) ASDC.openClinicalForm(self.snapshot, record);
     });
-    window.staffLiveSync = ASDC.startPortalSync({ start: () => self.weekStart || '', apply: data => {
+    window.staffLiveSync = ASDC.startPortalSync({ start: () => self.appointmentScheduler.state.start, apply: data => {
       self.snapshot = data;
-      if (weekInput) weekInput.value = data.week.week_start;
       self._contractsRaw = data.contracts;
       AdminState.records = data.records;
       self._applyPatients(); self._applyRecords();
       self.inbox.setItems(data.notifications);
+      self.appointmentScheduler.applySnapshot(data);
       const week = ASDC.ScheduleView.week(data.week.week_start, data.week.appointments);
-      self._renderWeekGrid('apptWeekGrid', week); self._renderWeekGrid('dashWeekGrid', week);
+      self._renderWeekGrid('dashWeekGrid', week);
       self._renderQueue(ASDC.ScheduleView.queue(data.week.appointments));
-      ['dashWeekLabel','apptWeekLabel'].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = week.label; });
+      ['dashWeekLabel'].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = week.label; });
       AdminState.dashboard.stats.forEach((s,i) => { s.num = i === 2 ? ContractFormat.peso(data.metrics[i]) : String(data.metrics[i]); });
       self._renderStats();
-      ASDC.renderDentistActions(document.getElementById('dentistAppointmentActions'), data);
     }});
   };
 

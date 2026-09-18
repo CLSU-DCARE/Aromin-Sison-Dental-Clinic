@@ -41,7 +41,9 @@ if ($fields) {
     \ASDC\ApiResponse::error(422, 'validation_failed', 'Please correct the highlighted fields.', $fields);
 }
 if (!is_string($_POST['note'] ?? '') || mb_strlen($_POST['note'] ?? '') > 255) \ASDC\ApiResponse::error(422, 'validation_failed', 'Payment note must be at most 255 characters.');
-if (!\ASDC\ContractService::activeContractForPatient($patientId)) \ASDC\ApiResponse::error(422, 'no_contract', 'No active contract is available for this payment.');
+$activeContract = \ASDC\Database::pdo()->prepare("SELECT 1 FROM braces_contracts WHERE patient_id = ? AND status = 'active' LIMIT 1");
+$activeContract->execute([$patientId]);
+if (!$activeContract->fetchColumn()) \ASDC\ApiResponse::error(422, 'no_contract', 'No active contract is available for this payment.');
 
 $receiptPath = \ASDC\ReceiptUploader::store($_FILES['receipt'] ?? null, $patientId);
 

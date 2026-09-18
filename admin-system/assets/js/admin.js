@@ -24,6 +24,7 @@ const views = {
   dashboard: { title: 'Dashboard', crumb: 'Overview' },
   patients: { title: 'Patient Management', crumb: 'Patients' },
   records: { title: 'Records & Protocols', crumb: 'Patients' },
+  archived: { title: 'Archived Patients', crumb: 'Patients' },
   appointments: { title: 'Appointment Scheduling', crumb: 'Scheduling' },
   braces: { title: 'Braces Contracts', crumb: 'Scheduling' },
   payments: { title: 'Payment Approvals', crumb: 'Operations' },
@@ -55,6 +56,7 @@ function switchView(view){
   const swap = () => {
     document.querySelectorAll('.view').forEach(el => el.classList.remove('active', 'view-leave'));
     target.classList.add('active');
+    if (view === 'archived') loadArchivedPatients();
     window.scrollTo({top:0, behavior:'smooth'});
     closeSidebar();
     announce('Showing ' + meta.title);
@@ -98,6 +100,131 @@ function setChipGroup(group, label){
 // ---------- Patient table (delegated to PatientTableManager) ----------
 const patientMgr = new PatientTableManager({ state: AdminState, onSwitchView: switchView });
 patientMgr.init();
+
+let archivedPatients = [];
+let archivedCurrent = null;
+
+async function loadArchivedPatients(){
+  const tbody = document.getElementById('archivedPatientsBody');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="5" class="empty-cell">Loading archived patients...</td></tr>';
+  try {
+    const data = await apiFetch('../backend/api/patients/archived.php', { cache: 'no-store' });
+    archivedPatients = Array.isArray(data.patients) ? data.patients : [];
+    renderArchivedPatients();
+  } catch (error) {
+    tbody.innerHTML = '<tr><td colspan="5" class="empty-cell">Unable to load archived patients.</td></tr>';
+    showToast(error.message, 'error');
+  }
+}
+
+function archivedName(patient){
+  return [patient.first_name, patient.last_name].filter(Boolean).join(' ').trim() || ('#P-' + patient.patient_id);
+}
+
+function renderArchivedPatients(){
+  const tbody = document.getElementById('archivedPatientsBody');
+  if (!tbody) return;
+  if (!archivedPatients.length) {
+    tbody.innerHTML = '<tr><td colspan="5" class="empty-cell">No archived patients.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = archivedPatients.map(patient => {
+    const name = archivedName(patient);
+    const retained = [
+      Number(patient.appointment_count || 0) + ' appt',
+      Number(patient.record_count || 0) + ' record',
+      Number(patient.contract_count || 0) + ' contract',
+      Number(patient.payment_count || 0) + ' payment',
+      Number(patient.notification_count || 0) + ' notice'
+    ].join(' · ');
+    return `<tr>
+      <td>${nameCell('', name, '#P-' + Number(patient.patient_id))}</td>
+      <td>${escapeHtml(patient.archived_at || '')}</td>
+      <td>${escapeHtml(retained)}</td>
+      <td>${escapeHtml(patient.archived_by_name || 'System')}</td>
+      <td><div class="row-actions">
+        <button class="btn btn-outline btn-sm" data-archive-view="${Number(patient.patient_id)}">View</button>
+        <button class="btn btn-gold btn-sm" data-archive-restore="${Number(patient.patient_id)}">Restore</button>
+      </div></td>
+    </tr>`;
+  }).join('');
+}
+
+function renderArchivedDetails(data){
+  const panel = document.getElementById('archivedDetailPanel');
+  const title = document.getElementById('archivedDetailTitle');
+  const body = document.getElementById('archivedDetailBody');
+  const restore = document.getElementById('archivedRestoreBtn');
+  if (!panel || !title || !body || !data.patient) return;
+  archivedCurrent = data.patient;
+  const name = archivedName(data.patient);
+  title.textContent = name + ' · #P-' + data.patient.patient_id;
+  if (restore) restore.dataset.patientId = data.patient.patient_id;
+  const groups = [
+    ['Appointments', data.appointments, item => `${item.scheduled_date} ${String(item.scheduled_time).slice(0,5)} · ${item.service_type} · ${item.status}`],
+    ['Treatment Records', data.records, item => `${item.date_recorded} · ${item.treatment_given || item.treatment_protocol || item.diagnosis || 'Clinical record'}`],
+    ['Braces Contracts', data.contracts, item => `#B-${item.contract_id} · ${item.status} · ${ContractFormat.peso(item.balance_amount || 0)} balance`],
+    ['Payments', data.payments, item => `${ContractFormat.peso(item.amount_paid || 0)} · ${item.status} · ${item.payment_date || item.created_at || ''}`],
+    ['Notifications', data.notifications, item => `${item.title} · ${item.created_at || ''}`]
+  ];
+  body.innerHTML = `<div class="detail-grid">
+    <div class="row"><span>Archived</span><span>${escapeHtml(data.patient.archived_at || '')}</span></div>
+    <div class="row"><span>Archived By</span><span>${escapeHtml(data.patient.archived_by_name || 'System')}</span></div>
+    <div class="row"><span>Retention</span><span>${escapeHtml(data.patient.retention_note || '')}</span></div>
+  </div>` + groups.map(([label, rows, format]) => {
+    rows = Array.isArray(rows) ? rows : [];
+    return `<h4>${escapeHtml(label)} (${rows.length})</h4>` +
+      (rows.length ? `<ul class="archive-detail-list">${rows.map(row => `<li>${escapeHtml(format(row))}</li>`).join('')}</ul>` : '<p class="empty-cell">None retained in this category.</p>');
+  }).join('');
+  panel.hidden = false;
+}
+
+async function openArchivedDetails(patientId){
+  try {
+    const data = await apiFetch('../backend/api/patients/archived.php?patient_id=' + encodeURIComponent(patientId), { cache: 'no-store' });
+    renderArchivedDetails(data);
+  } catch (error) {
+    showToast(error.message, 'error');
+  }
+}
+
+async function restoreArchivedPatient(patientId){
+  const patient = archivedPatients.find(p => Number(p.patient_id) === Number(patientId)) || archivedCurrent;
+  const confirmed = await ASDC.confirmAction({
+    title: 'Restore Patient',
+    message: 'Restore ' + archivedName(patient || { patient_id: patientId }) + ' to active patient lists?',
+    confirmLabel: 'Restore',
+    tone: 'gold'
+  });
+  if (!confirmed) return;
+  try {
+    await apiFetch('../backend/api/patients/archived.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'restore', patient_id: Number(patientId) })
+    });
+    document.getElementById('archivedDetailPanel').hidden = true;
+    archivedCurrent = null;
+    await loadArchivedPatients();
+    if (window.staffLiveSync) await window.staffLiveSync.refetch();
+    showToast('Patient restored.');
+  } catch (error) {
+    showToast(error.message, 'error');
+  }
+}
+
+document.getElementById('refreshArchivedBtn')?.addEventListener('click', loadArchivedPatients);
+document.getElementById('archivedPatientsBody')?.addEventListener('click', event => {
+  const view = event.target.closest('[data-archive-view]');
+  const restore = event.target.closest('[data-archive-restore]');
+  if (view) openArchivedDetails(view.dataset.archiveView);
+  if (restore) restoreArchivedPatient(restore.dataset.archiveRestore);
+});
+document.getElementById('archivedRestoreBtn')?.addEventListener('click', event => {
+  const patientId = event.currentTarget.dataset.patientId;
+  if (patientId) restoreArchivedPatient(patientId);
+});
 
 // =====================================================================
 // RECORDS TABLE: category filter + view details (delegated to RecordTableManager)
@@ -817,5 +944,6 @@ window.staffLiveSync = ASDC.startPortalSync({
     renderPromotions(AdminState.promotions);
     AdminState.inventory = data.inventory.map(i => inventoryMgr.normalize(i));
     inventoryMgr.apply();
+    if (document.getElementById('view-archived')?.classList.contains('active')) loadArchivedPatients();
   }
 });

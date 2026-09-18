@@ -35,23 +35,32 @@ class PaymentApprovalService
      */
     public static function submit(int $patientId, array $data, string $receiptPath): array
     {
-        $contract = ContractService::activeContractForPatient($patientId);
-        if (!$contract) {
-            ApiResponse::error(422, 'no_contract', 'You do not have an active braces contract to submit a payment for.');
-        }
-
         $method = self::METHOD_MAP[strtolower(trim($data['method'] ?? ''))] ?? 'other';
 
         $pdo = Database::pdo();
         $pdo->beginTransaction();
         try {
+        $contract = self::lockActiveContractForPatient($patientId);
+        if (!$contract) {
+            $pdo->rollBack();
+            ApiResponse::error(422, 'no_contract', 'You do not have an active braces contract to submit a payment for.');
+        }
+
+        $amount = (float) $data['amount'];
+        $pendingTotal = self::pendingTotal((int) $contract['contract_id']);
+        $availableBalance = max(0, (float) $contract['balance_amount'] - $pendingTotal);
+        if ($amount > $availableBalance) {
+            $pdo->rollBack();
+            ApiResponse::error(409, 'payment_exceeds_balance', 'This payment exceeds the remaining balance after pending submissions.');
+        }
+
         $stmt = $pdo->prepare(
             'INSERT INTO contract_payments
                 (contract_id, amount_paid, payment_date, payment_method, status, receipt_path, note, submitted_by)
              VALUES (?, ?, CURRENT_DATE(), ?, \'pending\', ?, ?, ?)'
         );
         $stmt->execute([
-            $contract['contract_id'], (float) $data['amount'], $method,
+            $contract['contract_id'], $amount, $method,
             $receiptPath, $data['note'] !== '' ? $data['note'] : null, $data['user_id'],
         ]);
 
@@ -96,6 +105,7 @@ class PaymentApprovalService
              FROM contract_payments cp
              JOIN braces_contracts c ON c.contract_id = cp.contract_id
              JOIN patients p ON p.patient_id = c.patient_id
+             WHERE p.archived_at IS NULL
              ORDER BY cp.created_at DESC, cp.payment_id DESC"
         );
         return array_map([self::class, 'present'], $stmt->fetchAll());
@@ -109,6 +119,7 @@ class PaymentApprovalService
              JOIN braces_contracts c ON c.contract_id = cp.contract_id
              JOIN patients p ON p.patient_id = c.patient_id
              WHERE cp.status = ?
+               AND p.archived_at IS NULL
              ORDER BY cp.created_at ASC, cp.payment_id ASC"
         );
         $stmt->execute([$status]);
@@ -137,6 +148,21 @@ class PaymentApprovalService
                 $pdo->rollBack();
                 if (!$row) ApiResponse::error(404, 'not_found', 'Payment submission not found.');
                 ApiResponse::error(409, 'already_reviewed', 'This submission was already reviewed.');
+            }
+            if ($approve) {
+                $contract = self::lockContract((int) $row['contract_id']);
+                if (!$contract || $contract['status'] !== 'active') {
+                    $pdo->rollBack();
+                    ApiResponse::error(409, 'inactive_contract', 'Payments can only be approved for active contracts.');
+                }
+
+                $amount = (float) $row['amount_paid'];
+                $pendingTotal = self::pendingTotal((int) $row['contract_id'], $paymentId);
+                $availableBalance = max(0, (float) $contract['balance_amount'] - $pendingTotal);
+                if ($amount > $availableBalance) {
+                    $pdo->rollBack();
+                    ApiResponse::error(409, 'payment_exceeds_balance', 'This payment exceeds the remaining balance after pending submissions.');
+                }
             }
             $status = $approve ? 'approved' : 'rejected';
             $orNumber = $approve ? 'OR-' . date('Ymd') . '-' . str_pad((string) $paymentId, 3, '0', STR_PAD_LEFT) : null;
@@ -167,6 +193,54 @@ class PaymentApprovalService
         $stmt->execute([$paymentId]);
         $row = $stmt->fetch();
         return $row ?: null;
+    }
+
+    private static function lockActiveContractForPatient(int $patientId): ?array
+    {
+        $stmt = Database::pdo()->prepare(
+            "SELECT * FROM braces_contracts
+             WHERE patient_id = ?
+               AND patient_id IN (SELECT patient_id FROM patients WHERE archived_at IS NULL)
+               AND status = 'active'
+             ORDER BY contract_id DESC
+             LIMIT 1
+             FOR UPDATE"
+        );
+        $stmt->execute([$patientId]);
+        $row = $stmt->fetch();
+        return $row ?: null;
+    }
+
+    private static function lockContract(int $contractId): ?array
+    {
+        $stmt = Database::pdo()->prepare(
+            'SELECT c.* FROM braces_contracts c
+              JOIN patients p ON p.patient_id=c.patient_id
+             WHERE c.contract_id = ? AND p.archived_at IS NULL
+             FOR UPDATE'
+        );
+        $stmt->execute([$contractId]);
+        $row = $stmt->fetch();
+        return $row ?: null;
+    }
+
+    private static function pendingTotal(int $contractId, ?int $excludePaymentId = null): float
+    {
+        $sql = "SELECT payment_id, amount_paid FROM contract_payments WHERE contract_id = ? AND status = 'pending'";
+        $params = [$contractId];
+        if ($excludePaymentId !== null) {
+            $sql .= ' AND payment_id <> ?';
+            $params[] = $excludePaymentId;
+        }
+        $sql .= ' FOR UPDATE';
+        $stmt = Database::pdo()->prepare($sql);
+        $stmt->execute($params);
+
+        $total = 0.0;
+        foreach ($stmt->fetchAll() as $row) {
+            $total += (float) $row['amount_paid'];
+        }
+        return $total;
     }
 
     private static function notifyPatient(int $contractId, string $templateKey, array $replacements): void
