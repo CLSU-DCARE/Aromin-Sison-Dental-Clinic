@@ -12,7 +12,7 @@
 <link rel="stylesheet" href="../shared/css/variables.css?v=4">
 <link rel="stylesheet" href="../shared/css/buttons.css?v=5">
 <link rel="stylesheet" href="../shared/css/panels.css?v=4">
-<link rel="stylesheet" href="assets/css/patient.css?v=23">
+<link rel="stylesheet" href="assets/css/patient.css?v=20260919-braces-contract">
 <link rel="stylesheet" href="../shared/css/dashboard-system.css?v=3">
 </head>
 <body>
@@ -58,13 +58,9 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h6"/></svg>
         <span class="nav-label">Treatment History</span>
       </button>
-      <button class="nav-item" data-view="braces" data-tooltip="Braces Progress" hidden>
+      <button class="nav-item" data-view="braces" data-tooltip="Braces Contract" hidden>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 13c0-4 2-8 8-8s8 4 8 8-3 8-8 8-8-4-8-8Z"/><path d="M8 13h8"/></svg>
-        <span class="nav-label">Braces Progress</span>
-      </button>
-      <button class="nav-item" data-view="contract" data-tooltip="My Contract" hidden>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12h6m-6 4h6M9 8h1"/><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
-        <span class="nav-label">My Contract</span>
+        <span class="nav-label">Braces Contract</span>
       </button>
       <button class="nav-item" data-view="billing" data-tooltip="Payment & Billing">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18"/><path d="M7 15h4"/></svg>
@@ -267,12 +263,13 @@
         </div>
       </section>
 
-      <!-- ===== BRACES PROGRESS ===== -->
+      <!-- ===== BRACES CONTRACT ===== -->
       <section class="view" id="view-braces">
         <div class="page-head">
-          <div><div class="eyebrow">Orthodontics</div><h1 class="serif view-title">Braces Treatment Progress</h1></div>
+          <div><div class="eyebrow">Orthodontics</div><h1 class="serif view-title">Braces Contract</h1></div>
+          <button class="btn btn-outline" id="downloadContractBtn">Download Contract PDF</button>
         </div>
-        <div class="panel panel-gap">
+        <div class="panel panel-gap braces-overview">
           <div class="progress-hero">
             <div class="ring-wrap">
               <svg width="140" height="140" viewBox="0 0 140 140">
@@ -290,20 +287,16 @@
               </div>
             </div>
           </div>
+          <div class="contract-progress">
+            <div class="progress-track"><div class="progress-fill" id="contractFill"></div></div>
+            <div class="contract-progress-meta"><span id="contractLeft">₱0.00 paid</span><span id="contractRight">0% Paid</span></div>
+          </div>
         </div>
+        <div class="contract-summary" id="contractSummary"></div>
         <div class="panel">
           <div class="panel-head"><h3>Treatment Stages</h3></div>
           <div class="stage-list" id="stageList"></div>
         </div>
-      </section>
-
-      <!-- ===== MY CONTRACT ===== -->
-      <section class="view" id="view-contract">
-        <div class="page-head">
-          <div><div class="eyebrow">Orthodontics</div><h1 class="serif view-title">My Braces Contract</h1></div>
-          <button class="btn btn-outline" id="downloadContractBtn">Download Contract PDF</button>
-        </div>
-        <div class="contract-summary" id="contractSummary"></div>
       </section>
 
       <!-- ===== PAYMENT & BILLING ===== -->
@@ -551,11 +544,11 @@
 <script src="assets/js/PatientAppointmentBooking.js?v=20260916-integration" defer></script>
 <script src="assets/js/PatientRescheduleModal.js?v=20260916-integration" defer></script>
 <script src="assets/js/PatientBracesProgress.js?v=20260916-integration" defer></script>
-<script src="assets/js/PatientContractView.js?v=20260918-billing" defer></script>
+<script src="assets/js/PatientContractView.js?v=20260919-braces-contract" defer></script>
 <script src="assets/js/PatientProfileEditor.js?v=20260916-integration" defer></script>
 <script src="assets/js/PatientPaymentSubmission.js?v=20260918-submit-proof" defer></script>
 <script src="assets/js/PatientLiveSync.js?v=20260916-integration" defer></script>
-<script src="assets/js/patient.js?v=20260918-billing" defer></script>
+<script src="assets/js/patient.js?v=20260919-braces-contract" defer></script>
 
 </body>
 </html>

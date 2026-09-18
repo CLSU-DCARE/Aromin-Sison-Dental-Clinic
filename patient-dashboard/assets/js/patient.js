@@ -7,7 +7,6 @@ let appointmentsLoaded = false;
 
 const PatientDashboardVisibility = {
   braces: false,
-  contract: false,
   billing: true,
   balance: false
 };
@@ -44,11 +43,7 @@ const views = {
     crumb: 'Treatment'
   },
   braces: {
-    title: 'Braces Treatment Progress',
-    crumb: 'Treatment'
-  },
-  contract: {
-    title: 'My Braces Contract',
+    title: 'Braces Contract',
     crumb: 'Treatment'
   },
   billing: {
@@ -134,13 +129,13 @@ function switchView(view) {
 
     closeSidebar();
 
-    if (view === 'contract' || view === 'braces' || view === 'billing') {
+    if (view === 'braces' || view === 'billing') {
       // Pick up any changes made on another dashboard (e.g. the
       // receptionist approved a payment, or the dentist updated progress)
       // since this page loaded, instead of only refreshing on a full
       // reload. Goes through the real endpoint first (same as the initial
       // page load) — loadPatientBraces() already re-renders both the
-      // contract and braces-progress views once it resolves, so nothing
+      // braces contract view once it resolves, so nothing
       // else needs to happen here.
       loadPatientBraces();
     }
@@ -1069,11 +1064,6 @@ function applyPatientFeatureVisibility() {
   );
 
   setPatientViewVisibility(
-    'contract',
-    PatientDashboardVisibility.contract
-  );
-
-  setPatientViewVisibility(
     'billing',
     true
   );
@@ -1145,8 +1135,7 @@ function applyPatientSnapshot(data, changed) {
   PatientState.contract = braces.contract;
   PatientState.treatments = data.treatments;
   appointmentsLoaded = true;
-  PatientDashboardVisibility.braces = braces.has_braces_treatment === true;
-  PatientDashboardVisibility.contract = braces.has_contract === true;
+  PatientDashboardVisibility.braces = braces.has_braces_treatment === true || braces.has_contract === true;
   PatientDashboardVisibility.billing = true;
   PatientDashboardVisibility.balance = braces.has_outstanding_balance === true;
   setDashboardStat('Braces Treatment Progress', braces.braces_progress);
@@ -1196,8 +1185,7 @@ function applyPatientSnapshot(data, changed) {
   renderContract(braces.contract);
   paymentSubmission.renderSubmissions(data.submissions);
   const active = document.querySelector('.view.active');
-  if ((active?.id === 'view-braces' && !PatientDashboardVisibility.braces) ||
-      (active?.id === 'view-contract' && !PatientDashboardVisibility.contract)) switchView('dashboard');
+  if (active?.id === 'view-braces' && !PatientDashboardVisibility.braces) switchView('dashboard');
 }
 
 const patientLiveSync = new PatientLiveSync({

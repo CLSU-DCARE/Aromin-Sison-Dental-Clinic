@@ -20,10 +20,14 @@ window.PatientContractView = class PatientContractView {
   }
 
   render (contract) {
+    const downloadButton = document.getElementById('downloadContractBtn');
+    if (downloadButton) downloadButton.hidden = !contract.active;
+
     // Summary boxes
     const summary = document.getElementById('contractSummary');
     if (summary) {
       const contractOnly = contract.summary.filter(box => !/amount|balance/i.test(box.l || ''));
+      summary.hidden = contractOnly.length === 0;
       summary.innerHTML = contractOnly.map(box =>
         `<div class="box"><div class="v">${box.v}</div><div class="l">${box.l}</div></div>`
       ).join('');
