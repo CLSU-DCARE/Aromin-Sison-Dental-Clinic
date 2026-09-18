@@ -1,5 +1,5 @@
-/**
- * PatientPaymentSubmission – Payment receipt upload and submission logic.
+﻿/**
+ * PatientPaymentSubmission - Payment receipt upload and submission logic.
  *
  * Submits requests to the authenticated backend.
  *
@@ -65,7 +65,7 @@ window.PatientPaymentSubmission = class PatientPaymentSubmission {
     list.innerHTML = submissions.map(sub => {
       const cls = sub.status === 'approved' ? 'green' : sub.status === 'rejected' ? 'red' : 'amber';
       const txt = sub.status === 'approved' ? 'Approved' : sub.status === 'rejected' ? 'Rejected' : 'Pending Confirmation';
-      return `<div class="pay-sub"><span class="ps-amt">${escapeHtml(sub.amount)}</span><span class="ps-meta"><b>Submitted ${escapeHtml(sub.submittedAt)}</b> · ${escapeHtml(sub.method)}${sub.orNumber ? ' · OR ' + escapeHtml(sub.orNumber) : ''}</span><span class="tag tag-${cls}">${txt}</span></div>`;
+      return `<div class="pay-sub"><span class="ps-amt">${escapeHtml(sub.amount)}</span><span class="ps-meta"><b>Submitted ${escapeHtml(sub.submittedAt)}</b> - ${escapeHtml(sub.method)}${sub.orNumber ? ' - OR ' + escapeHtml(sub.orNumber) : ''}</span><span class="tag tag-${cls}">${txt}</span></div>`;
     }).join('');
   }
 
@@ -98,7 +98,7 @@ window.PatientPaymentSubmission = class PatientPaymentSubmission {
         drop?.classList.add('has-file');
         if (txt) txt.textContent = 'Receipt ready: ' + result.name;
         this._showPreview({ preview, previewImg, previewFallback, previewName }, result);
-        showToast('Receipt attached — submit when ready.');
+        showToast('Receipt attached - submit when ready.');
       } catch (error) {
         showToast(error.message, 'error');
         input.value = '';
@@ -167,7 +167,7 @@ window.PatientPaymentSubmission = class PatientPaymentSubmission {
 
       if (this.onSubmitted) await this.onSubmitted();
       else await this.render();
-      showToast('Payment submitted — awaiting confirmation.');
+      showToast('Payment submitted - awaiting confirmation.');
     });
   }
 

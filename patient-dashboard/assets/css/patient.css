@@ -538,6 +538,29 @@ tbody tr:hover{background:rgba(241,237,227,0.5);}
   overflow-wrap:anywhere;
 }
 .contract-summary .box .l{font-size:12px;color:rgba(27,27,25,0.65);margin-top:8px;}
+.contract-summary .box .s{
+  margin-top:8px;
+  max-width:260px;
+  font-size:12.5px;
+  line-height:1.45;
+  color:rgba(27,27,25,0.66);
+}
+#billingSummary{
+  grid-template-columns:repeat(5,minmax(0,1fr));
+  gap:12px;
+  align-items:stretch;
+}
+#billingSummary .box{
+  min-height:136px;
+  padding:20px 16px;
+}
+#billingSummary .box .v{
+  font-size:clamp(21px,1.9vw,28px);
+}
+#billingSummary .box .s{
+  max-width:210px;
+  font-size:12px;
+}
 .progress-track{width:100%;height:9px;border-radius:var(--r-pill);background:var(--ivory-2);overflow:hidden;}
 .progress-fill{height:100%;background:var(--gold);border-radius:var(--r-pill);}
 
@@ -713,12 +736,16 @@ body.modal-open{overflow:hidden;}
 .modal-actions{display:flex;gap:12px;}
 .modal-actions .btn{flex:1;}
 
+@media (max-width:1280px){
+  #billingSummary{grid-template-columns:repeat(3,minmax(0,1fr));}
+}
 @media (max-width:1000px){
   .stat-grid{grid-template-columns:1fr 1fr;}
   .grid-2{grid-template-columns:1fr;}
   .profile-grid{grid-template-columns:1fr;}
 .book-grid{grid-template-columns:1fr;}
   .contract-summary{grid-template-columns:1fr;}
+  #billingSummary{grid-template-columns:repeat(2,minmax(0,1fr));}
   .progress-hero{align-items:flex-start;}
   .promo-grid{grid-template-columns:repeat(2,1fr);}
   .promo-viewer{width:calc(100vw - 18px);max-height:calc(100dvh - 18px);}
@@ -770,6 +797,7 @@ body.sidebar-open{overflow:hidden;}
   .contract-progress{margin:0 24px 24px;}
   .contract-progress-meta{flex-direction:column;gap:4px;}
   .contract-summary .box{min-height:108px;padding:20px;}
+  #billingSummary{grid-template-columns:1fr;}
   .sidebar-toggle{width:38px;height:38px;flex-shrink:0;}
   .sidebar-toggle svg{width:18px;height:18px;}
   /* Every action stays a compact, equally-sized icon on one row instead

@@ -74,7 +74,7 @@ class BracesService
 
         // Contract
         $stmt = $pdo->prepare(
-            "SELECT c.contract_id, c.total_amount, c.balance_amount, c.duration_months,
+            "SELECT c.contract_id, c.total_amount, c.balance_amount, c.monthly_payment, c.duration_months,
                     c.start_date, c.estimated_completion_date, c.status,
                     c.dentist_id, c.current_stage, c.progress_pct, c.progress_note,
                     c.next_note, c.progress_updated_at,
@@ -197,6 +197,7 @@ class BracesService
 
         if ($contractRow) {
             $total  = max(0, (float) $contractRow['total_amount']);
+            $monthly = max(0, (float) ($contractRow['monthly_payment'] ?? 0));
             $paid   = max(0, $total - $balance);
             $pct    = $total > 0 ? (int) round(($paid / $total) * 100) : 0;
             $pct    = min(100, max(0, $pct));
@@ -223,16 +224,32 @@ class BracesService
             }
             $approvedCount = count(array_filter($payments, fn($pay) => ($pay['status'] ?? '') === 'approved'));
             $dueDate = self::nextDueDate($contractRow['start_date'], (int) $contractRow['duration_months'], $approvedCount, $balance);
+            $duration = max(1, (int) $contractRow['duration_months']);
+            $installmentNumber = $balance <= 0 ? $duration : min($approvedCount + 1, $duration);
+            $nextPaymentAmount = $balance <= 0 ? 0 : min($monthly > 0 ? $monthly : $balance, $balance);
+            $dueDetail = $balance <= 0
+                ? 'Contract fully paid'
+                : 'Next installment: ' . self::fmtMoney($nextPaymentAmount) . ' - Month ' . $installmentNumber . ' of ' . $duration;
 
             $summary = [
                 ['v' => self::fmtMoney($total), 'l' => 'Total Contract Amount'],
+                ['v' => self::fmtMoney($monthly), 'l' => 'Monthly Payment'],
+                ['v' => $duration . ' months', 'l' => 'Payment Term'],
                 ['v' => self::fmtMoney($balance), 'l' => 'Remaining Balance'],
-                ['v' => $dueDate, 'l' => 'Due Date'],
+                ['v' => $dueDate, 'l' => 'Due Date', 's' => $dueDetail],
             ];
 
             $contract = [
                 'active'  => true,
                 'summary' => $summary,
+                'monthlyPayment' => self::fmtMoney($monthly),
+                'monthlyPaymentRaw' => $monthly,
+                'nextPaymentAmount' => self::fmtMoney($nextPaymentAmount),
+                'nextPaymentAmountRaw' => $nextPaymentAmount,
+                'paymentTerm' => $duration,
+                'installmentNumber' => $installmentNumber,
+                'dueDate' => $dueDate,
+                'dueDetail' => $dueDetail,
                 'progress' => [
                     'width' => $pct . '%',
                     'left'  => self::fmtMoney($paid) . ' paid',
