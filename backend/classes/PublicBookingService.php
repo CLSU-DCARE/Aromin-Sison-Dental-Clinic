@@ -46,8 +46,8 @@ class PublicBookingService
         if (strlen($values['contact_number']) > 20 || !preg_match('/^[0-9+() .-]{7,20}$/', $values['contact_number'])) {
             $fields['contact_number'] = 'Enter a valid contact number.';
         }
-        if (strlen($values['service_type']) > 150) {
-            $fields['service_type'] = 'Service must be 150 characters or fewer.';
+        if (!ServiceCatalog::isAppointmentService($values['service_type'])) {
+            $fields['service_type'] = 'Please choose a valid service.';
         }
         if ($email !== '' && (strlen($email) > 150 || !filter_var($email, FILTER_VALIDATE_EMAIL))) {
             $fields['email'] = 'Enter a valid email address.';

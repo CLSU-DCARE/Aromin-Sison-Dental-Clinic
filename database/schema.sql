@@ -21,11 +21,11 @@ CREATE TABLE users (
     is_active BOOLEAN DEFAULT TRUE
 );
 
--- Seed active dentist accounts used by appointment assignment and dentist portal login.
--- Default password for both seeded dentist accounts: Dentist@ASDC2026!
+-- Seed active dentist accounts used by appointment assignment.
+-- Password hashes are for unknown random passwords; set real dentist passwords through reset/bootstrap flow.
 INSERT INTO users (role, email, password_hash, full_name, is_active) VALUES
-('dentist', 'arsenia.aromin@arominsison.local', '$2y$12$LP1wcaOrZzlakg1/JOFvi.yLsoI.CWE7DZNViLrBBiaMThjaCqGKy', 'Dr. Arsenia Aromin', 1),
-('dentist', 'kathrine.sison@arominsison.local', '$2y$12$LP1wcaOrZzlakg1/JOFvi.yLsoI.CWE7DZNViLrBBiaMThjaCqGKy', 'Dr. Kathrine Sison', 1)
+('dentist', 'arsenia.aromin@arominsison.local', '$2y$10$aVmuy8aQ9w1VbY91LlcD4ONT9I9IZ2YQ694XLk.qgR3ePUthErE1S', 'Dr. Arsenia Aromin', 1),
+('dentist', 'kathrine.sison@arominsison.local', '$2y$10$jOr5I6WA7hTzNFnn4KaHBOfJ2UQc7t4k0/zvDY.jRczfI3z9x05Ua', 'Dr. Kathrine Sison', 1)
 ON DUPLICATE KEY UPDATE
     role = VALUES(role),
     password_hash = VALUES(password_hash),
@@ -45,6 +45,21 @@ CREATE TABLE password_reset_tokens (
     INDEX idx_password_reset_expiry (expires_at),
     FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
 );
+
+CREATE TABLE schema_migrations (
+    migration VARCHAR(191) NOT NULL PRIMARY KEY,
+    applied_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE rate_limits (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    identifier VARCHAR(191) NOT NULL,
+    attempts INT NOT NULL DEFAULT 0,
+    lockout_until DATETIME NULL,
+    window_started_at DATETIME NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_rate_limits_identifier (identifier)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ---------- PATIENTS ----------
 -- Extends users where role = 'patient'; also allows walk-in patients with no login

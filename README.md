@@ -158,7 +158,9 @@ Use your actual local MariaDB port. Some XAMPP installs use `3307`; many XAMPP/L
 1. Install [XAMPP](https://www.apachefriends.org/), start **Apache** + **MySQL** from the control panel
 2. Copy the whole `asdc_v2/` folder into `C:\xampp\htdocs\`
 3. Open `http://localhost/phpmyadmin`, create a database, import `database/schema.sql`
-4. Test: `http://localhost/asdc_v2/backend/api/patients/list.php`
+4. Apply migrations: `php database/migrate.php`
+5. Create a receptionist account with `database/bootstrap_receptionist.php`
+6. Test: `http://localhost/asdc_v2/backend/api/patients/list.php`
 
 **Laragon:**
 1. Install [Laragon](https://laragon.org/), click **Start All**
@@ -169,6 +171,25 @@ Use your actual local MariaDB port. Some XAMPP installs use `3307`; many XAMPP/L
 Either way you should get a JSON response (empty array is fine until you add data).
 
 Database credentials are read by `backend/classes/Database.php` from server environment variables first, then `.env.local`, then `.env`. The repository only includes `.env.example`, which is a template and must not contain shared or production secrets.
+
+### Migrations and staff bootstrap
+
+Use the migration runner after importing `database/schema.sql`, after pulling new backend/database changes, or when setting up a teammate's device:
+
+```sh
+php database/migrate.php
+```
+
+The runner records applied files in `schema_migrations` and skips objects that already exist on older local databases.
+
+Create or update the receptionist bootstrap account with environment variables. Do not commit real staff passwords.
+
+```sh
+set ASDC_BOOTSTRAP_RECEPTIONIST_EMAIL=receptionist@example.test
+set ASDC_BOOTSTRAP_RECEPTIONIST_PASSWORD=Choose-A-Unique-Password
+set ASDC_BOOTSTRAP_RECEPTIONIST_NAME=Clinic Receptionist
+php database/bootstrap_receptionist.php
+```
 
 ### Future shared development database
 
@@ -188,7 +209,7 @@ To migrate the current `aromin_sison_dental` development data safely:
 2. Export schema and data from the current source database using phpMyAdmin or `mysqldump`.
 3. Create the shared development database and a least-privilege app user.
 4. Import the dump into the shared database.
-5. Run any pending migrations, such as files in `database/migrations/`.
+5. Run pending migrations with `php database/migrate.php`.
 6. Give each developer their own `.env.local` values for the shared database.
 7. Keep a backup dump from before and after migration.
 
@@ -205,7 +226,7 @@ For endpoints that require a logged-in user, also include the auth helper:
 ```php
 require_once __DIR__ . '/../../config/auth.php';
 require_login();                    // any authenticated user
-require_role('admin', 'staff');     // restrict to specific roles
+require_role('receptionist', 'dentist');  // restrict to specific roles
 ```
 This starts a hardened session (HttpOnly + SameSite cookie), enforces an idle timeout,
 and centralizes 401/403 JSON responses so every endpoint returns the same shape.
@@ -293,11 +314,9 @@ variables may not be visible to the service.
 
 ## Dashboard data
 
-Appointments, contracts, patients, and payments use authenticated PHP endpoints. Request failures are shown as errors; no browser data is used to fabricate successful actions or records. Old browser payment, contract, and profile data is no longer read.
+Appointments, contracts, patients, payments, promotions, treatment records, inventory, attendance reports, profile editing, notifications, and patient dashboard sync use PHP endpoints backed by MySQL. Request failures are shown as errors; browser-only demo data is not used to fabricate successful actions or records.
 
-Treatment record editing, inventory, promotions, attendance reports, profile editing, and notification inboxes remain unavailable until their server implementations are provided. Unsupported write controls are disabled or explain that the action is unavailable.
-
-Test-account seed scripts have been removed. Existing database records are unchanged. Integration tests retain isolated fixtures.
+Promotions can be managed by receptionists from the admin dashboard and are displayed in the patient portal and public homepage. Uploaded promotion images are stored under `backend/uploads/promotions`; scripts and directory listings are blocked while image reads remain web-viewable.
 
 ## Next steps
 
@@ -307,10 +326,10 @@ The patient dashboard reads a patient-scoped server snapshot every three seconds
 
 During connection failures, the last successful data stays visible with a retry notice. Retries back off to at most 30 seconds. This is polling, so delivery takes roughly three seconds plus request time under a healthy connection.
 
-Apply the required contract/payment schema updates after importing the base schema:
+Apply database migrations after importing the base schema:
 
 ```sh
-php database/migrate_patient_sync.php
+php database/migrate.php
 ```
 
 Verification:
@@ -325,6 +344,6 @@ The integration test uses local Apache and MySQL, exercises separate receptionis
 
 ### Remaining setup
 
-1. Install XAMPP, import `database/schema.sql`, confirm `backend/api/patients/list.php` returns JSON
-2. Configure email delivery and clinic staff accounts.
-3. Implement the remaining unavailable modules with authenticated server endpoints.
+1. Install XAMPP, import `database/schema.sql`, run `php database/migrate.php`, and confirm `backend/api/patients/list.php` returns JSON.
+2. Configure email delivery and create the receptionist bootstrap account.
+3. Put all group members on one shared MySQL database if appointments and promotions must appear on every device.
