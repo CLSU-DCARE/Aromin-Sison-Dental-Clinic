@@ -134,26 +134,6 @@ of `schema.sql`).
 
 Either works: both give you Apache + MySQL + PHP locally, no hosting needed for your defense demo.
 
-### Database configuration
-
-Each developer should keep their own database settings in an ignored local environment file:
-
-```sh
-copy .env.example .env.local
-```
-
-Then edit `.env.local` for your machine:
-
-```ini
-ASDC_DB_HOST=127.0.0.1
-ASDC_DB_PORT=
-ASDC_DB_NAME=aromin_sison_dental
-ASDC_DB_USER=root
-ASDC_DB_PASS=
-```
-
-Use your actual local MariaDB port. Some XAMPP installs use `3307`; many XAMPP/Laragon installs use `3306`. Do not commit `.env.local` or real database passwords. If `ASDC_DB_PORT` is left blank, PHP uses the MySQL client default port.
-
 **XAMPP:**
 1. Install [XAMPP](https://www.apachefriends.org/), start **Apache** + **MySQL** from the control panel
 2. Copy the whole `asdc_v2/` folder into `C:\xampp\htdocs\`
