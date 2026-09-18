@@ -76,12 +76,23 @@
         if (el) el.textContent = value;
       };
 
+      const setAvatar = (id) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.classList.toggle('has-photo', Boolean(user.profile_image_url));
+        if (user.profile_image_url) {
+          el.innerHTML = `<img src="${this._escape(user.profile_image_url)}" alt="" loading="lazy">`;
+        } else {
+          el.textContent = initials || '?';
+        }
+      };
+
       [
         'sideFootAvatar',
         'chipAvatar',
         'menuAvatar',
         'profileAvatar',
-      ].forEach((id) => set(id, initials));
+      ].forEach((id) => setAvatar(id));
       ['sideFootName', 'menuName', 'profileName'].forEach((id) =>
         set(id, user.full_name)
       );
@@ -96,6 +107,60 @@
 
       const chip = document.getElementById('userChip');
       if (chip) chip.title = user.full_name + ': ' + roleLabel;
+      this._wireProfilePicture(user);
+    }
+
+    _wireProfilePicture(user) {
+      const menu = document.getElementById('userMenu');
+      if (!menu || menu.dataset.profilePictureReady === '1') return;
+      menu.dataset.profilePictureReady = '1';
+
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*';
+      input.hidden = true;
+      input.id = 'profilePictureInput';
+
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'user-menu-item';
+      button.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><span>Change profile picture</span>';
+      button.addEventListener('click', () => input.click());
+
+      input.addEventListener('change', async () => {
+        const file = input.files && input.files[0];
+        if (!file) return;
+        const form = new FormData();
+        form.append('profile_picture', file);
+        button.disabled = true;
+        try {
+          const data = await window.apiFetch('../backend/api/auth/profile-picture.php', {
+            method: 'POST',
+            body: form,
+          });
+          window.ASDCAuthUser = Object.assign({}, window.ASDCAuthUser, data);
+          this._populateUserUI(window.ASDCAuthUser);
+          if (window.showToast) window.showToast('Profile picture updated.');
+        } catch (error) {
+          if (window.showToast) window.showToast(error.message || 'Unable to update profile picture.', 'error');
+        } finally {
+          button.disabled = false;
+          input.value = '';
+        }
+      });
+
+      const signOut = document.getElementById('menuSignOut');
+      menu.insertBefore(input, signOut || null);
+      menu.insertBefore(button, signOut || null);
+    }
+
+    _escape(value) {
+      return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
     }
 
     _checkSession() {

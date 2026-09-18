@@ -12,8 +12,8 @@
 <link rel="stylesheet" href="../shared/css/variables.css?v=4">
 <link rel="stylesheet" href="../shared/css/buttons.css?v=5">
 <link rel="stylesheet" href="../shared/css/panels.css?v=4">
-<link rel="stylesheet" href="assets/css/patient.css?v=17">
-<link rel="stylesheet" href="../shared/css/dashboard-system.css?v=2">
+<link rel="stylesheet" href="assets/css/patient.css?v=23">
+<link rel="stylesheet" href="../shared/css/dashboard-system.css?v=3">
 </head>
 <body>
 
@@ -65,6 +65,10 @@
       <button class="nav-item" data-view="contract" data-tooltip="My Contract" hidden>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12h6m-6 4h6M9 8h1"/><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
         <span class="nav-label">My Contract</span>
+      </button>
+      <button class="nav-item" data-view="billing" data-tooltip="Payment & Billing">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18"/><path d="M7 15h4"/></svg>
+        <span class="nav-label">Payment & Billing</span>
       </button>
 
       <div class="nav-group-label">Clinic</div>
@@ -300,24 +304,34 @@
           <button class="btn btn-outline" id="downloadContractBtn">Download Contract PDF</button>
         </div>
         <div class="contract-summary" id="contractSummary"></div>
-        <div class="panel panel-gap">
-          <div class="panel-head"><h3>Contract Progress</h3></div>
-          <div class="panel-pad">
-            <div class="progress-track"><div class="progress-fill" id="contractFill" style="width:0%;"></div></div>
-            <div class="field-row">
-              <span id="contractLeft">No active contract</span><span id="contractRight">0% Paid</span>
+      </section>
+
+      <!-- ===== PAYMENT & BILLING ===== -->
+      <section class="view" id="view-billing">
+        <div class="page-head">
+          <div><div class="eyebrow">Billing</div><h1 class="serif view-title">Payment and Billing</h1><p>Submit proof of payment for staff confirmation.</p></div>
+        </div>
+        <div class="contract-summary" id="billingSummary"></div>
+        <div class="billing-grid">
+          <div class="panel panel-gap">
+            <div class="panel-head"><h3>GCash Payment Details</h3></div>
+            <div class="billing-details">
+              <div class="billing-row">
+                <span>Account Name</span>
+                <strong>KA.....E AN-E S.</strong>
+              </div>
+              <div class="billing-row">
+                <span>GCash Number</span>
+                <strong>+63 977 358 9025</strong>
+              </div>
+              <p class="billing-note">After completing your payment, upload your proof of payment. Make sure the amount and reference details are visible.</p>
             </div>
           </div>
-        </div>
 
-        <div class="panel panel-gap">
-          <div class="panel-head"><h3>Make a Payment</h3></div>
-          <div class="pay-layout">
-            <div class="pay-qr">
-              <p>Contact the clinic for payment instructions. Upload the receipt for a payment you have already made.</p>
-            </div>
-            <div class="pay-form">
-              <div class="form-group"><label for="payMethod">Payment method</label><select id="payMethod"><option value="cash">Cash</option><option value="gcash">GCash</option><option value="bank transfer">Bank transfer</option><option value="card">Card</option></select></div>
+          <div class="panel panel-gap">
+            <div class="panel-head"><h3>Submit Proof of Payment</h3></div>
+            <div class="pay-form panel-pad">
+              <div class="form-group"><label for="payMethod">Payment method</label><select id="payMethod"><option value="gcash">GCash</option><option value="bank transfer">Bank transfer</option><option value="cash">Cash</option><option value="card">Card</option></select></div>
               <div class="form-group">
                 <label for="payAmount">Amount</label>
                 <input type="text" id="payAmount" inputmode="numeric" placeholder="Enter amount paid">
@@ -329,11 +343,17 @@
                   <span class="upload-ic">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                   </span>
-                  <span class="upload-txt" id="payDropTxt">Click to upload a screenshot of your payment</span>
+                  <span class="upload-txt" id="payDropTxt">Click to submit proof of payment</span>
                 </label>
                 <div class="upload-preview" id="payPreview" hidden>
-                  <img id="payPreviewImg" alt="Receipt preview">
-                  <button type="button" class="btn btn-outline btn-sm" id="payRemoveReceipt">Remove</button>
+                  <div class="receipt-thumb">
+                    <img id="payPreviewImg" alt="Receipt preview" hidden>
+                    <span id="payPreviewFallback">Preview ready</span>
+                  </div>
+                  <div class="receipt-preview-meta">
+                    <span id="payPreviewName">Receipt attached</span>
+                    <button type="button" class="btn btn-outline btn-sm" id="payRemoveReceipt">Remove</button>
+                  </div>
                 </div>
               </div>
               <div class="form-group">
@@ -342,9 +362,9 @@
               </div>
               <button type="button" class="btn btn-gold btn-block" id="submitPaymentBtn">
                 <span class="btn-spinner" aria-hidden="true"></span>
-                <span class="btn-label">Submit for Admin Confirmation</span>
+                <span class="btn-label">Submit</span>
               </button>
-              <p class="pay-hint">Your payment stays <b>Pending</b> until our staff confirms your receipt. You'll see it here once approved.</p>
+              <p class="pay-hint">Your payment stays <b>Pending</b> until our staff confirms your receipt.</p>
             </div>
           </div>
         </div>
@@ -359,7 +379,7 @@
           <div class="panel-head"><h3>Payment History</h3></div>
           <div class="table-scroll"><table>
             <thead><tr><th>Date</th><th>Amount</th><th>Method</th><th>OR Number</th></tr></thead>
-            <tbody id="paymentsBody"></tbody>
+            <tbody id="billingPaymentsBody"></tbody>
           </table></div>
         </div>
       </section>
@@ -519,7 +539,7 @@
 <script src="../shared/js/core/api.js?v=20260916-integration" defer></script>
 <script src="../shared/js/core/ViewRouter.js?v=20260916-integration" defer></script>
 <script src="../shared/js/core/FilterChipGroup.js?v=20260916-integration" defer></script>
-<script src="../shared/js/core/SessionGuard.js?v=20260916-integration" defer></script>
+<script src="../shared/js/core/SessionGuard.js?v=20260918-profile-photo" defer></script>
 <script src="../shared/js/core/NotificationPanel.js?v=20260916-integration" defer></script>
 <script src="../shared/js/core/LogoutManager.js?v=20260916-integration" defer></script>
 <script src="../shared/js/core/FullscreenToggle.js?v=20260916-integration" defer></script>
@@ -531,11 +551,11 @@
 <script src="assets/js/PatientAppointmentBooking.js?v=20260916-integration" defer></script>
 <script src="assets/js/PatientRescheduleModal.js?v=20260916-integration" defer></script>
 <script src="assets/js/PatientBracesProgress.js?v=20260916-integration" defer></script>
-<script src="assets/js/PatientContractView.js?v=20260916-integration" defer></script>
+<script src="assets/js/PatientContractView.js?v=20260918-billing" defer></script>
 <script src="assets/js/PatientProfileEditor.js?v=20260916-integration" defer></script>
-<script src="assets/js/PatientPaymentSubmission.js?v=20260916-integration" defer></script>
+<script src="assets/js/PatientPaymentSubmission.js?v=20260918-submit-proof" defer></script>
 <script src="assets/js/PatientLiveSync.js?v=20260916-integration" defer></script>
-<script src="assets/js/patient.js?v=20260917-promotion-admin-cards" defer></script>
+<script src="assets/js/patient.js?v=20260918-billing" defer></script>
 
 </body>
 </html>

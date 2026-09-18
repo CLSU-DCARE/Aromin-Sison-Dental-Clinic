@@ -79,6 +79,8 @@ window.PatientPaymentSubmission = class PatientPaymentSubmission {
     const txt   = document.getElementById('payDropTxt');
     const preview      = document.getElementById('payPreview');
     const previewImg   = document.getElementById('payPreviewImg');
+    const previewFallback = document.getElementById('payPreviewFallback');
+    const previewName = document.getElementById('payPreviewName');
     const removeBtn    = document.getElementById('payRemoveReceipt');
     if (!input) return;
 
@@ -95,8 +97,7 @@ window.PatientPaymentSubmission = class PatientPaymentSubmission {
         this._receiptFile = file;
         drop?.classList.add('has-file');
         if (txt) txt.textContent = 'Receipt ready: ' + result.name;
-        if (preview) preview.hidden = false;
-        if (previewImg) previewImg.src = result.dataUrl;
+        this._showPreview({ preview, previewImg, previewFallback, previewName }, result);
         showToast('Receipt attached — submit when ready.');
       } catch (error) {
         showToast(error.message, 'error');
@@ -109,9 +110,8 @@ window.PatientPaymentSubmission = class PatientPaymentSubmission {
       this._receiptFile = null;
       input.value = '';
       drop?.classList.remove('has-file');
-      if (txt) txt.textContent = 'Click to upload a screenshot of your payment';
-      if (preview) preview.hidden = true;
-      if (previewImg) previewImg.src = '';
+      if (txt) txt.textContent = 'Click to submit proof of payment';
+      this._resetPreview({ preview, previewImg, previewFallback, previewName });
     });
   }
 
@@ -153,9 +153,13 @@ window.PatientPaymentSubmission = class PatientPaymentSubmission {
       if (input) input.value = '';
       document.getElementById('payDrop')?.classList.remove('has-file');
       const txt = document.getElementById('payDropTxt');
-      if (txt) txt.textContent = 'Click to upload a screenshot of your payment';
-      document.getElementById('payPreview').hidden = true;
-      document.getElementById('payPreviewImg').src = '';
+      if (txt) txt.textContent = 'Click to submit proof of payment';
+      this._resetPreview({
+        preview: document.getElementById('payPreview'),
+        previewImg: document.getElementById('payPreviewImg'),
+        previewFallback: document.getElementById('payPreviewFallback'),
+        previewName: document.getElementById('payPreviewName'),
+      });
       if (noteEl) noteEl.value = '';
 
       submitBtn.classList.remove('loading');
@@ -165,6 +169,47 @@ window.PatientPaymentSubmission = class PatientPaymentSubmission {
       else await this.render();
       showToast('Payment submitted — awaiting confirmation.');
     });
+  }
+
+  _showPreview (els, result) {
+    const { preview, previewImg, previewFallback, previewName } = els;
+    if (previewName) previewName.textContent = result.name || 'Receipt attached';
+    if (previewFallback) {
+      previewFallback.hidden = false;
+      previewFallback.textContent = 'Loading preview';
+    }
+    if (previewImg) {
+      previewImg.hidden = true;
+      previewImg.onload = () => {
+        previewImg.hidden = false;
+        if (previewFallback) previewFallback.hidden = true;
+      };
+      previewImg.onerror = () => {
+        previewImg.hidden = true;
+        if (previewFallback) {
+          previewFallback.hidden = false;
+          previewFallback.textContent = 'Preview unavailable';
+        }
+      };
+      previewImg.src = result.dataUrl;
+    }
+    if (preview) preview.hidden = false;
+  }
+
+  _resetPreview (els) {
+    const { preview, previewImg, previewFallback, previewName } = els;
+    if (preview) preview.hidden = true;
+    if (previewName) previewName.textContent = 'Receipt attached';
+    if (previewFallback) {
+      previewFallback.hidden = false;
+      previewFallback.textContent = 'Preview ready';
+    }
+    if (previewImg) {
+      previewImg.hidden = true;
+      previewImg.onload = null;
+      previewImg.onerror = null;
+      previewImg.removeAttribute('src');
+    }
   }
 
   _readImage (file) {

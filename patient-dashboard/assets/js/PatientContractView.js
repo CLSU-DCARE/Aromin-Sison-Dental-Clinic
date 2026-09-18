@@ -23,7 +23,14 @@ window.PatientContractView = class PatientContractView {
     // Summary boxes
     const summary = document.getElementById('contractSummary');
     if (summary) {
-      summary.innerHTML = contract.summary.map(box =>
+      const contractOnly = contract.summary.filter(box => !/amount|balance/i.test(box.l || ''));
+      summary.innerHTML = contractOnly.map(box =>
+        `<div class="box"><div class="v">${box.v}</div><div class="l">${box.l}</div></div>`
+      ).join('');
+    }
+    const billingSummary = document.getElementById('billingSummary');
+    if (billingSummary) {
+      billingSummary.innerHTML = contract.summary.map(box =>
         `<div class="box"><div class="v">${box.v}</div><div class="l">${box.l}</div></div>`
       ).join('');
     }
@@ -35,7 +42,7 @@ window.PatientContractView = class PatientContractView {
     this._setValue('contractRight', contract.progress.right);
 
     // Payment table
-    const tbody = document.getElementById('paymentsBody');
+    const tbody = document.getElementById('billingPaymentsBody');
     if (!tbody) return;
 
     const existing = contract.payments

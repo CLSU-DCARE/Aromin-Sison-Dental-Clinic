@@ -15,3 +15,7 @@ dist/
 # uploaded payment receipts
 backend/uploads/receipts/*
 !backend/uploads/receipts/.gitignore
+
+# uploaded profile pictures
+backend/uploads/profiles/*
+!backend/uploads/profiles/.gitignore

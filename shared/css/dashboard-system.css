@@ -225,3 +225,19 @@ td{padding:15px 20px;font-size:13.5px;}
 @media (prefers-reduced-motion:reduce){
   .sidebar,.main,.nav-item,.stat-card,.panel,.modal{transition:none;}
 }
+.avatar-sm img,
+.profile-avatar img{
+  width:100%;
+  height:100%;
+  display:block;
+  object-fit:cover;
+  border-radius:inherit;
+}
+
+.avatar-sm.has-photo,
+.profile-avatar.has-photo{
+  padding:0;
+  overflow:hidden;
+  background:var(--ivory-2);
+  color:transparent;
+}

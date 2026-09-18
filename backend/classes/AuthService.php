@@ -105,7 +105,7 @@ class AuthService
         AuthMiddleware::requireLogin();
 
         $pdo = Database::pdo();
-        $stmt = $pdo->prepare('SELECT user_id, role, email, full_name FROM users WHERE user_id = ? AND is_active = 1');
+        $stmt = $pdo->prepare('SELECT user_id, role, email, full_name, profile_image_path FROM users WHERE user_id = ? AND is_active = 1');
         $stmt->execute([$_SESSION['user_id']]);
         $user = $stmt->fetch();
 
@@ -120,6 +120,8 @@ class AuthService
             session_destroy();
             return null;
         }
+
+        $user['profile_image_url'] = $user['profile_image_path'] ? '../backend/' . $user['profile_image_path'] : null;
 
         return ['user' => $user];
     }

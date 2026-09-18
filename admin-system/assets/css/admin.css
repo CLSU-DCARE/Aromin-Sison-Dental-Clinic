@@ -169,6 +169,8 @@ button:active{transform:scale(.97);}
   font-family:'Fraunces',serif;font-weight:600;font-size:15px;
   flex-shrink:0;
 }
+.avatar-sm img{width:100%;height:100%;display:block;object-fit:cover;border-radius:inherit;}
+.avatar-sm.has-photo{padding:0;overflow:hidden;background:var(--ivory-2);color:transparent;}
 .online-dot{
   position:absolute;bottom:0;right:0;
   width:10px;height:10px;border-radius:50%;

@@ -8,6 +8,7 @@ let appointmentsLoaded = false;
 const PatientDashboardVisibility = {
   braces: false,
   contract: false,
+  billing: true,
   balance: false
 };
 
@@ -49,6 +50,10 @@ const views = {
   contract: {
     title: 'My Braces Contract',
     crumb: 'Treatment'
+  },
+  billing: {
+    title: 'Payment & Billing',
+    crumb: 'Billing'
   },
   announcements: {
     title: 'Announcements & Promotions',
@@ -129,7 +134,7 @@ function switchView(view) {
 
     closeSidebar();
 
-    if (view === 'contract' || view === 'braces') {
+    if (view === 'contract' || view === 'braces' || view === 'billing') {
       // Pick up any changes made on another dashboard (e.g. the
       // receptionist approved a payment, or the dentist updated progress)
       // since this page loaded, instead of only refreshing on a full
@@ -600,7 +605,7 @@ function renderDashboardStats(stats) {
         'Completed Visits': 'history',
         'Treatment Records': 'treatment',
         'Braces Treatment Progress': 'braces',
-        'Outstanding Balance': 'contract'
+        'Outstanding Balance': 'billing'
       }[stat.label] || 'dashboard';
 
       return (
@@ -1067,6 +1072,11 @@ function applyPatientFeatureVisibility() {
     'contract',
     PatientDashboardVisibility.contract
   );
+
+  setPatientViewVisibility(
+    'billing',
+    true
+  );
 }
 
 async function refreshAfterPatientAction() {
@@ -1137,6 +1147,7 @@ function applyPatientSnapshot(data, changed) {
   appointmentsLoaded = true;
   PatientDashboardVisibility.braces = braces.has_braces_treatment === true;
   PatientDashboardVisibility.contract = braces.has_contract === true;
+  PatientDashboardVisibility.billing = true;
   PatientDashboardVisibility.balance = braces.has_outstanding_balance === true;
   setDashboardStat('Braces Treatment Progress', braces.braces_progress);
   setDashboardStat('Outstanding Balance', braces.outstanding_balance);
