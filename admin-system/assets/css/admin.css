@@ -1028,6 +1028,44 @@ body.sidebar-open{overflow:hidden;}
   color:#1a56db;
 }
 
+.record-row td{vertical-align:middle;}
+.record-summary-cell{
+  display:flex;
+  flex-direction:column;
+  gap:5px;
+  max-width:520px;
+}
+.record-summary-cell strong{
+  font-weight:700;
+  color:var(--ink, #1B1B19);
+  line-height:1.25;
+}
+.record-summary-cell span{
+  width:max-content;
+  max-width:100%;
+  padding:3px 8px;
+  border-radius:var(--r-pill, 999px);
+  background:rgba(156,139,62,0.1);
+  color:var(--gold-text, #7a6825);
+  font-size:10px;
+  font-weight:700;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+}
+.record-summary-cell p{
+  margin:0;
+  color:var(--ink-muted, #6b6b65);
+  font-size:12.5px;
+  line-height:1.45;
+  overflow-wrap:anywhere;
+}
+.record-date-cell{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+}
+
 /* Send Notification modal: textarea + hint */
 #snBody{
   resize:vertical;

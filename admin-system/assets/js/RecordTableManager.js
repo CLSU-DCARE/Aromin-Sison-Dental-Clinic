@@ -53,10 +53,10 @@ window.RecordTableManager = class RecordTableManager {
     const tbody = document.getElementById('recordsBody');
     if (!tbody) return;
     tbody.innerHTML = records.map((r, i) =>
-      `<tr>
+      `<tr class="record-row">
         <td class="check-cell"><input type="checkbox" class="row-check" data-index="${i}" ${this.selectedRecords.has(r) ? 'checked' : ''} aria-label="Select record: ${escapeHtml(r.procedure)}"></td>
         <td>${nameCell(r.initials, r.name)}</td>
-        <td>${escapeHtml(r.procedure)}</td>
+        <td>${this._recordSummary(r)}</td>
         <td>${escapeHtml(r.date)}</td>
         <td>${escapeHtml(r.dentist || '')}</td>
         <td>${statusTag(r)}</td>
@@ -72,6 +72,17 @@ window.RecordTableManager = class RecordTableManager {
     const visible = this.recordsList.filter(r => this.selectedRecords.has(r)).length;
     selectAll.checked = this.recordsList.length > 0 && visible === this.recordsList.length;
     selectAll.indeterminate = visible > 0 && visible < this.recordsList.length;
+  }
+
+  _recordSummary (record) {
+    const notes = [record.diagnosis, record.treatment_protocol]
+      .filter(Boolean)
+      .map(value => escapeHtml(value))
+      .join('<br>');
+    return `<div class="record-summary-cell"><strong>${escapeHtml(record.procedure || 'Treatment record')}</strong>` +
+      (record.category ? `<span>${escapeHtml(record.category)}</span>` : '') +
+      (notes ? `<p>${notes}</p>` : '') +
+      `</div>`;
   }
 
   /* ------------------------------------------------------------------

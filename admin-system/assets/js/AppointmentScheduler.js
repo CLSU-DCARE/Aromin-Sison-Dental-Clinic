@@ -145,6 +145,7 @@ window.AppointmentScheduler = class AppointmentScheduler {
     const size = compact ? ' appointment-card-actions' : ' appointment-request-actions';
     return `<div class="${size.trim()}">` +
       (item.status === 'pending' ? `<button type="button" class="btn btn-sm btn-approve" data-appointment-action="approve" data-appointment-id="${id}">Approve</button><button type="button" class="btn btn-sm btn-reject" data-appointment-action="reject" data-appointment-id="${id}">Reject</button>` : '') +
+      (item.status === 'confirmed' ? `<button type="button" class="btn btn-sm btn-approve" data-appointment-action="complete" data-appointment-id="${id}">Complete</button><button type="button" class="btn btn-sm btn-outline" data-appointment-action="no_show" data-appointment-id="${id}">No-show</button>` : '') +
       `<button type="button" class="btn btn-sm btn-outline" data-appointment-action="reschedule" data-appointment-id="${id}">Reschedule</button>` +
       `<button type="button" class="btn btn-sm btn-reject" data-appointment-action="cancel" data-appointment-id="${id}">Cancel</button>` +
       `</div>`;

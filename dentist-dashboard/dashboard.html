@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -13,7 +13,7 @@
 <link rel="stylesheet" href="../shared/css/variables.css?v=4">
 <link rel="stylesheet" href="../shared/css/buttons.css?v=5">
 <link rel="stylesheet" href="../shared/css/panels.css?v=4">
-<link rel="stylesheet" href="../admin-system/assets/css/admin.css?v=14">
+<link rel="stylesheet" href="../admin-system/assets/css/admin.css?v=20260919-record-ui">
 <link rel="stylesheet" href="../shared/css/dashboard-system.css?v=3">
 </head>
 <body class="dentist-dashboard">
@@ -49,6 +49,10 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>
         <span class="nav-label">Treatment Records</span>
       </button>
+      <button class="nav-item" data-view="braces" data-tooltip="Braces Contracts">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12h6m-6 4h6M9 8h1"/><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg>
+        <span class="nav-label">Braces Contracts</span>
+      </button>
 
       <div class="nav-group-label">Scheduling</div>
       <button class="nav-item" data-view="appointments" data-tooltip="Appointments">
@@ -63,7 +67,7 @@
         <span class="online-dot"></span>
       </div>
       <span class="side-foot-text">
-        <span class="side-foot-name" id="sideFootName">Loading…</span>
+        <span class="side-foot-name" id="sideFootName">Loading...</span>
         <span class="side-foot-role" id="sideFootRole">Dentist</span>
       </span>
       <button class="logout-btn" id="logoutBtn" aria-label="Log out" title="Log out">
@@ -98,7 +102,7 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
           <span class="badge-count" id="notifBadge" hidden></span>
         </button>
-        <button type="button" class="user-chip" id="userChip" title="Loading…: Dentist" aria-haspopup="menu" aria-expanded="false" aria-label="Account menu">
+        <button type="button" class="user-chip" id="userChip" title="Loading...: Dentist" aria-haspopup="menu" aria-expanded="false" aria-label="Account menu">
           <div class="avatar-sm" id="chipAvatar">DS</div>
         </button>
       </div>
@@ -110,7 +114,7 @@
       <section class="view active" id="view-dashboard">
         <div class="welcome-banner">
           <div>
-            <div class="eyebrow" id="greetingSubtext">Loading… · Dentist</div>
+            <div class="eyebrow" id="greetingSubtext">Loading... - Dentist</div>
             <h2 id="greetingText">A blessed day!</h2>
             <p>Here's how the clinic is looking today.</p>
           </div>
@@ -123,7 +127,7 @@
           <div class="panel">
             <div class="panel-head">
               <h3>This Week: Schedule</h3>
-              <span class="tag tag-amber" id="dashWeekLabel">Loading…</span>
+              <span class="tag tag-amber" id="dashWeekLabel">Loading...</span>
             </div>
             <div class="week-scroll">
               <div class="week-grid" id="dashWeekGrid"></div>
@@ -187,6 +191,44 @@
         </div>
       </section>
 
+      <!-- ===== BRACES CONTRACTS ===== -->
+      <section class="view" id="view-braces">
+        <div class="page-head">
+          <div>
+            <div class="eyebrow">Contracts</div>
+            <p>Assigned orthodontic contracts and progress.</p>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="toolbar">
+            <div class="toolbar-left" role="group" aria-label="Filter braces contracts">
+              <button class="filter-chip active" data-filter="All" aria-pressed="true">All</button>
+              <button class="filter-chip" data-filter="Current" aria-pressed="false">Current</button>
+              <button class="filter-chip" data-filter="Completed" aria-pressed="false">Completed</button>
+              <button class="filter-chip" data-filter="Overdue" aria-pressed="false">Overdue</button>
+            </div>
+          </div>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>Patient</th>
+                  <th>Plan</th>
+                  <th>Monthly</th>
+                  <th>Paid</th>
+                  <th>Balance</th>
+                  <th>Due</th>
+                  <th>Status</th>
+                  <th>Progress</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="bracesContractsBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
       <!-- ===== TREATMENT RECORDS ===== -->
       <section class="view" id="view-records">
         <div class="page-head">
@@ -201,6 +243,7 @@
               <button class="filter-chip active" data-filter="All" aria-pressed="true">All</button>
               <button class="filter-chip" data-filter="Treatments" aria-pressed="false">Treatments</button>
               <button class="filter-chip" data-filter="Protocols" aria-pressed="false">Protocols</button>
+              <button class="filter-chip" data-filter="Progress" aria-pressed="false">Progress</button>
             </div>
             <button type="button" class="btn btn-gold btn-sm" id="addClinicalRecord" aria-label="Add a treatment record">
               <i class="bi bi-plus-lg" aria-hidden="true"></i>
@@ -364,7 +407,7 @@
   <div class="user-menu-head">
     <div class="avatar-sm" id="menuAvatar">DS</div>
     <div>
-      <div class="name" id="menuName">Loading…</div>
+      <div class="name" id="menuName">Loading...</div>
       <div class="role" id="menuRole">Dentist</div>
     </div>
   </div>
@@ -402,9 +445,9 @@
 <script src="../patient-dashboard/assets/js/PatientLiveSync.js?v=20260916-integration" defer></script>
 <script src="../shared/js/core/PortalSync.js?v=20260916-integration" defer></script>
 <script src="../shared/js/core/PortalForms.js?v=20260916-appointment-dialogs" defer></script>
-<script src="../admin-system/assets/js/AppointmentScheduler.js?v=20260916-public-booking" defer></script>
+<script src="../admin-system/assets/js/AppointmentScheduler.js?v=20260919-status-actions" defer></script>
 <script src="../admin-system/assets/js/AppointmentActions.js?v=20260916-appointment-dialogs" defer></script>
-<script src="assets/js/DentistDashboard.js?v=20260916-integration" defer></script>
+<script src="assets/js/DentistDashboard.js?v=20260919-braces-contracts" defer></script>
 <script src="assets/js/dentist.js?v=20260916-integration" defer></script>
 
 </body>

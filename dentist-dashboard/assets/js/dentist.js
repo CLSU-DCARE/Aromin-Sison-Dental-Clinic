@@ -1,6 +1,6 @@
-/* =====================================================================
+﻿/* =====================================================================
    Aromin-Sison Dental Clinic: Dentist Dashboard
-   Orchestrator init — delegates to ASDC.DentistDashboard class.
+   Orchestrator init - delegates to ASDC.DentistDashboard class.
    ================================================================= */
 
 (function(){

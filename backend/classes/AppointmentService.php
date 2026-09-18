@@ -108,7 +108,6 @@ class AppointmentService
 
         if (!in_array($status, ['cancelled', 'rejected', 'completed', 'no_show'], true)
             || ($type === 'request' && !in_array($status, ['cancelled', 'rejected'], true))) ApiResponse::error(422, 'validation_failed', 'Invalid status.');
-        if (in_array($status, ['completed', 'no_show'], true) && !$scope->isDentist()) ApiResponse::error(403, 'forbidden', 'Only the assigned dentist can set clinical appointment status.');
         $extra = $type === 'request' ? ', reviewed_by=?, reviewed_at=NOW()' : '';
         $params = $type === 'request' ? [$status, (int) $_SESSION['user_id'], $id] : [$status, $id];
         $allowed = $type === 'request' ? "('pending','rescheduled')" : ($status === 'rejected' ? "('pending')" : (in_array($status, ['completed','no_show'], true) ? "('confirmed')" : "('pending','confirmed')"));

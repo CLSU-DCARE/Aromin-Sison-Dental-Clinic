@@ -11,8 +11,10 @@ class ClinicalRecordService
             LEFT JOIN users u ON u.user_id=r.dentist_id WHERE $where ORDER BY r.date_recorded DESC,r.record_id DESC");
         $stmt->execute($params);
         return array_map(static function ($r) {
-            return $r + ['id' => (int) $r['record_id'], 'initials' => '', 'category' => $r['treatment_given'] ? 'Treatment' : 'Protocol',
-                'procedure' => $r['treatment_given'] ?: $r['treatment_protocol'], 'date' => $r['date_recorded'], 'status' => 'Recorded', 'tag' => 'green'];
+            $procedure = $r['treatment_given'] ?: ($r['diagnosis'] ?: $r['treatment_protocol']);
+            $category = str_starts_with((string) $procedure, 'Braces Progress') ? 'Progress' : ($r['treatment_given'] ? 'Treatment' : 'Protocol');
+            return $r + ['id' => (int) $r['record_id'], 'initials' => self::initials((string) $r['name']), 'category' => $category,
+                'procedure' => $procedure, 'date' => $r['date_recorded'], 'status' => 'Recorded', 'tag' => 'green'];
         }, $stmt->fetchAll());
     }
 
@@ -89,5 +91,58 @@ class ClinicalRecordService
         ]);
 
         return (int) $pdo->lastInsertId();
+    }
+
+    public static function recordBracesProgress(\PDO $pdo, array $contract, string $stage, int $percent, ?string $note, ?string $nextNote): ?int
+    {
+        $patientId = (int) ($contract['patient_id'] ?? 0);
+        if (!$patientId) return null;
+
+        $dentistId = !empty($contract['dentist_id']) ? (int) $contract['dentist_id'] : null;
+        $date = date('Y-m-d');
+        $diagnosis = 'Braces progress updated';
+        $treatment = 'Braces Progress - ' . $stage;
+        $parts = ['Progress: ' . $percent . '%'];
+        if ($note) $parts[] = 'Note: ' . $note;
+        if ($nextNote) $parts[] = 'Next visit: ' . $nextNote;
+        $protocol = implode("\n", $parts);
+
+        $stmt = $pdo->prepare(
+            "SELECT record_id
+             FROM treatment_records
+             WHERE patient_id = ?
+               AND date_recorded = ?
+               AND diagnosis = ?
+               AND treatment_given LIKE 'Braces Progress - %'
+             ORDER BY record_id DESC
+             LIMIT 1"
+        );
+        $stmt->execute([$patientId, $date, $diagnosis]);
+        $recordId = $stmt->fetchColumn();
+
+        if ($recordId) {
+            $stmt = $pdo->prepare(
+                'UPDATE treatment_records
+                 SET dentist_id = ?, treatment_given = ?, treatment_protocol = ?
+                 WHERE record_id = ?'
+            );
+            $stmt->execute([$dentistId, $treatment, $protocol, (int) $recordId]);
+            return (int) $recordId;
+        }
+
+        $stmt = $pdo->prepare(
+            'INSERT INTO treatment_records(patient_id,dentist_id,diagnosis,treatment_given,treatment_protocol,date_recorded,appointment_id)
+             VALUES(?,?,?,?,?,?,NULL)'
+        );
+        $stmt->execute([$patientId, $dentistId, $diagnosis, $treatment, $protocol, $date]);
+
+        return (int) $pdo->lastInsertId();
+    }
+
+    private static function initials(string $name): string
+    {
+        $parts = preg_split('/\s+/', trim($name));
+        $letters = array_map(fn ($p) => mb_strtoupper(mb_substr($p, 0, 1)), array_slice($parts ?: [], 0, 2));
+        return implode('', $letters) ?: '?';
     }
 }

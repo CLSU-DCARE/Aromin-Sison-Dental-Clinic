@@ -213,6 +213,14 @@ class ContractService
             $contractId,
         ]);
 
+        ClinicalRecordService::recordBracesProgress(
+            $pdo,
+            $existing,
+            $stage,
+            $pct,
+            $data['progress_note'] !== '' ? $data['progress_note'] : null,
+            $data['next_note'] !== '' ? $data['next_note'] : null
+        );
         $result = self::present(self::findRaw($contractId) + self::patientNames((int) $existing['patient_id']) + ['dentist_name' => self::dentistName($existing['dentist_id'])]);
         PortalEvent::patient((int) $existing['patient_id'], 'Treatment progress updated', $stage . ' (' . $pct . '%)', 'info');
         $pdo->commit();

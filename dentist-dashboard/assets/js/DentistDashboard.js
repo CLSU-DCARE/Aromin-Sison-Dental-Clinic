@@ -1,5 +1,5 @@
-/* =====================================================================
-   DentistDashboard — Orchestrator for the dentist dashboard view
+﻿/* =====================================================================
+   DentistDashboard - Orchestrator for the dentist dashboard view
    Manages view switching, data rendering, and filter wiring.
    Replaces the inline logic formerly in dentist.js.
    ================================================================= */
@@ -12,6 +12,7 @@ if (typeof window !== 'undefined') !window.ASDC && (window.ASDC = {});
   const VIEW_META = {
     dashboard:    { title: 'Dashboard',          crumb: 'Overview' },
     patients:     { title: 'Patients',           crumb: 'Patients' },
+    braces:       { title: 'Braces Contracts',   crumb: 'Patients' },
     records:      { title: 'Treatment Records',  crumb: 'Records' },
     appointments: { title: 'Appointments',       crumb: 'Scheduling' }
   };
@@ -23,6 +24,7 @@ if (typeof window !== 'undefined') !window.ASDC && (window.ASDC = {});
     this.viewCrumb = document.getElementById('viewCrumb');
     this.recordsFilter = 'All';
     this.patientsFilter = 'All';
+    this.bracesFilter = 'All';
     this.appointmentScheduler = null;
     this.appointmentActions = null;
   }
@@ -35,6 +37,7 @@ if (typeof window !== 'undefined') !window.ASDC && (window.ASDC = {});
     this._wireStatCards();
     this._wireRecordsFilter();
     this._wirePatientsFilter();
+    this._wireBracesFilter();
     this._bindProgressModal();
     this._renderAll();
     this._loadAppointments();
@@ -88,7 +91,7 @@ if (typeof window !== 'undefined') !window.ASDC && (window.ASDC = {});
   DentistDashboard.prototype._initNotifications = function(){
 this.inbox = initNotifications({ triggerId: 'notifBtn', panelId: 'notifPanel', listId: 'notifList', badgeId: 'notifBadge', markAllId: 'notifMarkAll', emptyId: 'notifEmpty', notifications: [] });
 const inboxEmpty = document.getElementById('notifEmpty');
-if (inboxEmpty) inboxEmpty.textContent = 'Loading notifications…';
+if (inboxEmpty) inboxEmpty.textContent = 'Loading notifications...';
   };
 
   DentistDashboard.prototype._initUserMenu = function(){
@@ -118,7 +121,7 @@ if (inboxEmpty) inboxEmpty.textContent = 'Loading notifications…';
   DentistDashboard.prototype._applyRecords = function(){
     var records = AdminState.records || [];
     // Chip labels are plural ("Treatments"/"Protocols") but record.category
-    // values are singular ("Treatment"/"Protocol") — map them, or every
+    // values are singular ("Treatment"/"Protocol") - map them, or every
     // filter except "All" would always show zero results.
     var categoryMap = { Treatments: 'Treatment', Protocols: 'Protocol' };
     var category = categoryMap[this.recordsFilter] || this.recordsFilter;
@@ -135,6 +138,16 @@ if (inboxEmpty) inboxEmpty.textContent = 'Loading notifications…';
     new ASDC.FilterChipGroup(group, function(label){
       self.patientsFilter = label;
       self._applyPatients();
+    });
+  };
+
+  DentistDashboard.prototype._wireBracesFilter = function(){
+    var self = this;
+    var group = document.querySelector('#view-braces .toolbar-left');
+    if (!group) return;
+    new ASDC.FilterChipGroup(group, function(label){
+      self.bracesFilter = label;
+      self._applyBracesContracts();
     });
   };
 
@@ -177,7 +190,7 @@ if (inboxEmpty) inboxEmpty.textContent = 'Loading notifications…';
 
     var current = null; // { contractId, contractNumericId, pid, name }
 
-    document.getElementById('patientsBody').addEventListener('click', function(e){
+    document.addEventListener('click', function(e){
       var btn = e.target.closest('[data-action="update-progress"]');
       if (!btn) return;
       var contract = (self._contractsRaw || []).filter(function(c){ return c.id === btn.dataset.contractId; })[0];
@@ -187,7 +200,7 @@ if (inboxEmpty) inboxEmpty.textContent = 'Loading notifications…';
         contractNumericId: contract.contract_id || Number(contract.id.replace('#B-', '')),
         pid: contract.pid, name: contract.name
       };
-      document.getElementById('progressFormPatientLabel').textContent = contract.name + ' · ' + contract.id;
+      document.getElementById('progressFormPatientLabel').textContent = contract.name + ' - ' + contract.id;
       var stageSelect = document.getElementById('pfStage');
       var progress = contract.progress || {};
       var currentStageName = progress.stage
@@ -216,6 +229,7 @@ if (inboxEmpty) inboxEmpty.textContent = 'Loading notifications…';
       var afterSave = function(){
         modal.close();
         self._applyPatients();
+        self._applyBracesContracts();
         showToast('Progress updated for ' + current.name);
         current = null;
         saveBtn.classList.remove('loading');
@@ -254,7 +268,7 @@ if (inboxEmpty) inboxEmpty.textContent = 'Loading notifications…';
         };
       });
       (self.snapshot?.patients || []).forEach(function(p) {
-        if (!contracts.some(c => c.pid === '#P-' + p.patient_id)) contracts.push({ id: '#P-' + p.patient_id, pid: '#P-' + p.patient_id, initials: '', name: p.first_name + ' ' + p.last_name, plan: 'No braces contract', monthly: '—', paid: '—', balance: '—', status: 'No contract', tag: 'green', progressPct: null });
+        if (!contracts.some(c => c.pid === '#P-' + p.patient_id)) contracts.push({ id: '#P-' + p.patient_id, pid: '#P-' + p.patient_id, initials: '', name: p.first_name + ' ' + p.last_name, plan: 'No braces contract', monthly: '-', paid: '-', balance: '-', dueDate: '-', status: 'No contract', tag: 'green', progressPct: null });
       });
       var filtered;
       if (self.patientsFilter === 'All') filtered = contracts;
@@ -274,12 +288,13 @@ if (inboxEmpty) inboxEmpty.textContent = 'Loading notifications…';
     this._set('menuName', user.name);
     this._set('menuRole', 'Dentist');
     this._set('greetingText', user.greeting);
-    this._set('greetingSubtext', user.name + ' · Dentist');
+    this._set('greetingSubtext', user.name + ' - Dentist');
 
     this._renderStats();
 
     this._renderQueue(AdminState.dashboard.queue);
     this._applyPatients();
+    this._applyBracesContracts();
     this._applyRecords();
   };
 
@@ -306,7 +321,43 @@ if (inboxEmpty) inboxEmpty.textContent = 'Loading notifications…';
       return;
     }
     tbody.innerHTML = patients.map(function(p){
-      return '<tr><td>' + ASDC.HtmlHelpers.nameCell(p.initials, p.name, p.id) + '</td><td>' + ASDC.HtmlHelpers.escapeHtml(p.plan || '') + '</td><td>' + ASDC.HtmlHelpers.escapeHtml(p.monthly || '') + '</td><td>' + ASDC.HtmlHelpers.escapeHtml(p.paid || '') + '</td><td>' + ASDC.HtmlHelpers.escapeHtml(p.balance) + '</td><td>' + ASDC.HtmlHelpers.statusTag(p) + '</td><td>' + (p.progressPct === null ? '—' : p.progressPct + '%') + '</td><td>' + (p.progressPct === null ? '' : '<button class="btn btn-outline btn-sm" data-action="update-progress" data-contract-id="' + p.id + '" data-pid="' + (p.pid || '') + '">Update Progress</button>') + '</td></tr>';
+      return '<tr><td>' + ASDC.HtmlHelpers.nameCell(p.initials, p.name, p.id) + '</td><td>' + ASDC.HtmlHelpers.escapeHtml(p.plan || '') + '</td><td>' + ASDC.HtmlHelpers.escapeHtml(p.monthly || '') + '</td><td>' + ASDC.HtmlHelpers.escapeHtml(p.paid || '') + '</td><td>' + ASDC.HtmlHelpers.escapeHtml(p.balance) + '</td><td>' + ASDC.HtmlHelpers.statusTag(p) + '</td><td>' + (p.progressPct === null ? '-' : p.progressPct + '%') + '</td><td>' + (p.progressPct === null ? '' : '<button class="btn btn-outline btn-sm" data-action="update-progress" data-contract-id="' + p.id + '" data-pid="' + (p.pid || '') + '">Update Progress</button>') + '</td></tr>';
+    }).join('');
+  };
+
+  DentistDashboard.prototype._applyBracesContracts = function(){
+    var self = this;
+    var contracts = (self._contractsRaw || []).map(function(c){
+      return {
+        id: c.id,
+        pid: c.pid,
+        initials: c.initials,
+        name: c.name,
+        plan: c.plan,
+        monthly: ContractFormat.peso(c.monthly),
+        paid: ContractFormat.peso(c.paid),
+        balance: ContractFormat.peso(c.balance),
+        dueDate: c.dueDate || '-',
+        status: c.status,
+        tag: c.tag,
+        progressPct: c.progress ? c.progress.pct : 0
+      };
+    });
+    var filtered = self.bracesFilter === 'All'
+      ? contracts
+      : contracts.filter(function(c){ return c.status === self.bracesFilter; });
+    self._renderBracesContracts(filtered);
+  };
+
+  DentistDashboard.prototype._renderBracesContracts = function(contracts){
+    var tbody = document.getElementById('bracesContractsBody');
+    if (!tbody) return;
+    if (!contracts.length){
+      tbody.innerHTML = '<tr><td colspan="9" class="empty-cell">No braces contracts match this filter.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = contracts.map(function(c){
+      return '<tr><td>' + ASDC.HtmlHelpers.nameCell(c.initials, c.name, c.id) + '</td><td>' + ASDC.HtmlHelpers.escapeHtml(c.plan || '') + '</td><td>' + ASDC.HtmlHelpers.escapeHtml(c.monthly) + '</td><td>' + ASDC.HtmlHelpers.escapeHtml(c.paid) + '</td><td>' + ASDC.HtmlHelpers.escapeHtml(c.balance) + '</td><td>' + ASDC.HtmlHelpers.escapeHtml(c.dueDate) + '</td><td>' + ASDC.HtmlHelpers.statusTag(c) + '</td><td>' + ASDC.HtmlHelpers.escapeHtml(String(c.progressPct || 0)) + '%</td><td><button class="btn btn-outline btn-sm" data-action="update-progress" data-contract-id="' + c.id + '" data-pid="' + (c.pid || '') + '">Update Progress</button></td></tr>';
     }).join('');
   };
 
@@ -318,10 +369,13 @@ if (inboxEmpty) inboxEmpty.textContent = 'Loading notifications…';
       return;
     }
     tbody.innerHTML = records.map(function(r){
-      return '<tr><td>' + ASDC.HtmlHelpers.nameCell(r.initials || '', r.name, r.dentist || '') + '</td><td>' + ASDC.HtmlHelpers.escapeHtml(r.category) + '</td><td>' + ASDC.HtmlHelpers.escapeHtml([r.diagnosis, r.procedure, r.treatment_protocol].filter(Boolean).join(' · ')) + '</td><td>' + ASDC.HtmlHelpers.escapeHtml(r.date) + (Number(r.dentist_id) === Number(window.ASDCAuthUser?.user_id) ? '<button class="btn btn-outline btn-sm" data-edit-record="' + Number(r.record_id) + '">Edit</button>' : '') + '</td></tr>';
+      var details = [r.diagnosis, r.treatment_protocol].filter(Boolean).map(ASDC.HtmlHelpers.escapeHtml).join('<br>');
+      var summary = '<div class="record-summary-cell"><strong>' + ASDC.HtmlHelpers.escapeHtml(r.procedure || 'Treatment record') + '</strong>' +
+        (details ? '<p>' + details + '</p>' : '') + '</div>';
+      var edit = Number(r.dentist_id) === Number(window.ASDCAuthUser?.user_id) ? '<button class="btn btn-outline btn-sm" data-edit-record="' + Number(r.record_id) + '">Edit</button>' : '';
+      return '<tr class="record-row"><td>' + ASDC.HtmlHelpers.nameCell(r.initials || '', r.name, r.dentist || '') + '</td><td><span class="tag tag-green">' + ASDC.HtmlHelpers.escapeHtml(r.category) + '</span></td><td>' + summary + '</td><td><div class="record-date-cell">' + ASDC.HtmlHelpers.escapeHtml(r.date) + edit + '</div></td></tr>';
     }).join('');
   };
-
   DentistDashboard.prototype._renderWeekGrid = function(containerId, week){
     var grid = document.getElementById(containerId);
     if (!grid) return;
@@ -367,7 +421,7 @@ if (inboxEmpty) inboxEmpty.textContent = 'Loading notifications…';
       self.snapshot = data;
       self._contractsRaw = data.contracts;
       AdminState.records = data.records;
-      self._applyPatients(); self._applyRecords();
+      self._applyPatients(); self._applyBracesContracts(); self._applyRecords();
       self.inbox.setItems(data.notifications);
       self.appointmentScheduler.applySnapshot(data);
       const week = ASDC.ScheduleView.week(data.week.week_start, data.week.appointments);
