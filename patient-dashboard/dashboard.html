@@ -12,7 +12,7 @@
 <link rel="stylesheet" href="../shared/css/variables.css?v=4">
 <link rel="stylesheet" href="../shared/css/buttons.css?v=5">
 <link rel="stylesheet" href="../shared/css/panels.css?v=4">
-<link rel="stylesheet" href="assets/css/patient.css?v=20260919-topbar-room">
+<link rel="stylesheet" href="assets/css/patient.css?v=20260919-profile-photo-modal">
 <link rel="stylesheet" href="../shared/css/dashboard-system.css?v=3">
 </head>
 <body>
@@ -448,6 +448,18 @@
       <label for="epEmail">Email Address</label>
       <input type="email" id="epEmail" autocomplete="off">
     </div>
+    <div class="form-group profile-picture-edit">
+      <label>Profile Picture</label>
+      <div class="profile-picture-row">
+        <button type="button" class="btn btn-outline" id="profilePictureBtn">
+          Change Profile Picture
+        </button>
+        <button type="button" class="btn btn-secondary" id="profilePictureRemoveBtn">
+          Remove
+        </button>
+      </div>
+      <input type="file" id="profilePictureInput" accept="image/*" hidden>
+    </div>
     <p class="booking-note" id="profileNote" role="status" hidden></p>
     <div class="modal-actions">
       <button type="button" class="btn btn-secondary" id="profileCancelBtn">Cancel</button>
@@ -523,6 +535,7 @@
   </div>
 </div>
 
+<script>window.ASDC_DISABLE_MENU_PROFILE_PICTURE = true;</script>
 <script src="../shared/js/core/namespace.js?v=20260916-integration" defer></script>
 <script src="../shared/js/core/Modal.js?v=20260916-integration" defer></script>
 <script src="../shared/js/core/ToastManager.js?v=20260916-integration" defer></script>
@@ -533,7 +546,7 @@
 <script src="../shared/js/core/api.js?v=20260916-integration" defer></script>
 <script src="../shared/js/core/ViewRouter.js?v=20260916-integration" defer></script>
 <script src="../shared/js/core/FilterChipGroup.js?v=20260916-integration" defer></script>
-<script src="../shared/js/core/SessionGuard.js?v=20260918-profile-photo" defer></script>
+<script src="../shared/js/core/SessionGuard.js?v=20260919-profile-modal-photo" defer></script>
 <script src="../shared/js/core/NotificationPanel.js?v=20260916-integration" defer></script>
 <script src="../shared/js/core/LogoutManager.js?v=20260916-integration" defer></script>
 <script src="../shared/js/core/FullscreenToggle.js?v=20260916-integration" defer></script>
@@ -546,7 +559,7 @@
 <script src="assets/js/PatientRescheduleModal.js?v=20260916-integration" defer></script>
 <script src="assets/js/PatientBracesProgress.js?v=20260916-integration" defer></script>
 <script src="assets/js/PatientContractView.js?v=20260919-no-payment-term" defer></script>
-<script src="assets/js/PatientProfileEditor.js?v=20260916-integration" defer></script>
+<script src="assets/js/PatientProfileEditor.js?v=20260919-profile-photo-modal" defer></script>
 <script src="assets/js/PatientPaymentSubmission.js?v=20260919-clean-text" defer></script>
 <script src="assets/js/PatientLiveSync.js?v=20260916-integration" defer></script>
 <script src="assets/js/patient.js?v=20260919-header-desc" defer></script>

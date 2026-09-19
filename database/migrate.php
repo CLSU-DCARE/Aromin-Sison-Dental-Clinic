@@ -130,6 +130,7 @@ function migration_already_present(PDO $pdo, string $name): bool
         '015_deactivate_redundant_email_templates.sql' => template_keys_are_inactive($pdo, LEGACY_TEMPLATE_KEYS),
         '016_remove_contact_email_from_notification_templates.sql' => template_bodies_exclude_contact_details($pdo, array_merge(APPOINTMENT_TEMPLATE_KEYS, BILLING_TEMPLATE_KEYS)),
         '017_user_profile_pictures.sql' => has_columns($pdo, 'users', ['profile_image_path']),
+        '019_general_treatment_billing.sql' => table_exists($pdo, 'treatment_bills') && table_exists($pdo, 'treatment_payments'),
         default => false,
     };
 }

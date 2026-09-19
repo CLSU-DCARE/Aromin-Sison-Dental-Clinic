@@ -30,7 +30,9 @@ if ($method === 'GET') {
 \ASDC\CsrfToken::requireValid();
 $body = \ASDC\ApiResponse::requireJson();
 
-$paymentId = \ASDC\InputValidator::positiveId($body['payment_id'] ?? null);
+$paymentId = is_string($body['payment_id'] ?? null)
+    ? trim($body['payment_id'])
+    : \ASDC\InputValidator::positiveId($body['payment_id'] ?? null);
 $action = is_string($body['action'] ?? null) ? strtolower(trim($body['action'])) : '';
 
 if (!$paymentId || !in_array($action, ['approve', 'reject'], true)) {

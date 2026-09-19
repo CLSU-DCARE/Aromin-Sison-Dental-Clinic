@@ -107,7 +107,9 @@
 
       const chip = document.getElementById('userChip');
       if (chip) chip.title = user.full_name + ': ' + roleLabel;
-      this._wireProfilePicture(user);
+      if (!window.ASDC_DISABLE_MENU_PROFILE_PICTURE) {
+        this._wireProfilePicture(user);
+      }
     }
 
     _wireProfilePicture(user) {

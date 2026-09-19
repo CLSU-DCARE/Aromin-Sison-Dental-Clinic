@@ -227,7 +227,7 @@ class NotificationSendService
             $total = (float) ($contract['total_amount'] ?? 0);
             $balance = max(0, (float) ($contract['balance_amount'] ?? 0));
             $paid = max(0, $total - $balance);
-            $defaults['service_treatment'] = $contract['current_stage'] ?: 'Braces Contract';
+            $defaults['service_treatment'] = 'Braces Treatment Plan';
             $defaults['total_amount'] = 'PHP ' . number_format($total, 2);
             $defaults['amount_paid'] = 'PHP ' . number_format($paid, 2);
             $defaults['remaining_balance'] = 'PHP ' . number_format($balance, 2);
