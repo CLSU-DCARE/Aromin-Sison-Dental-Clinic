@@ -289,6 +289,11 @@ td{padding:16px 24px;border-bottom:1px solid var(--line);font-size:14px;white-sp
 tr:last-child td{border-bottom:none;}
 tbody tr{transition:background .15s ease;}
 tbody tr:hover{background:rgba(241,237,227,0.5);}
+.table-empty{
+  padding:28px 24px;
+  text-align:center;
+  color:rgba(27,27,25,0.58);
+}
 .tag{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:var(--r-pill);font-size:12px;font-weight:600;}
 .tag::before{content:'';width:6px;height:6px;border-radius:50%;}
 /* Tag text + dot use the darkened status tones so small pill text passes

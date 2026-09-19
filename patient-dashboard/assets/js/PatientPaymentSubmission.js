@@ -10,7 +10,7 @@
  */
 /* global showToast, escapeHtml, apiFetch */
 window.PatientPaymentSubmission = class PatientPaymentSubmission {
-  constructor ({ state, paymentMethod = 'cash', onSubmitted = null } = {}) {
+  constructor ({ state, paymentMethod = 'gcash', onSubmitted = null } = {}) {
     this.state          = state;
     this.paymentMethod = paymentMethod;
     this.onSubmitted = onSubmitted;

@@ -129,10 +129,8 @@ window.PatientContractView = class PatientContractView {
     const raw = Number(contract.nextPaymentAmountRaw || 0);
     if (raw > 0) {
       input.placeholder = `Suggested monthly payment: ${contract.nextPaymentAmount}`;
-      if (!input.value) input.value = String(raw);
     } else {
       input.placeholder = 'No remaining balance';
-      if (!input.value) input.value = '';
     }
   }
 

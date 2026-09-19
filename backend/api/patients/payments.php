@@ -34,7 +34,7 @@ if ($amount === false || $amount <= 0 || $amount > 99999999.99) {
     $fields['amount'] = 'Enter the amount you paid.';
 }
 $method_ = is_string($_POST['method'] ?? null) ? trim($_POST['method']) : '';
-if (!in_array(strtolower($method_), ['cash','card','gcash','bank transfer','over the counter','online (qr)'], true)) {
+if (!in_array(strtolower($method_), ['cash','gcash'], true)) {
     $fields['method'] = 'Select a payment method.';
 }
 if ($fields) {

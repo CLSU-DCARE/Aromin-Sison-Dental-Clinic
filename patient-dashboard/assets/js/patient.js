@@ -903,9 +903,8 @@ function renderTreatments(rows) {
   }
 
   if (!rows.length) {
-    list.innerHTML = emptyState(
-      'No treatment records on file yet.'
-    );
+    list.innerHTML =
+      '<tr><td colspan="4" class="table-empty">No treatment records on file yet.</td></tr>';
 
     return;
   }
@@ -914,24 +913,16 @@ function renderTreatments(rows) {
     rows.map(treatment => {
       const detail = [treatment.diagnosis, treatment.notes]
         .filter(Boolean)
-        .map(text => `<p>${escapeHtml(text)}</p>`)
-        .join('');
-      return (
-        `<div class="timeline-item treatment-card">` +
-        `<div class="tl-dot` +
-        `${treatment.muted ? ' muted' : ''}">` +
-        `</div>` +
-        `<div class="treatment-copy">` +
-        `<div class="tl-title">` +
-        `${escapeHtml(treatment.title)}` +
-        `</div>` +
-        `<div class="tl-meta">` +
-        `${escapeHtml(treatment.meta)}` +
-        `</div>` +
-        (detail ? `<div class="treatment-notes">${detail}</div>` : '') +
-        `</div>` +
-        `</div>`
-      );
+        .join(' - ');
+      const meta = String(treatment.meta || '').split(/\s+·\s+/);
+      const date = meta[0] || '—';
+      const dentist = meta.slice(1).join(' · ') || '—';
+      return `<tr>
+        <td>${escapeHtml(date)}</td>
+        <td><strong>${escapeHtml(treatment.title)}</strong></td>
+        <td>${escapeHtml(dentist)}</td>
+        <td>${detail ? escapeHtml(detail) : '—'}</td>
+      </tr>`;
     }).join('');
 }
 
