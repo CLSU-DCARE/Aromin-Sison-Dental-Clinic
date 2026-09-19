@@ -369,9 +369,11 @@ if (inboxEmpty) inboxEmpty.textContent = 'Loading notifications...';
       return;
     }
     tbody.innerHTML = records.map(function(r){
-      var details = [r.diagnosis, r.treatment_protocol].filter(Boolean).map(ASDC.HtmlHelpers.escapeHtml).join('<br>');
+      var details = [r.diagnosis, r.treatment_protocol].filter(Boolean).map(function(text){
+        return '<p>' + ASDC.HtmlHelpers.escapeHtml(text) + '</p>';
+      }).join('');
       var summary = '<div class="record-summary-cell"><strong>' + ASDC.HtmlHelpers.escapeHtml(r.procedure || 'Treatment record') + '</strong>' +
-        (details ? '<p>' + details + '</p>' : '') + '</div>';
+        (details ? '<div class="record-detail-lines">' + details + '</div>' : '') + '</div>';
       var edit = Number(r.dentist_id) === Number(window.ASDCAuthUser?.user_id) ? '<button class="btn btn-outline btn-sm" data-edit-record="' + Number(r.record_id) + '">Edit</button>' : '';
       return '<tr class="record-row"><td>' + ASDC.HtmlHelpers.nameCell(r.initials || '', r.name, r.dentist || '') + '</td><td><span class="tag tag-green">' + ASDC.HtmlHelpers.escapeHtml(r.category) + '</span></td><td>' + summary + '</td><td><div class="record-date-cell">' + ASDC.HtmlHelpers.escapeHtml(r.date) + edit + '</div></td></tr>';
     }).join('');

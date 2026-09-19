@@ -62,6 +62,25 @@
   }
   const field = (label, input) => `<div class="form-group"><label>${esc(label)}</label>${input}</div>`;
   const write = (url, body, method = 'PATCH') => apiFetch('../backend/api/' + url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  const treatmentOptions = [
+    'Dental Examination',
+    'Consultation',
+    'Cleaning & Check-up',
+    'Tooth Restoration / Composite Filling',
+    'Tooth Extraction',
+    'Root Canal Treatment',
+    'Teeth Whitening',
+    'Braces Adjustment',
+    'Braces Progress',
+    'Retainer Fitting',
+    'Other Dental Treatment',
+  ];
+  const treatmentSelect = value => {
+    const current = String(value || '').trim();
+    const options = treatmentOptions.slice();
+    if (current && !options.includes(current)) options.unshift(current);
+    return `<select name="treatment_given" required>${options.map(option => `<option value="${esc(option)}" ${option === current ? 'selected' : ''}>${esc(option)}</option>`).join('')}</select>`;
+  };
   const refreshStaffSnapshot = async () => {
     if (window.staffLiveSync && typeof window.staffLiveSync.refetch === 'function') {
       await window.staffLiveSync.refetch();
@@ -81,7 +100,7 @@
       field('Patient', `<select name="patient_id" required>${patientOptions}</select>`) +
       field('Date recorded', `<input name="date_recorded" type="date" required value="${esc(record?.date_recorded || new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0,10))}">`) +
       field('Diagnosis', `<input name="diagnosis" maxlength="255" value="${esc(record?.diagnosis)}">`) +
-      field('Treatment', `<textarea name="treatment_given" maxlength="10000">${esc(record?.treatment_given)}</textarea>`) +
+      field('Treatment', treatmentSelect(record?.treatment_given)) +
       field('Dentist notes / protocol (shared with patient)', `<textarea name="treatment_protocol" maxlength="10000">${esc(record?.treatment_protocol)}</textarea>`),
       values => write('patients/records.php', { ...values, ...(record ? { record_id: record.record_id, appointment_id: record.appointment_id } : {}) }, record ? 'PATCH' : 'POST'));
   };

@@ -912,16 +912,18 @@ function renderTreatments(rows) {
   list.innerHTML =
     rows.map(treatment => {
       const detail = [treatment.diagnosis, treatment.notes]
-        .filter(Boolean)
-        .join(' - ');
+        .filter(Boolean);
       const meta = String(treatment.meta || '').split(/\s+·\s+/);
       const date = meta[0] || '—';
       const dentist = meta.slice(1).join(' · ') || '—';
       return `<tr>
         <td>${escapeHtml(date)}</td>
-        <td><strong>${escapeHtml(treatment.title)}</strong></td>
+        <td>
+          <div class="treatment-table-title">${escapeHtml(treatment.title)}</div>
+          ${detail.length ? `<div class="treatment-table-notes">${detail.map(text => `<p>${escapeHtml(text)}</p>`).join('')}</div>` : ''}
+        </td>
         <td>${escapeHtml(dentist)}</td>
-        <td>${detail ? escapeHtml(detail) : '—'}</td>
+        <td>${detail.length ? escapeHtml(detail[detail.length - 1]) : '—'}</td>
       </tr>`;
     }).join('');
 }
