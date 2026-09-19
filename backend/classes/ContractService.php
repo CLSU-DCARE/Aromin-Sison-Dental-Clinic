@@ -44,14 +44,14 @@ class ContractService
                     c.total_amount, c.downpayment, c.monthly_payment, c.balance_amount,
                     c.duration_months, c.start_date, c.estimated_completion_date, c.status,
                     c.current_stage, c.progress_pct, c.progress_note, c.next_note, c.progress_updated_at,
-                    COALESCE(pay.approved_count, 0) AS approved_payment_count,
+                    COALESCE(pay.approved_total, 0) AS approved_payment_total,
                     p.first_name, p.last_name,
                     du.full_name AS dentist_name
              FROM braces_contracts c
              JOIN patients p ON p.patient_id = c.patient_id
              LEFT JOIN users du ON du.user_id = c.dentist_id
              LEFT JOIN (
-                SELECT contract_id, COUNT(*) AS approved_count
+                SELECT contract_id, SUM(amount_paid) AS approved_total
                 FROM contract_payments
                 WHERE status = 'approved'
                 GROUP BY contract_id
@@ -356,8 +356,10 @@ class ContractService
         }
 
         $durationMonths = max(1, (int) $row['duration_months']);
-        $approvedPayments = max(0, (int) ($row['approved_payment_count'] ?? 0));
-        $monthIndex = min(max(1, $approvedPayments + 1), $durationMonths);
+        $monthly = max(0, (float) ($row['monthly_payment'] ?? 0));
+        $paid = max(0, (float) ($row['total_amount'] ?? 0) - (float) ($row['balance_amount'] ?? 0));
+        $coveredMonths = $monthly > 0 ? (int) floor($paid / $monthly) : 0;
+        $monthIndex = min(max(1, $coveredMonths + 1), $durationMonths);
         $due = clone $start;
         $due->modify('+' . $monthIndex . ' months');
 

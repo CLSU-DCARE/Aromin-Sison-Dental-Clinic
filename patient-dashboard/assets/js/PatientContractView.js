@@ -34,7 +34,10 @@ window.PatientContractView = class PatientContractView {
     }
     const billingSummary = document.getElementById('billingSummary');
     if (billingSummary) {
-      billingSummary.innerHTML = contract.summary.map(box =>
+      const billingOnly = contract.summary.filter(box =>
+        !/payment term/i.test(box.l || '')
+      );
+      billingSummary.innerHTML = billingOnly.map(box =>
         this._summaryBox(box)
       ).join('');
     }

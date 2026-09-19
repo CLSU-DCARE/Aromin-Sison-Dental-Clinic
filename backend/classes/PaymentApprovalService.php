@@ -88,7 +88,7 @@ class PaymentApprovalService
     public static function listForPatient(int $patientId): array
     {
         $stmt = Database::pdo()->prepare(
-            "SELECT cp.*, c.start_date, c.duration_months, c.balance_amount
+            "SELECT cp.*, c.start_date, c.duration_months, c.total_amount, c.monthly_payment, c.balance_amount
              FROM contract_payments cp
              JOIN braces_contracts c ON c.contract_id = cp.contract_id
              WHERE c.patient_id = ?
@@ -108,7 +108,7 @@ class PaymentApprovalService
     public static function listAll(): array
     {
         $stmt = Database::pdo()->query(
-            "SELECT cp.*, c.start_date, c.duration_months, c.balance_amount,
+            "SELECT cp.*, c.start_date, c.duration_months, c.total_amount, c.monthly_payment, c.balance_amount,
                     p.first_name, p.last_name, p.patient_id
              FROM contract_payments cp
              JOIN braces_contracts c ON c.contract_id = cp.contract_id
@@ -122,7 +122,7 @@ class PaymentApprovalService
     private static function listByStatus(string $status): array
     {
         $stmt = Database::pdo()->prepare(
-            "SELECT cp.*, c.start_date, c.duration_months, c.balance_amount,
+            "SELECT cp.*, c.start_date, c.duration_months, c.total_amount, c.monthly_payment, c.balance_amount,
                     p.first_name, p.last_name, p.patient_id
              FROM contract_payments cp
              JOIN braces_contracts c ON c.contract_id = cp.contract_id
@@ -386,9 +386,11 @@ class PaymentApprovalService
             return ['date' => 'Not set', 'status' => 'upcoming'];
         }
 
-        $approvedPayments = self::approvedPaymentCount((int) $row['contract_id']);
         $durationMonths = max(1, (int) $row['duration_months']);
-        $monthIndex = min(max(1, $approvedPayments + 1), $durationMonths);
+        $monthly = max(0, (float) ($row['monthly_payment'] ?? 0));
+        $paid = max(0, (float) ($row['total_amount'] ?? 0) - (float) ($row['balance_amount'] ?? 0));
+        $coveredMonths = $monthly > 0 ? (int) floor($paid / $monthly) : 0;
+        $monthIndex = min(max(1, $coveredMonths + 1), $durationMonths);
         $due = clone $start;
         $due->modify('+' . $monthIndex . ' months');
 
@@ -401,15 +403,6 @@ class PaymentApprovalService
         }
 
         return ['date' => $due->format('M j, Y'), 'status' => $status];
-    }
-
-    private static function approvedPaymentCount(int $contractId): int
-    {
-        $stmt = Database::pdo()->prepare(
-            "SELECT COUNT(*) FROM contract_payments WHERE contract_id = ? AND status = 'approved'"
-        );
-        $stmt->execute([$contractId]);
-        return (int) $stmt->fetchColumn();
     }
 
     private static function fmtDateTime(?string $value): ?string

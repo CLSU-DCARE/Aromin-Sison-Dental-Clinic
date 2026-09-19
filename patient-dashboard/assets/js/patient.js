@@ -20,39 +20,48 @@ const PatientDashboardVisibility = {
 const views = {
   dashboard: {
     title: 'My Dashboard',
-    crumb: 'Overview'
+    crumb: 'Overview',
+    description: 'Your next visit and clinic updates at a glance.'
   },
   profile: {
     title: 'My Profile',
-    crumb: 'Account'
+    crumb: 'Account',
+    description: 'Review and update your personal information.'
   },
   schedule: {
     title: 'My Appointment Schedule',
-    crumb: 'Appointments'
+    crumb: 'Appointments',
+    description: 'View your upcoming clinic visits.'
   },
   book: {
     title: 'Book an Appointment',
-    crumb: 'Appointments'
+    crumb: 'Appointments',
+    description: 'Choose a service, date, and available time slot.'
   },
   history: {
     title: 'Appointment History',
-    crumb: 'Appointments'
+    crumb: 'Appointments',
+    description: 'All past visits at Aromin-Sison Dental Clinic.'
   },
   treatment: {
     title: 'Treatment History',
-    crumb: 'Treatment'
+    crumb: 'Treatment',
+    description: 'A record of the care you have received.'
   },
   braces: {
     title: 'Braces Contract',
-    crumb: 'Treatment'
+    crumb: 'Treatment',
+    description: 'Track your orthodontic progress and contract details.'
   },
   billing: {
     title: 'Payment & Billing',
-    crumb: 'Billing'
+    crumb: 'Billing',
+    description: 'Submit proof of payment for staff confirmation.'
   },
   announcements: {
     title: 'Announcements & Promotions',
-    crumb: 'Clinic'
+    crumb: 'Clinic',
+    description: 'Scroll through current clinic announcements and offers.'
   }
 };
 
@@ -105,6 +114,16 @@ function switchView(view) {
 
   if (crumbElement) {
     crumbElement.textContent = meta.crumb;
+  }
+
+  const descriptionElement =
+    document.getElementById('viewDescription');
+
+  if (descriptionElement) {
+    descriptionElement.textContent =
+      meta.description || '';
+    descriptionElement.hidden =
+      !meta.description;
   }
 
   const current =

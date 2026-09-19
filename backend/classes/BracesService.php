@@ -222,14 +222,14 @@ class BracesService
                     'status' => $pay['status'],
                 ];
             }
-            $approvedCount = count(array_filter($payments, fn($pay) => ($pay['status'] ?? '') === 'approved'));
-            $dueDate = self::nextDueDate($contractRow['start_date'], (int) $contractRow['duration_months'], $approvedCount, $balance);
             $duration = max(1, (int) $contractRow['duration_months']);
-            $installmentNumber = $balance <= 0 ? $duration : min($approvedCount + 1, $duration);
-            $nextPaymentAmount = $balance <= 0 ? 0 : min($monthly > 0 ? $monthly : $balance, $balance);
+            $installment = self::installmentState($contractRow['start_date'], $duration, $monthly, $paid, $balance);
+            $dueDate = $installment['dueDate'];
+            $installmentNumber = $installment['month'];
+            $nextPaymentAmount = $installment['amountDue'];
             $dueDetail = $balance <= 0
                 ? 'Contract fully paid'
-                : 'Next installment: ' . self::fmtMoney($nextPaymentAmount) . ' - Month ' . $installmentNumber . ' of ' . $duration;
+                : $installment['label'];
 
             $summary = [
                 ['v' => self::fmtMoney($total), 'l' => 'Total Contract Amount'],
@@ -304,14 +304,52 @@ class BracesService
         return $time ? $time->format('g:i A') : $value;
     }
 
-    private static function nextDueDate(string $startDate, int $durationMonths, int $approvedPayments, float $balance): string
+    private static function installmentState(string $startDate, int $durationMonths, float $monthly, float $paid, float $balance): array
     {
-        if ($balance <= 0) return 'Fully paid';
+        if ($balance <= 0) {
+            return [
+                'dueDate' => 'Fully paid',
+                'month' => max(1, $durationMonths),
+                'amountDue' => 0.0,
+                'label' => 'Contract fully paid',
+            ];
+        }
+
+        if ($monthly <= 0) {
+            return [
+                'dueDate' => self::fmtDate($startDate),
+                'month' => 1,
+                'amountDue' => $balance,
+                'label' => 'Next payment: ' . self::fmtMoney($balance),
+            ];
+        }
+
         $start = DateTime::createFromFormat('Y-m-d', $startDate);
-        if (!$start) return 'Not set';
-        $monthIndex = min(max(1, $approvedPayments + 1), max(1, $durationMonths));
+        if (!$start) {
+            return [
+                'dueDate' => 'Not set',
+                'month' => 1,
+                'amountDue' => min($monthly, $balance),
+                'label' => 'Next installment: ' . self::fmtMoney(min($monthly, $balance)) . ' - Month 1 of ' . $durationMonths,
+            ];
+        }
+
+        $coveredMonths = (int) floor(max(0, $paid) / $monthly);
+        $paidIntoCurrent = fmod(max(0, $paid), $monthly);
+        $monthIndex = min(max(1, $coveredMonths + 1), max(1, $durationMonths));
+        $amountDue = $paidIntoCurrent > 0.009
+            ? max(0, $monthly - $paidIntoCurrent)
+            : $monthly;
+        $amountDue = min($amountDue, $balance);
+
         $due = clone $start;
         $due->modify('+' . $monthIndex . ' months');
-        return self::fmtDate($due->format('Y-m-d'));
+
+        return [
+            'dueDate' => self::fmtDate($due->format('Y-m-d')),
+            'month' => $monthIndex,
+            'amountDue' => $amountDue,
+            'label' => 'Next installment: ' . self::fmtMoney($amountDue) . ' - Month ' . $monthIndex . ' of ' . $durationMonths,
+        ];
     }
 }
