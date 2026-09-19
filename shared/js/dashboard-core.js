@@ -52,6 +52,10 @@
   const guard = new ASDC.SessionGuard();
   guard.init();
 
+  // Session refresh & warning (30-min timeout, 2-min warning)
+  const sessionRefresh = new ASDC.SessionRefreshManager();
+  sessionRefresh.init();
+
   // CSRF token bootstrap
   if (window.ASDC.ApiClient && window.ASDC.ApiClient.refreshCsrf) {
     window.ASDC.ApiClient.refreshCsrf();

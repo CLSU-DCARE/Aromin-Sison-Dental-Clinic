@@ -4,6 +4,7 @@
  *
  * Database-backed dual-key rate limiting (email + IP).
  * Falls back to session-only if the database is unavailable.
+ * Uses atomic INSERT ... ON DUPLICATE KEY UPDATE to prevent race conditions.
  *
  * Usage:
  *   RateLimiter::record('login:john@example.com', 5, 900);
@@ -40,41 +41,45 @@ class RateLimiter
     }
 
     /**
-     * Record a failed attempt. Locks out after maxAttempts.
+     * Record a failed attempt atomically. Locks out after maxAttempts.
+     * Uses INSERT ... ON DUPLICATE KEY UPDATE for atomicity.
      */
     public static function record(string $key, int $maxAttempts, int $windowSeconds): void
     {
-        $rows = self::fetch([$key]);
-        if ($rows === null) {
-            self::sessionRecord($key, $maxAttempts, $windowSeconds);
-            return;
-        }
-
-        $row = $rows[$key] ?? null;
-        $pdo = Database::pdo();
-
-        if (!$row) {
+        try {
+            $pdo = Database::pdo();
+            
+            // Atomic upsert: increment attempts, set lockout if threshold reached
             $stmt = $pdo->prepare(
                 'INSERT INTO rate_limits (identifier, attempts, lockout_until, window_started_at)
-                 VALUES (?, 1, NULL, NOW())'
+                 VALUES (?, 1, NULL, NOW())
+                 ON DUPLICATE KEY UPDATE
+                     attempts = IF(
+                         lockout_until IS NOT NULL AND lockout_until > NOW(),
+                         attempts,
+                         CASE
+                             WHEN attempts + 1 >= ? THEN attempts + 1
+                             ELSE attempts + 1
+                         END
+                     ),
+                     lockout_until = IF(
+                         lockout_until IS NOT NULL AND lockout_until > NOW(),
+                         lockout_until,
+                         CASE
+                             WHEN attempts + 1 >= ? THEN DATE_ADD(NOW(), INTERVAL ? SECOND)
+                             ELSE NULL
+                         END
+                     ),
+                     window_started_at = IF(
+                         window_started_at < DATE_SUB(NOW(), INTERVAL ? SECOND),
+                         NOW(),
+                         window_started_at
+                     )'
             );
-            $stmt->execute([$key]);
-            return;
-        }
-
-        if ($row['lockout_until'] && strtotime($row['lockout_until']) > time()) {
-            return;
-        }
-
-        $attempts = $row['attempts'] + 1;
-        if ($attempts >= $maxAttempts) {
-            $stmt = $pdo->prepare(
-                'UPDATE rate_limits SET attempts=?, lockout_until=DATE_ADD(NOW(), INTERVAL ? SECOND) WHERE identifier=?'
-            );
-            $stmt->execute([$attempts, $windowSeconds, $key]);
-        } else {
-            $stmt = $pdo->prepare('UPDATE rate_limits SET attempts=? WHERE identifier=?');
-            $stmt->execute([$attempts, $key]);
+            $stmt->execute([$key, $maxAttempts, $maxAttempts, $windowSeconds, $windowSeconds]);
+        } catch (\Throwable $e) {
+            // Fallback to session-only on DB error
+            self::sessionRecord($key, $maxAttempts, $windowSeconds);
         }
     }
 

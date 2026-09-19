@@ -1,7 +1,7 @@
 <?php
 /**
  * POST /backend/api/auth/login.php
- * Body (JSON): { "email": "...", "password": "..." }
+ * Body (JSON): { "email": "...", "password": "...", "remember_me": false }
  */
 
 require_once __DIR__ . '/../../autoload.php';
@@ -11,14 +11,14 @@ require_once __DIR__ . '/../../config/headers.php';
 
 $input = \ASDC\ApiResponse::requireJson();
 
-$email    = is_string($input['email'] ?? '') ? $input['email'] : '';
-$password = is_string($input['password'] ?? '') ? $input['password'] : '';
+$email       = is_string($input['email'] ?? '') ? $input['email'] : '';
+$password    = is_string($input['password'] ?? '') ? $input['password'] : '';
+$rememberMe  = isset($input['remember_me']) ? (bool) $input['remember_me'] : false;
 
-$result = \ASDC\AuthService::login($email, $password);
+$result = \ASDC\AuthService::login($email, $password, $rememberMe);
 
 if ($result['success']) {
-    echo json_encode($result);
+    \ASDC\ApiResponse::ok($result['user'], 'Login successful.');
 } else {
-    http_response_code($result['code']);
-    echo json_encode(['error' => $result['error']]);
+    \ASDC\ApiResponse::error($result['code'], 'LOGIN_FAILED', $result['error']);
 }

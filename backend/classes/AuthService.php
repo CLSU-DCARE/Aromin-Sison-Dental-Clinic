@@ -33,9 +33,10 @@ class AuthService
      * On success, sets session variables and regenerates the session ID.
      * On failure, tracks brute-force attempts.
      *
+     * @param bool $rememberMe If true, creates a remember token for persistent login
      * @return array{success: true, user: array}|array{success: false, error: string, code: int}
      */
-    public static function login(string $email, string $password): array
+    public static function login(string $email, string $password, bool $rememberMe = false): array
     {
         $email = strtolower(trim($email));
 
@@ -89,8 +90,25 @@ class AuthService
         $_SESSION['email'] = $user['email'];
         $_SESSION['full_name'] = $user['full_name'];
         $_SESSION['last_activity'] = time();
+        $_SESSION['remember_me'] = $rememberMe;
+
+        // Register active session
+        $sessionId = session_id();
+        $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? null;
+        $ipAddress = AuthMiddleware::getClientIp();
+        SessionManager::registerSession($user['user_id'], $sessionId, $userAgent, $ipAddress, $rememberMe);
+
+        // Create remember token if requested
+        if ($rememberMe) {
+            $token = RememberToken::generate($user['user_id'], $userAgent, $ipAddress);
+            RememberToken::setCookie($token);
+        }
 
         unset($user['password_hash'], $user['is_active']);
+
+        // Audit log
+        $sessionId = session_id();
+        SessionAudit::logCreate($user['user_id'], $sessionId, $rememberMe);
 
         return ['success' => true, 'user' => $user];
     }
@@ -132,6 +150,23 @@ class AuthService
     public static function logout(): void
     {
         AuthMiddleware::secureSessionStart();
+
+        // Remove active session record
+        $sessionId = session_id();
+        $userId = !empty($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
+        
+        if ($sessionId && $userId) {
+            SessionManager::revokeSession($userId, $sessionId);
+            // Audit log
+            SessionAudit::logDestroy($userId, $sessionId, 'user_logout');
+        }
+
+        // Delete remember token if present
+        $token = RememberToken::getCookieToken();
+        if ($token) {
+            RememberToken::delete($token);
+            RememberToken::clearCookie();
+        }
 
         $_SESSION = [];
 

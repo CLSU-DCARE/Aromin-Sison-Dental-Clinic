@@ -2,18 +2,16 @@
  * SessionGuard: Aromin-Sison Dental Clinic System.
  * Validates session on page load, bfcache restore, and visibility change.
  * Redirects to login if session is invalid.
+ * Supports multi-tab sync via BroadcastChannel.
  */
 (function () {
   'use strict';
 
   class SessionGuard {
     constructor() {
-      this._loginUrl = '../auth/login.html';
-      this._roleDestinations = {
-        patient: '../patient-dashboard/dashboard.html',
-        dentist: '../dentist-dashboard/dashboard.html',
-        receptionist: '../admin-system/dashboard.html',
-      };
+      this._loginUrl = window.ASDC.Routing ? window.ASDC.Routing.getLoginUrl() : '../auth/login.html';
+      this._broadcastChannel = null;
+      this._initBroadcastChannel();
     }
 
     init() {
@@ -22,7 +20,90 @@
       this._initVisibilityChange();
     }
 
+    _initBroadcastChannel() {
+      if (!window.BroadcastChannel) return;
+      try {
+        this._broadcastChannel = new BroadcastChannel('asdc-auth');
+        this._broadcastChannel.onmessage = (event) => this._handleBroadcastMessage(event.data);
+      } catch (e) {
+        // BroadcastChannel not supported or failed
+      }
+      // Fallback for older browsers
+      window.addEventListener('storage', (e) => {
+        if (e.key === 'asdc:auth:logout' && e.newValue) {
+          this._handleBroadcastMessage({ type: 'logout' });
+        }
+      });
+    }
+
+    _handleBroadcastMessage(message) {
+      if (!message || !message.type) return;
+      switch (message.type) {
+        case 'logout':
+          this._forceLogout();
+          break;
+        case 'refresh':
+          // Session was refreshed in another tab, update local timestamp
+          if (message.timestamp) {
+            this._lastKnownActivity = message.timestamp;
+          }
+          break;
+      }
+    }
+
+    _broadcast(message) {
+      if (!this._broadcastChannel) return;
+      try {
+        this._broadcastChannel.postMessage(message);
+      } catch (e) {
+        // Ignore
+      }
+      // Also set localStorage as fallback
+      if (message.type === 'logout') {
+        localStorage.setItem('asdc:auth:logout', Date.now().toString());
+      }
+    }
+
+    _forceLogout() {
+      // Clear any cached user data
+      window.ASDCAuthUser = null;
+      // Redirect to login
+      window.location.replace(this._loginUrl + '?error=session');
+    }
+
     _guardDashboard() {
+      if (!window.ASDC.Routing) {
+        // Fallback if routing not loaded
+        this._legacyGuardDashboard();
+        return;
+      }
+
+      const pathname = location.pathname;
+      const isDashboard = window.ASDC.Routing.isDashboardPath(pathname);
+      if (!isDashboard) return;
+
+      document.documentElement.style.visibility = 'hidden';
+
+      this._checkSession()
+        .then((user) => {
+          const correctDashboard = window.ASDC.Routing.isCorrectDashboardForRole(pathname, user.role);
+
+          if (!correctDashboard) {
+            window.ASDC.Routing.redirectToDashboard(user.role);
+            return;
+          }
+
+          window.ASDCAuthUser = user;
+          this._populateUserUI(user);
+          window.dispatchEvent(new CustomEvent('asdc:authenticated', { detail: user }));
+          document.documentElement.style.visibility = '';
+        })
+        .catch(() =>
+          window.location.replace(this._loginUrl + '?error=session')
+        );
+    }
+
+    _legacyGuardDashboard() {
       const isPatient = location.pathname.includes('/patient-dashboard/');
       const isDentist = location.pathname.includes('/dentist-dashboard/');
       const isReceptionist = location.pathname.includes('/admin-system/');
@@ -158,14 +239,15 @@
 
     _escape(value) {
       return String(value)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
+        .replace(/&/g, '&')
+        .replace(/</g, '<')
+        .replace(/>/g, '>')
+        .replace(/"/g, '"')
+        .replace(/'/g, ''');
     }
 
     _checkSession() {
+      // First try the regular session check
       return fetch('../backend/api/auth/me.php', {
         method: 'GET',
         credentials: 'same-origin',
@@ -177,8 +259,34 @@
           try {
             payload = await response.json();
           } catch (e) {}
-          if (!response.ok || !payload.user)
+          if (!response.ok || !payload.user) {
+            // Session check failed, try auto-login with remember token
+            return this._tryAutoLogin();
+          }
+          return payload.user;
+        });
+    }
+
+    _tryAutoLogin() {
+      // Try to use remember token for auto-login
+      return fetch('../backend/api/auth/auto-login.php', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify({}),
+        cache: 'no-store',
+      })
+        .then(async (response) => {
+          let payload = {};
+          try {
+            payload = await response.json();
+          } catch (e) {}
+          if (!response.ok || !payload.user) {
             throw new Error('unauthenticated');
+          }
           return payload.user;
         });
     }
@@ -204,7 +312,24 @@
         });
       });
     }
+
+    // Public method to notify other tabs of logout
+    broadcastLogout() {
+      this._broadcast({ type: 'logout' });
+    }
+
+    // Public method to notify other tabs of session refresh
+    broadcastRefresh() {
+      this._broadcast({ type: 'refresh', timestamp: Date.now() });
+    }
   }
+
+  // Legacy role destinations for backward compatibility
+  SessionGuard.prototype._roleDestinations = {
+    patient: '../patient-dashboard/dashboard.html',
+    dentist: '../dentist-dashboard/dashboard.html',
+    receptionist: '../admin-system/dashboard.html',
+  };
 
   window.ASDC.SessionGuard = SessionGuard;
 })();

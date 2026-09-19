@@ -12,4 +12,4 @@ require_once __DIR__ . '/../../config/headers.php';
 
 \ASDC\AuthService::logout();
 
-echo json_encode(['success' => true]);
+\ASDC\ApiResponse::ok([], 'Logged out successfully.');

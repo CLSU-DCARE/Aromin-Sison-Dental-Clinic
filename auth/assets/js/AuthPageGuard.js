@@ -2,6 +2,7 @@
  * AuthPageGuard: Aromin-Sison Dental Clinic System.
  * Redirects authenticated users away from login/signup/forgot-password pages.
  * Handles bfcache restores and visibility changes.
+ * Uses unified routing.
  */
 (function () {
   'use strict';
@@ -11,7 +12,8 @@
       return (
         !!document.getElementById('panel-login') ||
         !!document.getElementById('panel-patient-signup') ||
-        !!document.getElementById('panel-forgot')
+        !!document.getElementById('panel-forgot') ||
+        !!document.getElementById('panel-reset')
       );
     }
 
@@ -20,20 +22,31 @@
 
       const authShell = document.querySelector('.auth-shell');
       const api = window.ASDC.AuthApiClient;
-      const destinations = api.roleDestinations;
+      const routing = window.ASDC.Routing;
 
       api
         .me()
         .then(({ response, payload }) => {
-          if (payload.user && destinations[payload.user.role]) {
-            if (authShell) authShell.style.visibility = 'hidden';
-            window.location.replace(destinations[payload.user.role]);
+          if (payload.user && routing && routing.getDestinationForRole) {
+            const destination = routing.getDestinationForRole(payload.user.role);
+            if (destination && destination !== routing.getLoginUrl()) {
+              if (authShell) authShell.style.visibility = 'hidden';
+              window.location.replace(destination);
+            }
           }
         })
         .catch(() => {});
     }
 
     static init() {
+      // Add cache-control meta tag for auth pages to prevent bfcache issues
+      if (!document.querySelector('meta[http-equiv="Cache-Control"]')) {
+        const meta = document.createElement('meta');
+        meta.httpEquiv = 'Cache-Control';
+        meta.content = 'no-store, must-revalidate';
+        document.head.appendChild(meta);
+      }
+
       AuthPageGuard._checkAndRedirect();
 
       window.addEventListener('pageshow', (e) => {

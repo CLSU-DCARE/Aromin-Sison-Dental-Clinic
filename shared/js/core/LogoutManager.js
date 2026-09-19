@@ -1,6 +1,7 @@
 /**
  * LogoutManager: Aromin-Sison Dental Clinic System.
  * Handles logout modal flow and synchronous session destruction.
+ * Broadcasts logout to other tabs via BroadcastChannel.
  */
 (function () {
   'use strict';
@@ -8,10 +9,12 @@
   class LogoutManager {
     constructor() {
       this._modal = null;
+      this._sessionGuard = null;
     }
 
     init(redirectUrl) {
       this._modal = new window.ASDC.Modal('logoutModal');
+      this._sessionGuard = new window.ASDC.SessionGuard();
       const logoutBtn = document.getElementById('logoutBtn');
       const cancelBtn = document.getElementById('logoutCancelBtn');
       const confirmBtn = document.getElementById('logoutConfirmBtn');
@@ -33,6 +36,11 @@
     }
 
     _destroyAndRedirect(url) {
+      // Broadcast logout to other tabs BEFORE destroying session
+      if (this._sessionGuard && this._sessionGuard.broadcastLogout) {
+        this._sessionGuard.broadcastLogout();
+      }
+
       try {
         var xhr = new XMLHttpRequest();
         if (window.ASDC && !window.ASDC._csrfToken) {
