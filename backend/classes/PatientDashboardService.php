@@ -7,6 +7,7 @@ class PatientDashboardService
     public static function snapshot(int $patientId): array
     {
         $pdo = Database::pdo();
+        PaymentApprovalService::ensureGeneralTreatmentBillingTables();
         $pdo->exec('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ');
         $pdo->beginTransaction();
         try {

@@ -168,7 +168,7 @@ button:active{transform:scale(.97);}
   body.sidebar-collapsed .main{margin-left:76px;}
 }
 .topbar{
-  min-height:94px;
+  height:72px;
   /* Apple-inspired frosted glass: the page scrolls beneath a translucent
      blurred bar instead of an opaque strip. Kept subtle and elegant:
      saturates the ivory palette, stays readable on any background. */
@@ -177,7 +177,7 @@ button:active{transform:scale(.97);}
   backdrop-filter:var(--glass-blur-strong);
   border-bottom:1px solid var(--glass-border);
   box-shadow:inset 0 1px 0 rgba(255,255,255,0.55), 0 6px 24px rgba(17,17,16,0.05);
-  display:flex;align-items:center;justify-content:space-between;padding:14px 32px;position:sticky;top:0;z-index:40;
+  display:flex;align-items:center;justify-content:space-between;padding:0 32px;position:sticky;top:0;z-index:40;
   gap:16px;
 }
 .topbar-left{display:flex;align-items:center;gap:16px;min-width:0;}
@@ -200,20 +200,11 @@ button:active{transform:scale(.97);}
   margin-bottom:1px;white-space:nowrap;
 }
 .topbar h1{
-  font-family:'Fraunces',serif;font-size:21px;font-weight:600;
+  font-family:'Fraunces',serif;font-size:20px;font-weight:600;
   letter-spacing:-0.015em;line-height:1.15;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
-.topbar-desc{
-  margin-top:7px;
-  max-width:520px;
-  color:rgba(27,27,25,0.62);
-  font-size:12.5px;
-  line-height:1.25;
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
-}
+.topbar-desc{display:none;}
 .topbar-right{display:flex;align-items:center;gap:14px;}
 .icon-btn{width:42px;height:42px;border-radius:50%;border:1px solid var(--glass-border);background:rgba(255,255,255,0.55);-webkit-backdrop-filter:var(--glass-blur);backdrop-filter:var(--glass-blur);display:flex;align-items:center;justify-content:center;color:var(--dark);position:relative;transition:background .2s ease, border-color .2s ease, color .2s ease;flex-shrink:0;}
 .icon-btn:hover{background:rgba(255,255,255,0.92);border-color:rgba(156,139,62,0.45);color:var(--gold);}
@@ -250,12 +241,11 @@ button:active{transform:scale(.97);}
 
 .eyebrow{font-family:var(--font-ui);font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--gold-text);display:flex;align-items:center;gap:8px;margin-bottom:8px;}
 .page-head{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:32px;flex-wrap:wrap;gap:16px;}
-.page-head p{color:rgba(27,27,25,0.65);font-size:14px;margin-top:5px;}
-.page-head > div:first-child{display:none;}
-.page-head:not(:has(> button)){display:none;}
+.page-head .view-title{display:none;}
+.page-head p{color:rgba(27,27,25,0.65);font-size:15px;margin-top:10px;max-width:620px;}
 .page-head:has(> button){
-  justify-content:flex-end;
-  margin-bottom:22px;
+  justify-content:space-between;
+  margin-bottom:32px;
 }
 /* ===== BUTTONS =====
    All buttons (primary, gold, outline, danger, ghost, icon, sizes,

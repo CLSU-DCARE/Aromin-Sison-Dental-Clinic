@@ -35,6 +35,7 @@ class PaymentApprovalService
      */
     public static function submit(int $patientId, array $data, string $receiptPath): array
     {
+        self::ensureGeneralTreatmentBillingTables();
         $method = self::METHOD_MAP[strtolower(trim($data['method'] ?? ''))] ?? 'other';
 
         $pdo = Database::pdo();
@@ -104,6 +105,7 @@ class PaymentApprovalService
     /** All of this patient's own submissions (any status), newest first. */
     public static function listForPatient(int $patientId): array
     {
+        self::ensureGeneralTreatmentBillingTables();
         $stmt = Database::pdo()->prepare(
             "SELECT cp.*, c.start_date, c.duration_months, c.total_amount, c.monthly_payment, c.balance_amount
              FROM contract_payments cp
@@ -126,6 +128,7 @@ class PaymentApprovalService
 
     public static function listAll(): array
     {
+        self::ensureGeneralTreatmentBillingTables();
         $stmt = Database::pdo()->query(
             "SELECT cp.*, c.start_date, c.duration_months, c.total_amount, c.monthly_payment, c.balance_amount,
                     p.first_name, p.last_name, p.patient_id
@@ -142,6 +145,7 @@ class PaymentApprovalService
 
     private static function listByStatus(string $status): array
     {
+        self::ensureGeneralTreatmentBillingTables();
         $stmt = Database::pdo()->prepare(
             "SELECT cp.*, c.start_date, c.duration_months, c.total_amount, c.monthly_payment, c.balance_amount,
                     p.first_name, p.last_name, p.patient_id
@@ -170,6 +174,7 @@ class PaymentApprovalService
 
     private static function review($paymentId, int $reviewerId, bool $approve): array
     {
+        self::ensureGeneralTreatmentBillingTables();
         $ref = self::paymentRef($paymentId);
         if ($ref['type'] === 'treatment') {
             return self::reviewTreatment($ref['id'], $reviewerId, $approve);
@@ -326,6 +331,52 @@ class PaymentApprovalService
     /* ------------------------------------------------------------------
      *  Private helpers
      * ----------------------------------------------------------------*/
+
+    public static function ensureGeneralTreatmentBillingTables(): void
+    {
+        static $done = false;
+        if ($done) return;
+
+        $pdo = Database::pdo();
+        if ($pdo->inTransaction()) return;
+        $pdo->exec(
+            "CREATE TABLE IF NOT EXISTS treatment_bills (
+                bill_id INT AUTO_INCREMENT PRIMARY KEY,
+                patient_id INT NOT NULL,
+                appointment_id INT NULL,
+                service_treatment VARCHAR(160) NOT NULL,
+                total_amount DECIMAL(10,2) NOT NULL,
+                balance_amount DECIMAL(10,2) NOT NULL,
+                status ENUM('active','paid','cancelled') NOT NULL DEFAULT 'active',
+                created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+                FOREIGN KEY (patient_id) REFERENCES patients(patient_id) ON DELETE CASCADE,
+                FOREIGN KEY (appointment_id) REFERENCES appointments(appointment_id) ON DELETE SET NULL
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"
+        );
+        $pdo->exec(
+            "CREATE TABLE IF NOT EXISTS treatment_payments (
+                payment_id INT AUTO_INCREMENT PRIMARY KEY,
+                bill_id INT NOT NULL,
+                amount_paid DECIMAL(10,2) NOT NULL,
+                payment_date DATE NOT NULL,
+                payment_method ENUM('cash','card','gcash','bank_transfer','other') DEFAULT 'cash',
+                status ENUM('pending','approved','rejected') NOT NULL DEFAULT 'pending',
+                receipt_path VARCHAR(255) NULL,
+                note VARCHAR(255) NULL,
+                submitted_by INT NULL,
+                reviewed_by INT NULL,
+                reviewed_at TIMESTAMP NULL,
+                created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                or_number VARCHAR(50) NULL,
+                FOREIGN KEY (bill_id) REFERENCES treatment_bills(bill_id) ON DELETE CASCADE,
+                FOREIGN KEY (submitted_by) REFERENCES users(user_id) ON DELETE SET NULL,
+                FOREIGN KEY (reviewed_by) REFERENCES users(user_id) ON DELETE SET NULL
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"
+        );
+
+        $done = true;
+    }
 
     private static function findRaw(int $paymentId): ?array
     {

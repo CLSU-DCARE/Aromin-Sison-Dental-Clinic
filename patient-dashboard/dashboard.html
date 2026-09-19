@@ -12,7 +12,7 @@
 <link rel="stylesheet" href="../shared/css/variables.css?v=4">
 <link rel="stylesheet" href="../shared/css/buttons.css?v=5">
 <link rel="stylesheet" href="../shared/css/panels.css?v=4">
-<link rel="stylesheet" href="assets/css/patient.css?v=20260919-treatment-notes-table">
+<link rel="stylesheet" href="assets/css/patient.css?v=20260919-page-head-style">
 <link rel="stylesheet" href="../shared/css/dashboard-system.css?v=3">
 </head>
 <body>
@@ -98,7 +98,6 @@
         <div class="topbar-title">
           <div class="crumb" id="viewCrumb">Overview</div>
           <h1 id="viewTitle" class="serif">My Dashboard</h1>
-          <p id="viewDescription" class="topbar-desc">Your next visit and clinic updates at a glance.</p>
         </div>
       </div>
       <div class="topbar-right">
@@ -126,6 +125,9 @@
 
       <!-- ===== DASHBOARD ===== -->
       <section class="view active" id="view-dashboard">
+        <div class="page-head">
+          <div><div class="eyebrow">Overview</div><h1 class="serif view-title">My Dashboard</h1><p>Your next visit and clinic updates at a glance.</p></div>
+        </div>
         <div class="welcome-banner">
           <div>
             <h2 id="welcomeTitle">Welcome</h2>
@@ -155,7 +157,7 @@
       <!-- ===== PROFILE ===== -->
       <section class="view" id="view-profile">
         <div class="page-head">
-          <div><div class="eyebrow">Account</div><h1 class="serif view-title">My Profile</h1></div>
+          <div><div class="eyebrow">Account</div><h1 class="serif view-title">My Profile</h1><p>Review and update your personal information.</p></div>
           <button class="btn btn-outline" id="editProfileBtn">Edit Profile</button>
         </div>
         <div class="profile-grid">
@@ -178,7 +180,7 @@
       <!-- ===== MY SCHEDULE ===== -->
       <section class="view" id="view-schedule">
         <div class="page-head">
-          <div><div class="eyebrow">Appointments</div><h1 class="serif view-title">My Appointment Schedule</h1></div>
+          <div><div class="eyebrow">Appointments</div><h1 class="serif view-title">My Appointment Schedule</h1><p>View your upcoming clinic visits.</p></div>
         </div>
         <div class="panel">
           <div class="panel-head"><h3>Upcoming</h3></div>
@@ -270,7 +272,7 @@
       <!-- ===== BRACES CONTRACT ===== -->
       <section class="view" id="view-braces">
         <div class="page-head">
-          <div><div class="eyebrow">Orthodontics</div><h1 class="serif view-title">Braces Contract</h1></div>
+          <div><div class="eyebrow">Orthodontics</div><h1 class="serif view-title">Braces Contract</h1><p>Track your orthodontic progress and contract details.</p></div>
           <button class="btn btn-outline" id="downloadContractBtn">Download Contract PDF</button>
         </div>
         <div class="panel panel-gap braces-overview">
