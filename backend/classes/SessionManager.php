@@ -54,7 +54,7 @@ class SessionManager
                  is_current = TRUE,
                  remember_token_used = VALUES(remember_token_used)'
         );
-        $stmt->execute([$sessionId, $userId, $userAgent, $ipAddress, $rememberTokenUsed]);
+        $stmt->execute([$sessionId, $userId, $userAgent, $ipAddress, (int) $rememberTokenUsed]);
     }
 
     /**
