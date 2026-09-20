@@ -101,6 +101,14 @@
               : log.status === 'failed'
                 ? '<span class="tag tag-red">Failed</span>'
                 : '<span class="tag tag-amber">Pending</span>';
+          const apptStatus = log.appointment_status || '';
+          const apptTag = apptStatus
+            ? (['confirmed', 'completed'].includes(apptStatus)
+                ? '<span class="tag tag-green">' + esc(apptStatus.charAt(0).toUpperCase() + apptStatus.slice(1)) + '</span>'
+                : ['pending', 'rescheduled'].includes(apptStatus)
+                  ? '<span class="tag tag-amber">' + esc(apptStatus.charAt(0).toUpperCase() + apptStatus.slice(1)) + '</span>'
+                  : '<span class="tag tag-red">' + esc(apptStatus.charAt(0).toUpperCase() + apptStatus.slice(1)) + '</span>')
+            : '<span class="tag tag-gray">—</span>';
           const subject = log.subject || '\u2014';
           const date = log.sent_at
             ? new Date(log.sent_at).toLocaleString('en-US', {
@@ -116,6 +124,7 @@
             <td>${chTag}</td>
             <td>${esc(subject)}</td>
             <td>${stTag}</td>
+            <td>${apptTag}</td>
             <td>${esc(date)}</td>
             <td><button class="icon-btn notif-delete" data-log-id="${esc(log.log_id || '')}" title="Delete notification" aria-label="Delete notification">${window.trashIcon || 'Delete'}</button></td>
           </tr>`;

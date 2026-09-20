@@ -21,6 +21,7 @@
   const LOGIN_URL = '../auth/login.html';
 
   const Routing = {
+    ROLE_DESTINATIONS,
     getDestinationForRole(role) {
       return ROLE_DESTINATIONS[role] || LOGIN_URL;
     },

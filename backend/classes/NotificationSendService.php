@@ -19,7 +19,7 @@ class NotificationSendService
      * Send a notification to a patient.
      *
      * @param int   $patientId
-     * @param array{template_key?: string, channel?: string, subject?: string, body?: string, replacements?: array} $data
+     * @param array{template_key?: string, channel?: string, subject?: string, body?: string, replacements?: array, appointment_id?: int} $data
      * @return array{success: true, patient_id: int, results: array}|array{success: false, error: string, code: int}
      */
     public static function send(int $patientId, array $data): array
@@ -44,6 +44,7 @@ class NotificationSendService
         $subject      = trim($data['subject'] ?? '');
         $body         = trim($data['body'] ?? '');
         $replacements = $data['replacements'] ?? [];
+        $appointmentId = $data['appointment_id'] ?? null;
 
         // Load template if provided
         $templateId = null;
@@ -94,10 +95,11 @@ class NotificationSendService
             }
 
             // Log
-            $logStmt = $pdo->prepare('INSERT INTO notification_logs (patient_id, template_id, channel, recipient, subject, body, status, error_message) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+            $logStmt = $pdo->prepare('INSERT INTO notification_logs (patient_id, template_id, appointment_id, channel, recipient, subject, body, status, error_message) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
             $logStmt->execute([
                 $patientId,
                 $templateId,
+                $appointmentId,
                 $ch,
                 $recipient ?? '',
                 $renderedSubject,

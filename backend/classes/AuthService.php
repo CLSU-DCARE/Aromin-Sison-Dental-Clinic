@@ -82,7 +82,15 @@ class AuthService
         // Success
         RateLimiter::reset("login:{$email}");
         RateLimiter::reset('ip:' . AuthMiddleware::getClientIp());
-        session_regenerate_id(true);
+
+        // Only regenerate the session ID if there was a pre-existing session
+        // (e.g. from AuthPageGuard checking me.php on page load). Destroying
+        // a brand-new session with session_regenerate_id(true) can race against
+        // the browser storing the Set-Cookie header, causing the immediate
+        // follow-up me() call to land on an empty session.
+        if (!empty($_SESSION['user_id'])) {
+            session_regenerate_id(true);
+        }
         CsrfToken::regenerate();
 
         $_SESSION['user_id'] = $user['user_id'];

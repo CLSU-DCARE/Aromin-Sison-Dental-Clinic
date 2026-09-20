@@ -50,16 +50,28 @@ function initLoginForm(form) {
     const password = String(data.get('password') || '');
 
     try {
-      const { response, payload } = await ASDC.AuthApiClient.login(email, password);
-      if (!response.ok) {
-        showAlert(loginErrorMessage(response, payload));
+      const { response: loginResponse, payload: loginPayload } = await ASDC.AuthApiClient.login(email, password);
+      if (!loginResponse.ok) {
+        showAlert(loginErrorMessage(loginResponse, loginPayload));
         return;
       }
 
+      // Attempt to verify the session was created by calling /me.
       const meResult = await ASDC.AuthApiClient.me();
-      const user = meResult.payload.user;
-      const destination = user && ROLE_DESTINATIONS[user.role];
-      if (!meResult.response.ok || !destination) {
+      let user = meResult.payload && meResult.payload.user;
+      let destination = user && ROLE_DESTINATIONS[user.role];
+
+      // Fallback: if me() failed (session cookie race), use user data from
+      // the login response to avoid forcing a needless re-login.
+      if (!user || !destination) {
+        const loginData = loginPayload && loginPayload.data;
+        if (loginData && loginData.role) {
+          user = loginData;
+          destination = ROLE_DESTINATIONS[loginData.role];
+        }
+      }
+
+      if (!destination) {
         await ASDC.AuthApiClient.logout();
         showAlert('Your account session could not be verified. Please sign in again.');
         return;

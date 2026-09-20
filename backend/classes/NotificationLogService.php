@@ -62,10 +62,12 @@ class NotificationLogService
                 nl.error_message,
                 nl.sent_at,
                 nt.template_key,
-                nt.name AS template_name
+                nt.name AS template_name,
+                a.status AS appointment_status
             FROM notification_logs nl
             JOIN patients p ON p.patient_id = nl.patient_id
             LEFT JOIN notification_templates nt ON nt.template_id = nl.template_id
+            LEFT JOIN appointments a ON a.appointment_id = nl.appointment_id
             $whereClause
             ORDER BY nl.sent_at DESC
             LIMIT $limit OFFSET $offset

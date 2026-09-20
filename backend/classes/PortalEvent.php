@@ -199,6 +199,7 @@ class PortalEvent
             NotificationSendService::send((int) $row['patient_id'], [
                 'template_key' => $templateKey,
                 'replacements' => self::appointmentReplacements($row, $context),
+                'appointment_id' => (int) $row['appointment_id'],
             ]);
         } catch (\Throwable $e) {
             error_log('Appointment email notification failed: ' . $e->getMessage());

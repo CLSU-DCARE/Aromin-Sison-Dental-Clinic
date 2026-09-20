@@ -311,6 +311,22 @@
           </div>
           <button class="btn btn-secondary" id="refreshAppointmentsBtn">Refresh Schedule</button>
         </div>
+        <div class="panel appointment-request-panel">
+          <div class="panel-head">
+            <div>
+              <h3>Pending Booking Requests</h3>
+              <p>Requests submitted through the public website for the selected week.</p>
+            </div>
+            <span class="tag tag-amber" id="appointmentRequestCount">Loading…</span>
+          </div>
+          <div class="table-scroll">
+            <table class="appointment-request-table">
+              <thead><tr><th>Patient</th><th>Service</th><th>Requested Schedule</th><th>Contact Number</th><th>Status</th><th>Actions</th></tr></thead>
+              <tbody id="appointmentRequestsBody"><tr><td colspan="6" class="empty-cell">Loading booking requests…</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+
         <div class="panel">
           <div class="toolbar appointment-toolbar">
             <div class="toolbar-left" role="group" aria-label="Filter schedule">
@@ -335,22 +351,6 @@
             </table>
           </div>
           <p class="form-note err appointment-load-error" id="appointmentLoadError" role="alert" hidden></p>
-        </div>
-
-        <div class="panel appointment-request-panel">
-          <div class="panel-head">
-            <div>
-              <h3>Pending Booking Requests</h3>
-              <p>Requests submitted through the public website for the selected week.</p>
-            </div>
-            <span class="tag tag-amber" id="appointmentRequestCount">Loading…</span>
-          </div>
-          <div class="table-scroll">
-            <table class="appointment-request-table">
-              <thead><tr><th>Patient</th><th>Service</th><th>Requested Schedule</th><th>Contact Number</th><th>Status</th><th>Actions</th></tr></thead>
-              <tbody id="appointmentRequestsBody"><tr><td colspan="6" class="empty-cell">Loading booking requests…</td></tr></tbody>
-            </table>
-          </div>
         </div>
       </section>
 
@@ -563,6 +563,7 @@
                   <th>Channel</th>
                   <th>Subject</th>
                   <th>Status</th>
+                  <th>Appt Status</th>
                   <th>Sent</th>
                   <th></th>
                 </tr>
