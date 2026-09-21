@@ -48,8 +48,9 @@
   const logout = new ASDC.LogoutManager();
   ASDC._logout = logout;
 
-  // Session guard
+  // Session guard (shared, so logout and the idle timer use the same one)
   const guard = new ASDC.SessionGuard();
+  ASDC.sessionGuard = guard;
   guard.init();
 
   // Session refresh & warning (30-min timeout, 2-min warning)

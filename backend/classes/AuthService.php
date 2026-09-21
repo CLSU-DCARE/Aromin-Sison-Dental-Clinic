@@ -25,7 +25,7 @@ class AuthService
     private const LOGIN_LOCKOUT_SECONDS = 30;
     private const RESET_MAX_ATTEMPTS = 3;
     private const RESET_WINDOW_SECONDS = 900;
-    private const ALLOWED_ROLES = ['dentist', 'receptionist', 'patient'];
+    public const ALLOWED_ROLES = ['dentist', 'receptionist', 'patient'];
 
     /**
      * Authenticate a user by email + password.
@@ -83,14 +83,19 @@ class AuthService
         RateLimiter::reset("login:{$email}");
         RateLimiter::reset('ip:' . AuthMiddleware::getClientIp());
 
-        // Only regenerate the session ID if there was a pre-existing session
-        // (e.g. from AuthPageGuard checking me.php on page load). Destroying
-        // a brand-new session with session_regenerate_id(true) can race against
-        // the browser storing the Set-Cookie header, causing the immediate
-        // follow-up me() call to land on an empty session.
-        if (!empty($_SESSION['user_id'])) {
-            session_regenerate_id(true);
+        // Always give the user a brand-new session ID at login. If we kept the ID
+        // the browser arrived with, anyone who planted that ID beforehand
+        // ("session fixation") would be logged in as this user.
+        // The old ID is deleted only when it belonged to a logged-in user; an empty
+        // pre-login session is left to expire on its own, so pages that were already
+        // in flight with the old cookie (like the login page's own /me check) do
+        // not break.
+        $wasLoggedIn = !empty($_SESSION['user_id']);
+        if ($wasLoggedIn) {
+            SessionManager::removeSession((int) $_SESSION['user_id'], session_id());
         }
+        session_regenerate_id($wasLoggedIn);
+        $_SESSION = []; // start clean; nothing from an earlier visit may carry over
         CsrfToken::regenerate();
 
         $_SESSION['user_id'] = $user['user_id'];
@@ -105,8 +110,16 @@ class AuthService
         $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? null;
         $ipAddress = AuthMiddleware::getClientIp();
         SessionManager::registerSession($user['user_id'], $sessionId, $userAgent, $ipAddress, $rememberMe);
+        $_SESSION['session_registered'] = true; // lets the server tell "revoked" apart from "old login without a row"
 
-        // Create remember token if requested
+        // A "remember me" cookie left by an earlier login in this browser must not
+        // outlive this login (it could silently sign the previous person back in).
+        // If the user asked to be remembered this time, a fresh one is issued below.
+        $oldRememberToken = RememberToken::getCookieToken();
+        if ($oldRememberToken) {
+            RememberToken::delete($oldRememberToken);
+            RememberToken::clearCookie();
+        }
         if ($rememberMe) {
             $token = RememberToken::generate($user['user_id'], $userAgent, $ipAddress);
             RememberToken::setCookie($token);
@@ -159,32 +172,25 @@ class AuthService
     {
         AuthMiddleware::secureSessionStart();
 
-        // Remove active session record
         $sessionId = session_id();
         $userId = !empty($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
-        
+
+        // Remove this device's active-session record and write one audit entry.
         if ($sessionId && $userId) {
-            SessionManager::revokeSession($userId, $sessionId);
-            // Audit log
+            SessionManager::removeSession($userId, $sessionId);
             SessionAudit::logDestroy($userId, $sessionId, 'user_logout');
         }
 
-        // Delete remember token if present
+        // Always forget this browser's "remember me" token, even when the
+        // session had already expired. Otherwise the next page load would sign
+        // the person straight back in.
         $token = RememberToken::getCookieToken();
         if ($token) {
             RememberToken::delete($token);
             RememberToken::clearCookie();
         }
 
-        $_SESSION = [];
-
-        if (ini_get('session.use_cookies')) {
-            $params = session_get_cookie_params();
-            setcookie(session_name(), '', time() - 42000,
-                $params['path'], $params['domain'], $params['secure'], $params['httponly']);
-        }
-
-        session_destroy();
+        AuthMiddleware::destroySession(true);
     }
 
     /**
@@ -354,6 +360,16 @@ class AuthService
 
             TokenService::markUsed($pdo, $reset['user_id']);
             $pdo->commit();
+
+            // The password changed, so every existing login (any device, any
+            // "remember me") must stop working. This is what protects the
+            // account if someone else knew the old password.
+            try {
+                SessionManager::revokeAllSessions((int) $reset['user_id']);
+                RememberToken::deleteAllForUser((int) $reset['user_id']);
+            } catch (\Throwable $e) {
+                error_log('Could not revoke sessions after password reset: ' . $e->getMessage());
+            }
         } catch (\Throwable $e) {
             if ($pdo->inTransaction()) $pdo->rollBack();
             error_log('Password reset failed: ' . $e->getMessage());

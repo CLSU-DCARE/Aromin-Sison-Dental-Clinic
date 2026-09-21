@@ -1,222 +1,205 @@
 /**
  * SessionRefreshManager: Aromin-Sison Dental Clinic System.
- * Handles sliding session refresh (every 10 min) and 2-min warning modal.
- * Uses existing modal system.
+ * Keeps the login alive ONLY while the person is really using the system,
+ * and warns them 2 minutes before the 30-minute idle timeout.
+ *
+ * How it works, in plain words:
+ *  - It watches clicks, key presses, touches and scrolling (in any open tab).
+ *  - If the person did something, it tells the server "still here", at most
+ *    once every 5 minutes.
+ *  - If nobody did anything, it says nothing. The server then lets the session
+ *    end after 30 minutes, and a warning is shown 2 minutes before.
+ *  - Background auto-refresh of the dashboard does NOT count as activity.
  */
 (function () {
   'use strict';
 
+  const REFRESH_URL = '../backend/api/auth/refresh.php';
+
   class SessionRefreshManager {
     constructor() {
-      this._refreshInterval = null;
-      this._warningShown = false;
-      this._checkInterval = null;
-      this._lastKnownActivity = Date.now();
-      this._refreshEndpoint = '../backend/api/auth/refresh.php';
-      this._refreshIntervalMs = 10 * 60 * 1000; // 10 minutes
-      this._checkIntervalMs = 30 * 1000; // 30 seconds
+      this._timeoutMs = 30 * 60 * 1000;        // must match the server (30 minutes)
+      this._warningBeforeMs = 2 * 60 * 1000;   // warn 2 minutes before
+      this._refreshEveryMs = 5 * 60 * 1000;    // tell the server at most every 5 minutes
+      this._tickMs = 15 * 1000;
+
+      this._lastActivity = Date.now();   // last real action in ANY tab
+      this._lastRefresh = Date.now();    // last time the server was told
+      this._needsRefresh = false;        // was there activity since the last refresh?
+      this._expiryChecked = false;
+      this._refreshing = null;
+      this._timer = null;
+      this._modal = null;
+      this._lastActivityStamp = 0;
     }
 
     init() {
-      // Get timeout config from backend if available
-      this._loadSessionConfig();
-
-      // Start periodic refresh
-      this._startPeriodicRefresh();
-
-      // Start session expiry check
-      this._startExpiryCheck();
-
-      // Listen for user activity to reset warning
       this._bindActivityListeners();
-
-      // Listen for broadcast refresh from other tabs
-      this._listenForBroadcasts();
+      this._listenForOtherTabs();
+      this._timer = setInterval(() => this._tick(), this._tickMs);
     }
 
-    _loadSessionConfig() {
-      // Try to get timeout from session guard if available
-      if (window.ASDC && window.ASDC.SessionGuard) {
-        // Config will be loaded via /me endpoint or we use defaults
-      }
-      // Defaults: 30 min timeout, 2 min warning
-      this._timeoutMs = 30 * 60 * 1000;
-      this._warningBeforeMs = 2 * 60 * 1000;
-    }
-
-    _startPeriodicRefresh() {
-      // Refresh session every 10 minutes
-      this._refreshInterval = setInterval(() => {
-        this._refreshSession();
-      }, this._refreshIntervalMs);
-
-      // Also refresh on window focus (user returns to tab)
-      window.addEventListener('focus', () => {
-        this._refreshSession();
-      });
-    }
-
-    _startExpiryCheck() {
-      // Check session expiry every 30 seconds
-      this._checkInterval = setInterval(() => {
-        this._checkExpiry();
-      }, this._checkIntervalMs);
-    }
-
-    _checkExpiry() {
-      // We can't directly access server-side last_activity from frontend
-      // But we can track local activity and estimate
-      const now = Date.now();
-      const timeSinceActivity = now - this._lastKnownActivity;
-
-      if (timeSinceActivity >= this._timeoutMs - this._warningBeforeMs &&
-          timeSinceActivity < this._timeoutMs &&
-          !this._warningShown) {
-        this._showWarningModal();
-      } else if (timeSinceActivity >= this._timeoutMs) {
-        // Session likely expired, let SessionGuard handle redirect
-        this._warningShown = false;
-      }
-    }
+    // ---------- Activity ----------
 
     _bindActivityListeners() {
-      const events = ['mousedown', 'keydown', 'touchstart', 'scroll', 'click'];
-      events.forEach(event => {
-        document.addEventListener(event, () => this._onUserActivity(), { passive: true });
+      ['mousedown', 'keydown', 'touchstart', 'scroll', 'click'].forEach((name) => {
+        document.addEventListener(name, () => this._onUserActivity(), { passive: true, capture: true });
       });
     }
 
     _onUserActivity() {
-      this._lastKnownActivity = Date.now();
-      this._warningShown = false;
+      // While the warning is open, only its buttons count (so nothing extends
+      // the session by accident).
+      if (this._isWarningOpen()) return;
+      const now = Date.now();
+      this._lastActivity = now;
+      this._needsRefresh = true;
+      this._expiryChecked = false;
+
+      // Let other tabs know, but not on every single event.
+      if (now - this._lastActivityStamp > 10 * 1000) {
+        this._lastActivityStamp = now;
+        const guard = window.ASDC && window.ASDC.sessionGuard;
+        if (guard) guard.broadcastRefresh();
+      }
     }
 
-    _listenForBroadcasts() {
-      if (!window.BroadcastChannel) return;
-      try {
-        const channel = new BroadcastChannel('asdc-auth');
-        channel.onmessage = (event) => {
-          if (event.data && event.data.type === 'refresh' && event.data.timestamp) {
-            this._lastKnownActivity = event.data.timestamp;
-            this._warningShown = false;
+    _listenForOtherTabs() {
+      // Another tab reported activity: this tab is not idle either.
+      window.addEventListener('asdc:session-activity', () => {
+        this._lastActivity = Date.now();
+        this._expiryChecked = false;
+        this._hideWarning();
+      });
+    }
+
+    // ---------- Timer ----------
+
+    _tick() {
+      const now = Date.now();
+
+      if (this._needsRefresh && now - this._lastRefresh >= this._refreshEveryMs) {
+        this._refreshSession();
+      }
+
+      const idle = now - this._lastActivity;
+      if (idle >= this._timeoutMs - this._warningBeforeMs && idle < this._timeoutMs && !this._isWarningOpen()) {
+        this._showWarning();
+      } else if (idle >= this._timeoutMs && !this._expiryChecked) {
+        // The time is up. Ask the server (without counting it as activity):
+        // it either confirms the session ended (login page) or restores a
+        // "remember me" login.
+        this._expiryChecked = true;
+        this._hideWarning();
+        const guard = window.ASDC && window.ASDC.sessionGuard;
+        if (guard) guard.revalidate({ force: true, passive: true });
+      }
+    }
+
+    // ---------- Server refresh ----------
+
+    _postRefresh() {
+      const headers = { 'Content-Type': 'application/json', Accept: 'application/json' };
+      if (window.ASDC && window.ASDC._csrfToken) headers['X-CSRF-Token'] = window.ASDC._csrfToken;
+      return fetch(REFRESH_URL, { method: 'POST', credentials: 'same-origin', headers, body: '{}' });
+    }
+
+    _refreshSession() {
+      if (this._refreshing) return this._refreshing;
+      this._refreshing = (async () => {
+        try {
+          const api = window.ASDC && window.ASDC.ApiClient;
+          // Make sure we hold a CSRF token first.
+          if (api && api.refreshCsrf && !window.ASDC._csrfToken) await api.refreshCsrf();
+
+          let response = await this._postRefresh();
+          if (response.status === 403 && api && api.refreshCsrf) {
+            // The CSRF token was replaced (it is renewed every few hours). Get the new one and retry once.
+            await api.refreshCsrf();
+            response = await this._postRefresh();
           }
-        };
-      } catch (e) {
-        // Ignore
-      }
-    }
 
-    async _refreshSession() {
-      try {
-        const headers = { 'Content-Type': 'application/json' };
-        if (window.ASDC && window.ASDC._csrfToken) {
-          headers['X-CSRF-Token'] = window.ASDC._csrfToken;
+          if (response.ok) {
+            this._lastRefresh = Date.now();
+            this._needsRefresh = false;
+            this._lastActivity = Date.now();
+            this._expiryChecked = false;
+            this._hideWarning();
+            const guard = window.ASDC && window.ASDC.sessionGuard;
+            if (guard) guard.broadcastRefresh();
+          } else if (response.status === 401) {
+            // The session already ended. Let the guard restore it (remember me) or go to login.
+            const guard = window.ASDC && window.ASDC.sessionGuard;
+            if (guard) guard.revalidate({ force: true });
+          }
+        } catch (e) {
+          // Offline or server busy: try again on a later tick.
+        } finally {
+          this._refreshing = null;
         }
-        const response = await fetch(this._refreshEndpoint, {
-          method: 'POST',
-          credentials: 'same-origin',
-          headers: headers
-        });
-
-        if (response.ok) {
-          this._lastKnownActivity = Date.now();
-          this._warningShown = false;
-          // Broadcast refresh to other tabs
-          this._broadcastRefresh();
-        } else if (response.status === 401 || response.status === 403) {
-          // Session invalid, stop refresh
-          this._stopAll();
-        }
-      } catch (e) {
-        // Network error, will retry on next interval
-      }
+      })();
+      return this._refreshing;
     }
 
-    _broadcastRefresh() {
-      if (!window.BroadcastChannel) return;
-      try {
-        const channel = new BroadcastChannel('asdc-auth');
-        channel.postMessage({ type: 'refresh', timestamp: Date.now() });
-      } catch (e) {
-        // Ignore
+    // ---------- Warning dialog ----------
+
+    _ensureModal() {
+      if (this._modal) return this._modal;
+      let overlay = document.getElementById('sessionWarningModal');
+      if (!overlay) {
+        // Same look as the existing "Confirm Logout" dialog.
+        overlay = document.createElement('div');
+        overlay.className = 'modal-overlay';
+        overlay.id = 'sessionWarningModal';
+        overlay.hidden = true;
+        overlay.innerHTML = `
+          <div class="modal" role="dialog" aria-modal="true" aria-labelledby="sessionWarningTitle" aria-describedby="sessionWarningText">
+            <h3 id="sessionWarningTitle">Session expiring soon</h3>
+            <p id="sessionWarningText">You have been inactive for a while. For your security you will be signed out in about 2 minutes.</p>
+            <div class="modal-actions">
+              <button type="button" class="btn btn-secondary" id="sessionLogoutBtn">Log Out</button>
+              <button type="button" class="btn btn-primary" id="sessionStayBtn">Stay Logged In</button>
+            </div>
+          </div>`;
+        document.body.appendChild(overlay);
       }
-    }
+      this._modal = new window.ASDC.Modal('sessionWarningModal');
 
-    _showWarningModal() {
-      this._warningShown = true;
-
-      // Use existing modal system
-      if (!window.ASDC.Modal) return;
-
-      // Create or find warning modal
-      let modalEl = document.getElementById('sessionWarningModal');
-      if (!modalEl) {
-        modalEl = this._createWarningModal();
-        document.body.appendChild(modalEl);
-      }
-
-      const modal = new window.ASDC.Modal('sessionWarningModal');
-
-      // Wire up "Stay logged in" button
       const stayBtn = document.getElementById('sessionStayBtn');
       if (stayBtn) {
-        stayBtn.onclick = () => {
-          modal.close();
+        stayBtn.addEventListener('click', () => {
+          this._modal.close();
+          this._needsRefresh = true;
           this._refreshSession();
-        };
+        });
       }
-
-      // Wire up "Log out" button
       const logoutBtn = document.getElementById('sessionLogoutBtn');
       if (logoutBtn) {
-        logoutBtn.onclick = () => {
-          modal.close();
-          // Trigger logout
-          if (window.openLogoutConfirm) {
-            window.openLogoutConfirm();
-          }
-        };
+        logoutBtn.addEventListener('click', () => {
+          this._modal.close();
+          if (window.openLogoutConfirm) window.openLogoutConfirm();
+        });
       }
-
-      modal.open(document.activeElement);
+      return this._modal;
     }
 
-    _createWarningModal() {
-      const div = document.createElement('div');
-      div.id = 'sessionWarningModal';
-      div.className = 'modal';
-      div.setAttribute('role', 'dialog');
-      div.setAttribute('aria-modal', 'true');
-      div.setAttribute('aria-labelledby', 'sessionWarningTitle');
-      div.innerHTML = `
-        <div class="modal-backdrop" tabindex="-1"></div>
-        <div class="modal-dialog modal-sm">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h3 id="sessionWarningTitle" class="modal-title">Session Expiring Soon</h3>
-              <button type="button" class="modal-close" aria-label="Close">&times;</button>
-            </div>
-            <div class="modal-body">
-              <p>Your session will expire in <strong>2 minutes</strong> due to inactivity.</p>
-              <p>Do you want to stay logged in?</p>
-            </div>
-            <div class="modal-footer">
-              <button type="button" id="sessionLogoutBtn" class="btn btn-outline">Log Out</button>
-              <button type="button" id="sessionStayBtn" class="btn btn-primary">Stay Logged In</button>
-            </div>
-          </div>
-        </div>
-      `;
-      return div;
+    _showWarning() {
+      if (!window.ASDC || !window.ASDC.Modal) return;
+      this._ensureModal().open(document.activeElement);
     }
 
-    _stopAll() {
-      if (this._refreshInterval) clearInterval(this._refreshInterval);
-      if (this._checkInterval) clearInterval(this._checkInterval);
+    _hideWarning() {
+      if (this._modal) this._modal.close();
+    }
+
+    // The dialog can also be closed with Esc or a backdrop click, so ask the dialog itself.
+    _isWarningOpen() {
+      return !!(this._modal && this._modal.modal && !this._modal.modal.hidden);
     }
 
     // Public method to manually refresh
     refreshNow() {
+      this._needsRefresh = true;
       return this._refreshSession();
     }
   }

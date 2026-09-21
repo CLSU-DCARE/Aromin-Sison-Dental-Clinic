@@ -68,7 +68,9 @@ function initLoginForm(form) {
 
     try {
       clearExpiredSessionNotice();
-      const { response: loginResponse, payload: loginPayload } = await ASDC.AuthApiClient.login(email, password);
+      // "Remember me" checkbox (only on the login form)
+      const rememberMe = data.get('remember') !== null;
+      const { response: loginResponse, payload: loginPayload } = await ASDC.AuthApiClient.login(email, password, rememberMe);
       if (!loginResponse.ok) {
         try {
           sessionStorage.removeItem('asdc:login-submitting');
@@ -98,6 +100,8 @@ function initLoginForm(form) {
         return;
       }
 
+      // Tell other open tabs that someone just signed in
+      ASDC.AuthApiClient.announceLogin();
       window.location.replace(destination);
     } catch (error) {
       try {

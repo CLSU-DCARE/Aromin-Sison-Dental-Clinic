@@ -1,16 +1,28 @@
 /**
  * SessionGuard: Aromin-Sison Dental Clinic System.
- * Validates session on page load, bfcache restore, and visibility change.
- * Redirects to login if session is invalid.
- * Supports multi-tab sync via BroadcastChannel.
+ * Keeps a dashboard page tied to a real, valid session:
+ *  - checks the session when the page opens, when it is restored from the
+ *    back/forward cache, and when the tab becomes visible again;
+ *  - sends the person to the right dashboard (or the login page) if the
+ *    session is gone or belongs to a different role / a different user;
+ *  - keeps all open tabs in step (logout, login as someone else) through
+ *    BroadcastChannel (or the "storage" event on older browsers).
+ *
+ * A temporary network or server problem is NEVER treated as "logged out".
  */
 (function () {
   'use strict';
 
+  const ME_URL = '../backend/api/auth/me.php';
+
   class SessionGuard {
     constructor() {
       this._loginUrl = window.ASDC.Routing ? window.ASDC.Routing.getLoginUrl() : '../auth/login.html';
-      this._broadcastChannel = null;
+      this._channel = null;
+      this._user = null;          // who this page was built for
+      this._verifying = null;     // a check that is running right now
+      this._lastVerifyAt = 0;
+      this._redirecting = false;
       this._initBroadcastChannel();
     }
 
@@ -20,18 +32,24 @@
       this._initVisibilityChange();
     }
 
+    // ---------- Multi-tab messages ----------
+
     _initBroadcastChannel() {
-      if (!window.BroadcastChannel) return;
-      try {
-        this._broadcastChannel = new BroadcastChannel('asdc-auth');
-        this._broadcastChannel.onmessage = (event) => this._handleBroadcastMessage(event.data);
-      } catch (e) {
-        // BroadcastChannel not supported or failed
+      if (window.BroadcastChannel) {
+        try {
+          this._channel = new BroadcastChannel('asdc-auth');
+          this._channel.onmessage = (event) => this._handleBroadcastMessage(event.data);
+        } catch (e) {
+          this._channel = null;
+        }
       }
-      // Fallback for older browsers
+      // Older browsers: the "storage" event fires in the OTHER tabs only.
       window.addEventListener('storage', (e) => {
-        if (e.key === 'asdc:auth:logout' && e.newValue) {
-          this._handleBroadcastMessage({ type: 'logout' });
+        if (e.key !== 'asdc:auth:event' || !e.newValue) return;
+        try {
+          this._handleBroadcastMessage(JSON.parse(e.newValue));
+        } catch (err) {
+          // ignore bad data
         }
       });
     }
@@ -40,113 +58,190 @@
       if (!message || !message.type) return;
       switch (message.type) {
         case 'logout':
-          this._forceLogout();
+          // Someone signed out in another tab: leave this page too.
+          this._goToLogin(false);
           break;
+        case 'login':
+          // Someone signed in in another tab. It may be a different person,
+          // so this page must check that it still shows the right account.
+          this.revalidate({ force: true });
+          break;
+        case 'activity':
         case 'refresh':
-          // Session was refreshed in another tab, update local timestamp
-          if (message.timestamp) {
-            this._lastKnownActivity = message.timestamp;
-          }
+          // The person is active in another tab. Tell the idle timer.
+          window.dispatchEvent(
+            new CustomEvent('asdc:session-activity', { detail: { timestamp: message.timestamp || Date.now() } })
+          );
           break;
       }
     }
 
     _broadcast(message) {
-      if (!this._broadcastChannel) return;
+      if (this._channel) {
+        try {
+          this._channel.postMessage(message);
+          return;
+        } catch (e) {
+          // fall through to localStorage
+        }
+      }
       try {
-        this._broadcastChannel.postMessage(message);
+        localStorage.setItem('asdc:auth:event', JSON.stringify(Object.assign({ ts: Date.now() }, message)));
       } catch (e) {
-        // Ignore
-      }
-      // Also set localStorage as fallback
-      if (message.type === 'logout') {
-        localStorage.setItem('asdc:auth:logout', Date.now().toString());
+        // storage not available
       }
     }
 
-    _forceLogout() {
-      // Clear any cached user data
+    // ---------- Redirects ----------
+
+    _goToLogin(expired) {
+      if (this._redirecting) return;
+      this._redirecting = true;
       window.ASDCAuthUser = null;
-      // Redirect to login
-      window.location.replace(this._loginUrl);
-    }
-
-    _loginRedirectUrl(reason) {
-      if (reason === 'expired') {
+      if (expired) {
+        // The login page shows "session expired" when it finds this flag.
         try {
           sessionStorage.setItem('asdc:session-expired', '1');
         } catch (e) {}
       }
-      return this._loginUrl;
+      window.location.replace(this._loginUrl);
     }
 
-    _redirectToLogin(error) {
-      const reason = error && error.reason ? error.reason : 'signedout';
-      window.location.replace(this._loginRedirectUrl(reason));
+    _redirectTo(url) {
+      if (this._redirecting) return;
+      this._redirecting = true;
+      window.ASDCAuthUser = null;
+      window.location.replace(url);
     }
+
+    _pageRole() {
+      const routing = window.ASDC.Routing;
+      if (routing && routing.getRoleFromPath) return routing.getRoleFromPath(location.pathname);
+      if (location.pathname.includes('/patient-dashboard/')) return 'patient';
+      if (location.pathname.includes('/dentist-dashboard/')) return 'dentist';
+      if (location.pathname.includes('/admin-system/')) return 'receptionist';
+      return null;
+    }
+
+    _destinationFor(role) {
+      const routing = window.ASDC.Routing;
+      return (routing && routing.ROLE_DESTINATIONS && routing.ROLE_DESTINATIONS[role]) ||
+        this._roleDestinations[role] || this._loginUrl;
+    }
+
+    // ---------- Page guard ----------
 
     _guardDashboard() {
-      if (!window.ASDC.Routing) {
-        // Fallback if routing not loaded
-        this._legacyGuardDashboard();
-        return;
-      }
+      if (!this._pageRole()) return; // not a dashboard page
 
-      const pathname = location.pathname;
-      const isDashboard = window.ASDC.Routing.isDashboardPath(pathname);
-      if (!isDashboard) return;
-
+      // Keep the page invisible until the server confirms who is signed in.
       document.documentElement.style.visibility = 'hidden';
-
-      this._checkSession()
-        .then((user) => {
-          const correctDashboard = window.ASDC.Routing.isCorrectDashboardForRole(pathname, user.role);
-
-          if (!correctDashboard) {
-            window.ASDC.Routing.redirectToDashboard(user.role);
-            return;
-          }
-
-          window.ASDCAuthUser = user;
-          this._populateUserUI(user);
-          window.dispatchEvent(new CustomEvent('asdc:authenticated', { detail: user }));
-          document.documentElement.style.visibility = '';
-        })
-        .catch((error) => this._redirectToLogin(error));
+      this._firstCheck(0);
     }
 
-    _legacyGuardDashboard() {
-      const isPatient = location.pathname.includes('/patient-dashboard/');
-      const isDentist = location.pathname.includes('/dentist-dashboard/');
-      const isReceptionist = location.pathname.includes('/admin-system/');
-      const isAny = isPatient || isDentist || isReceptionist;
-      if (!isAny) return;
+    async _firstCheck(attempt) {
+      const result = await this._checkSession();
+      if (result.state === 'none') {
+        this._goToLogin(true);
+        return;
+      }
+      if (result.state === 'error') {
+        // The server could not be reached. That is not a logout: show the page
+        // (its own "reconnecting" messages take over) and keep trying quietly.
+        document.documentElement.style.visibility = '';
+        setTimeout(() => this._firstCheck(attempt + 1), Math.min(2000 * Math.pow(2, attempt), 30000));
+        return;
+      }
+      this._accept(result.user);
+    }
 
-      document.documentElement.style.visibility = 'hidden';
+    _accept(user) {
+      const pageRole = this._pageRole();
+      if (pageRole && user.role !== pageRole) {
+        // Signed in, but this is the wrong dashboard for the role.
+        this._redirectTo(this._destinationFor(user.role));
+        return;
+      }
+      const isFirst = !this._user;
+      this._user = user;
+      window.ASDCAuthUser = user;
+      this._populateUserUI(user);
+      document.documentElement.style.visibility = '';
+      if (isFirst) {
+        window.dispatchEvent(new CustomEvent('asdc:authenticated', { detail: user }));
+      }
+    }
 
-      this._checkSession()
-        .then((user) => {
-          const destination = this._roleDestinations[user.role];
-          const correctDashboard =
-            (isPatient && user.role === 'patient') ||
-            (isDentist && user.role === 'dentist') ||
-            (isReceptionist && user.role === 'receptionist');
+    /**
+     * Ask the server who is signed in (and quietly restore a "remember me" login).
+     * Resolves to { state: 'ok', user } | { state: 'none' } | { state: 'error' }.
+     * 'error' means a network/server problem, so callers must NOT log the person out.
+     * @param {{passive?: boolean}} [options] passive = do not count as user activity.
+     */
+    async _checkSession(options) {
+      const headers = { Accept: 'application/json' };
+      if (options && options.passive) headers['X-ASDC-Passive'] = '1';
 
-          if (!destination) {
-            location.replace(this._loginUrl);
+      try {
+        const response = await fetch(ME_URL, {
+          method: 'GET',
+          credentials: 'same-origin',
+          headers,
+          cache: 'no-store',
+        });
+        let payload = {};
+        try {
+          payload = await response.json();
+        } catch (e) {}
+        if (response.ok && payload.user) return { state: 'ok', user: payload.user };
+        if (response.status >= 500) return { state: 'error' };
+      } catch (e) {
+        return { state: 'error' };
+      }
+
+      // Not signed in. Try the "remember me" cookie before giving up.
+      const api = window.ASDC.ApiClient;
+      if (!api || !api.recoverSession) return { state: 'none' };
+      const recovered = await api.recoverSession();
+      if (recovered.ok) return { state: 'ok', user: recovered.user, restored: true };
+      return { state: recovered.error ? 'error' : 'none' };
+    }
+
+    /**
+     * Check again that the session is still valid AND still belongs to the
+     * same person this page was built for. Called on tab focus, back/forward
+     * restore, coming back online, and when another tab logs in.
+     */
+    revalidate(options) {
+      const opts = options || {};
+      if (this._verifying) return this._verifying;
+      if (!opts.force && Date.now() - this._lastVerifyAt < 5000) return Promise.resolve();
+      this._lastVerifyAt = Date.now();
+
+      this._verifying = this._checkSession({ passive: !!opts.passive })
+        .then((result) => {
+          if (result.state === 'none') {
+            this._goToLogin(true);
             return;
           }
-          if (!correctDashboard) {
-            location.replace(destination);
+          if (result.state !== 'ok') return; // temporary trouble: stay where we are
+
+          const user = result.user;
+          const pageRole = this._pageRole();
+          if (pageRole && user.role !== pageRole) {
+            this._redirectTo(this._destinationFor(user.role));
             return;
           }
-
-          window.ASDCAuthUser = user;
-          this._populateUserUI(user);
-          window.dispatchEvent(new CustomEvent('asdc:authenticated', { detail: user }));
-          document.documentElement.style.visibility = '';
+          if (this._user && String(user.user_id) !== String(this._user.user_id)) {
+            // Another tab signed in as a different person. Never keep showing
+            // the previous person's records: load this dashboard again.
+            this._redirectTo(this._destinationFor(user.role));
+          }
         })
-        .catch((error) => this._redirectToLogin(error));
+        .finally(() => {
+          this._verifying = null;
+        });
+      return this._verifying;
     }
 
     _populateUserUI(user) {
@@ -254,75 +349,36 @@
     }
 
     _escape(value) {
-      return String(value)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
-    }
-
-    _checkSession() {
-      // First try the regular session check
-      return fetch('../backend/api/auth/me.php', {
-        method: 'GET',
-        credentials: 'same-origin',
-        headers: { Accept: 'application/json' },
-        cache: 'no-store',
-      })
-        .then(async (response) => {
-          let payload = {};
-          try {
-            payload = await response.json();
-          } catch (e) {}
-          const user = payload.user || payload.data || null;
-          if (!response.ok || !user) {
-            // Session check failed, try auto-login with remember token.
-            return this._tryAutoLogin(payload && payload.code);
-          }
-          return user;
-        });
-    }
-
-    _tryAutoLogin(sessionErrorCode) {
-      // Try to use remember token for auto-login
-      return fetch('../backend/api/auth/auto-login.php', {
-        method: 'POST',
-        credentials: 'same-origin',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: JSON.stringify({}),
-        cache: 'no-store',
-      })
-        .then(async (response) => {
-          let payload = {};
-          try {
-            payload = await response.json();
-          } catch (e) {}
-          const user = payload.user || payload.data || null;
-          if (!response.ok || !user) {
-            const error = new Error('unauthenticated');
-            error.reason = sessionErrorCode === 'SESSION_EXPIRED' ? 'expired' : 'signedout';
-            throw error;
-          }
-          return user;
-        });
+      // The entity text is built in two pieces so it cannot be mangled by copy/paste tools.
+      const map = {
+        '&': '&' + 'amp;',
+        '<': '&' + 'lt;',
+        '>': '&' + 'gt;',
+        '"': '&' + 'quot;',
+        "'": '&' + '#39;',
+      };
+      return String(value).replace(/[&<>"']/g, (c) => map[c]);
     }
 
     _initBfcache() {
       window.addEventListener('pageshow', (e) => {
         if (!e.persisted) return;
-        this._checkSession().catch((error) => this._redirectToLogin(error));
+        // The browser brought back an old copy of the page (Back/Forward).
+        // It may still show data from before a logout, so hide it until the
+        // server confirms the session is still valid.
+        const isDashboard = !!this._pageRole();
+        if (isDashboard) document.documentElement.style.visibility = 'hidden';
+        this.revalidate({ force: true }).finally(() => {
+          if (isDashboard && !this._redirecting) document.documentElement.style.visibility = '';
+        });
       });
     }
 
     _initVisibilityChange() {
       document.addEventListener('visibilitychange', () => {
-        if (document.hidden) return;
-        this._checkSession().catch((error) => this._redirectToLogin(error));
+        if (!document.hidden) this.revalidate();
       });
+      window.addEventListener('online', () => this.revalidate({ force: true }));
     }
 
     // Public method to notify other tabs of logout
@@ -330,13 +386,13 @@
       this._broadcast({ type: 'logout' });
     }
 
-    // Public method to notify other tabs of session refresh
+    // Public method to tell other tabs the person is active (resets their idle timers)
     broadcastRefresh() {
-      this._broadcast({ type: 'refresh', timestamp: Date.now() });
+      this._broadcast({ type: 'activity', timestamp: Date.now() });
     }
   }
 
-  // Legacy role destinations for backward compatibility
+  // Role destinations used when the shared router is not available
   SessionGuard.prototype._roleDestinations = {
     patient: '../patient-dashboard/dashboard.html',
     dentist: '../dentist-dashboard/dashboard.html',
