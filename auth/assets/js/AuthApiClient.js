@@ -64,6 +64,70 @@
       );
     }
 
+    // The CSRF token is only needed for requests that change things while
+    // signed in. Auth pages have no session yet, so fetch one when needed.
+    static async csrfHeaders(extra = {}) {
+      const headers = Object.assign({ 'Content-Type': 'application/json' }, extra);
+      try {
+        const response = await fetch('../backend/api/auth/csrf-token.php', {
+          credentials: 'same-origin',
+          headers: { Accept: 'application/json' },
+          cache: 'no-store',
+        });
+        if (response.ok) {
+          const data = await AuthApiClient.readJson(response);
+          if (data.csrf_token) headers['X-CSRF-Token'] = data.csrf_token;
+        }
+      } catch (e) {
+        // request below will simply be rejected by the server
+      }
+      return headers;
+    }
+
+    // Only one tab at a time may use the "remember me" cookie (when the browser supports it).
+    static withTabLock(task) {
+      if (navigator.locks && navigator.locks.request) {
+        return navigator.locks.request('asdc-session-recover', task);
+      }
+      return task();
+    }
+
+    /**
+     * Who is signed in? If nobody, quietly sign in from the "remember me" cookie.
+     * Resolves to the user object, or null when the person really is signed out
+     * (or the server could not be reached; the caller then just stays on the page).
+     */
+    static restoreSession() {
+      return AuthApiClient.withTabLock(async () => {
+        try {
+          const { response, payload } = await AuthApiClient.me();
+          if (response.ok && payload.user) return payload.user;
+          if (response.status >= 500) return null;
+          const auto = await AuthApiClient.autoLogin();
+          const user = auto.payload && (auto.payload.data || auto.payload.user);
+          if (auto.response.ok && user && user.role) return user;
+        } catch (e) {
+          // offline or timed out
+        }
+        return null;
+      });
+    }
+
+    // Tell other open tabs that someone just signed in (they re-check who).
+    static announceLogin() {
+      try {
+        if (window.BroadcastChannel) {
+          const channel = new BroadcastChannel('asdc-auth');
+          channel.postMessage({ type: 'login' });
+          setTimeout(() => channel.close(), 1000);
+        } else {
+          localStorage.setItem('asdc:auth:event', JSON.stringify({ type: 'login', ts: Date.now() }));
+        }
+      } catch (e) {
+        // ignore
+      }
+    }
+
     static async login(email, password, rememberMe = false) {
       const response = await AuthApiClient.fetchWithTimeout(
         ENDPOINTS.login,
@@ -91,28 +155,22 @@
 
     static async logout() {
       try {
-        var headers = { 'Content-Type': 'application/json' };
-        if (window.ASDC && window.ASDC._csrfToken) {
-          headers['X-CSRF-Token'] = window.ASDC._csrfToken;
-        }
         await fetch(ENDPOINTS.logout, {
           method: 'POST',
           credentials: 'same-origin',
-          headers: headers
+          headers: await AuthApiClient.csrfHeaders(),
+          body: '{}',
         });
       } catch (e) {}
     }
 
     static async refresh() {
       try {
-        var headers = { 'Content-Type': 'application/json' };
-        if (window.ASDC && window.ASDC._csrfToken) {
-          headers['X-CSRF-Token'] = window.ASDC._csrfToken;
-        }
         const response = await fetch(ENDPOINTS.refresh, {
           method: 'POST',
           credentials: 'same-origin',
-          headers: headers
+          headers: await AuthApiClient.csrfHeaders(),
+          body: '{}',
         });
         return { response, payload: await AuthApiClient.readJson(response) };
       } catch (e) {
@@ -120,16 +178,16 @@
       }
     }
 
+    // No CSRF token here: the person has no session yet. The server checks the
+    // HttpOnly "remember me" cookie instead (see auto-login.php).
     static async autoLogin() {
       try {
-        var headers = { 'Content-Type': 'application/json' };
-        if (window.ASDC && window.ASDC._csrfToken) {
-          headers['X-CSRF-Token'] = window.ASDC._csrfToken;
-        }
         const response = await fetch(ENDPOINTS.autoLogin, {
           method: 'POST',
           credentials: 'same-origin',
-          headers: headers
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: '{}',
+          cache: 'no-store',
         });
         return { response, payload: await AuthApiClient.readJson(response) };
       } catch (e) {
@@ -148,26 +206,24 @@
       return { response, payload };
     }
 
-    static async revokeSession(sessionId) {
+    // sessionRef is the "session_ref" value returned by getSessions() (never the real session ID).
+    static async revokeSession(sessionRef) {
       const response = await AuthApiClient.fetchWithTimeout(ENDPOINTS.sessionRevoke, {
         method: 'DELETE',
         credentials: 'same-origin',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ session_id: sessionId }),
+        headers: await AuthApiClient.csrfHeaders(),
+        body: JSON.stringify({ session_ref: sessionRef }),
       });
       const payload = await AuthApiClient.readJson(response);
       return { response, payload };
     }
 
     static async revokeOtherSessions() {
-      var headers = { 'Content-Type': 'application/json' };
-      if (window.ASDC && window.ASDC._csrfToken) {
-        headers['X-CSRF-Token'] = window.ASDC._csrfToken;
-      }
       const response = await fetch(ENDPOINTS.sessionRevokeOthers, {
         method: 'POST',
         credentials: 'same-origin',
-        headers: headers
+        headers: await AuthApiClient.csrfHeaders(),
+        body: '{}',
       });
       const payload = await AuthApiClient.readJson(response);
       return { response, payload };

@@ -11,7 +11,7 @@ window.ASDC.startPortalSync = function ({ start = () => '', apply }) {
     fetchSnapshot: async () => {
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), 10000);
-      try { return await apiFetch('../backend/api/appointments/dashboard.php' + (start() ? '?start=' + encodeURIComponent(start()) : ''), { cache: 'no-store', signal: controller.signal }); }
+      try { return await apiFetch('../backend/api/appointments/dashboard.php' + (start() ? '?start=' + encodeURIComponent(start()) : ''), { cache: 'no-store', signal: controller.signal, passive: true }); } // passive: background refresh must not keep an idle session alive
       finally { clearTimeout(timer); }
     },
     applySnapshot: apply,
