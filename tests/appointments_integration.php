@@ -1,4 +1,5 @@
 <?php
+if (PHP_SAPI !== 'cli') { http_response_code(404); exit; } // Test script: never run it from a web browser.
 require __DIR__ . '/../backend/config/db.php';
 if (!is_dir(__DIR__ . '/sessions')) mkdir(__DIR__ . '/sessions', 0700, true);
 ini_set('session.save_path', __DIR__ . '/sessions');
@@ -7,7 +8,7 @@ $base = 'http://127.0.0.1:8765';
 $suffix = bin2hex(random_bytes(4));
 $email = "module3-$suffix@example.test";
 $phone = '0917' . random_int(1000000, 9999999);
-$password = 'Module3Test!2026';
+$password = bin2hex(random_bytes(16)) . 'aA1!'; // random on every run
 $createdUserIds = [];
 $results = [];
 

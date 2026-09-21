@@ -2,6 +2,8 @@
 // Isolated reset-request regression tests: no database connection or email delivery.
 namespace ASDC;
 
+if (PHP_SAPI !== 'cli') { http_response_code(404); exit; } // Test script: never run it from a web browser.
+
 class AuthMiddleware
 {
     public static function secureSessionStart(): void {}
