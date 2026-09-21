@@ -133,7 +133,9 @@ class PatientService
 
     public static function listArchived(): array
     {
-        $stmt = Database::pdo()->query(
+        $scope = DataScope::current();
+        [$where, $params] = self::archivedPatientFilter($scope);
+        $stmt = Database::pdo()->prepare(
             "SELECT p.patient_id, p.first_name, p.last_name, p.contact_number, p.email,
                     p.registered_at, p.archived_at, p.retention_note, u.full_name AS archived_by_name,
                     (SELECT COUNT(*) FROM appointments a WHERE a.patient_id=p.patient_id) AS appointment_count,
@@ -143,22 +145,25 @@ class PatientService
                     (SELECT COUNT(*) FROM user_notifications n WHERE n.patient_id=p.patient_id) AS notification_count
              FROM patients p
              LEFT JOIN users u ON u.user_id=p.archived_by
-             WHERE p.archived_at IS NOT NULL
+             WHERE {$where}
              ORDER BY p.archived_at DESC, p.patient_id DESC"
         );
+        $stmt->execute($params);
         return $stmt->fetchAll();
     }
 
     public static function archivedDetails(int $patientId): array
     {
         $pdo = Database::pdo();
+        $scope = DataScope::current();
+        [$where, $params] = self::archivedPatientFilter($scope);
         $patient = $pdo->prepare(
             "SELECT p.*, u.full_name AS archived_by_name
              FROM patients p
              LEFT JOIN users u ON u.user_id=p.archived_by
-             WHERE p.patient_id=? AND p.archived_at IS NOT NULL"
+             WHERE p.patient_id=? AND {$where}"
         );
-        $patient->execute([$patientId]);
+        $patient->execute(array_merge([$patientId], $params));
         $row = $patient->fetch();
         if (!$row) ApiResponse::error(404, 'not_found', 'Archived patient not found.');
 
@@ -176,6 +181,30 @@ class PatientService
             $details[$key] = $stmt->fetchAll();
         }
         return $details;
+    }
+
+    /**
+     * Archived-patient scope. Receptionists may inspect all archived records;
+     * dentists only see archived patients with their appointments or contracts.
+     *
+     * @return array{0: string, 1: array<int, mixed>}
+     */
+    private static function archivedPatientFilter(DataScope $scope): array
+    {
+        if ($scope->isDentist()) {
+            $userId = $scope->getUserId();
+            if (!$userId) return ['1=0', []];
+            return [
+                'p.archived_at IS NOT NULL AND (p.patient_id IN (SELECT patient_id FROM appointments WHERE dentist_id = ?) OR p.patient_id IN (SELECT patient_id FROM braces_contracts WHERE dentist_id = ?))',
+                [$userId, $userId],
+            ];
+        }
+
+        if ($scope->hasFullAccess()) {
+            return ['p.archived_at IS NOT NULL', []];
+        }
+
+        return ['1=0', []];
     }
 
     public static function restore(int $patientId): array

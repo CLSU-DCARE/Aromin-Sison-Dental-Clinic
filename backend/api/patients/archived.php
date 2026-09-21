@@ -4,7 +4,12 @@ require_once __DIR__ . '/../../config/headers.php';
 require_once __DIR__ . '/../../config/auth.php';
 
 $method = \ASDC\ApiResponse::method('GET', 'POST');
-require_role('receptionist');
+
+if ($method === 'GET') {
+    require_role('receptionist', 'dentist');
+} else {
+    require_role('receptionist');
+}
 
 if ($method === 'GET') {
     header('Cache-Control: no-store');

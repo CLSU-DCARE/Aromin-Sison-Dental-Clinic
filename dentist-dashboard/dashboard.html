@@ -49,6 +49,10 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>
         <span class="nav-label">Treatment Records</span>
       </button>
+      <button class="nav-item" data-view="archived" data-tooltip="Archived">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg>
+        <span class="nav-label">Archived Patients</span>
+      </button>
       <button class="nav-item" data-view="braces" data-tooltip="Braces Contracts">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12h6m-6 4h6M9 8h1"/><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg>
         <span class="nav-label">Braces Contracts</span>
@@ -58,6 +62,12 @@
       <button class="nav-item" data-view="appointments" data-tooltip="Appointments">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
         <span class="nav-label">Appointments</span>
+      </button>
+
+      <div class="nav-group-label">Reports</div>
+      <button class="nav-item" data-view="reports" data-tooltip="Reports">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m7 14 3-3 4 4 5-7"/><path d="M18 8h1v1"/></svg>
+        <span class="nav-label">Attendance Reports</span>
       </button>
     </nav>
 
@@ -191,6 +201,40 @@
         </div>
       </section>
 
+      <!-- ===== ARCHIVED PATIENTS ===== -->
+      <section class="view" id="view-archived">
+        <div class="page-head">
+          <div>
+            <div class="eyebrow">Archive</div>
+            <p>Read-only retained patient charts linked to your appointments or contracts.</p>
+          </div>
+          <button class="btn btn-secondary btn-sm" id="refreshArchivedBtn">Refresh</button>
+        </div>
+        <div class="panel">
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>Patient</th>
+                  <th>Archived</th>
+                  <th>Retained Records</th>
+                  <th>Archived By</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="archivedPatientsBody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="panel" id="archivedDetailPanel" hidden>
+          <div class="panel-head">
+            <h3 id="archivedDetailTitle">Archived Patient</h3>
+            <span class="tag tag-amber">Read only</span>
+          </div>
+          <div id="archivedDetailBody"></div>
+        </div>
+      </section>
+
       <!-- ===== BRACES CONTRACTS ===== -->
       <section class="view" id="view-braces">
         <div class="page-head">
@@ -261,6 +305,60 @@
                 </tr>
               </thead>
               <tbody id="recordsBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== ATTENDANCE REPORTS ===== -->
+      <section class="view" id="view-reports">
+        <div class="page-head">
+          <div>
+            <div class="eyebrow">Reports</div>
+            <p>Attendance for appointments assigned to you.</p>
+          </div>
+          <div class="toolbar-left" role="group" aria-label="Report period">
+            <button class="filter-chip active" aria-pressed="true">This week</button>
+            <button class="filter-chip" aria-pressed="false">Last week</button>
+            <button class="filter-chip" aria-pressed="false">This month</button>
+          </div>
+        </div>
+
+        <div class="stat-grid stat-grid-3" id="reportStats"></div>
+
+        <div class="report-layout">
+          <div class="panel attendance-chart-panel">
+            <div class="panel-head">
+              <h3 id="reportHeading">Attendance: This Week</h3>
+              <span class="tag tag-green" id="reportRateTag">0%</span>
+            </div>
+            <div class="attendance-donut-wrap">
+              <div class="attendance-donut" id="attendanceDonut" style="--attended:0%;"></div>
+              <div class="attendance-legend">
+                <div><span class="legend-dot attended"></span><b id="attendedCount">0</b> attended</div>
+                <div><span class="legend-dot missed"></span><b id="missedCount">0</b> did not attend</div>
+                <div><span class="legend-dot upcoming"></span><b id="upcomingCount">0</b> upcoming</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-head">
+              <h3>Daily Attendance</h3>
+            </div>
+            <div class="bar-chart attendance-bars" id="reportBars"></div>
+          </div>
+        </div>
+
+        <div class="panel report-table-panel">
+          <div class="panel-head">
+            <h3>Attendance Records</h3>
+            <span class="tag tag-amber" id="reportRecordCount">0 records</span>
+          </div>
+          <div class="table-scroll">
+            <table class="attendance-table">
+              <thead><tr><th>Patient</th><th>Service</th><th>Schedule</th><th>Dentist</th><th>Attendance</th></tr></thead>
+              <tbody id="attendanceReportBody"></tbody>
             </table>
           </div>
         </div>
@@ -434,12 +532,12 @@
 <script src="../shared/js/core/api.js?v=20260916-integration" defer></script>
 <script src="../shared/js/core/ViewRouter.js?v=20260916-integration" defer></script>
 <script src="../shared/js/core/FilterChipGroup.js?v=20260916-integration" defer></script>
-<script src="../shared/js/core/SessionGuard.js?v=20260918-profile-photo" defer></script>
+<script src="../shared/js/core/SessionGuard.js?v=20260921-session-content-fix" defer></script>
 <script src="../shared/js/core/NotificationPanel.js?v=20260916-integration" defer></script>
 <script src="../shared/js/core/LogoutManager.js?v=20260916-integration" defer></script>
 <script src="../shared/js/core/FullscreenToggle.js?v=20260916-integration" defer></script>
 <script src="../shared/js/core/ReportExporter.js?v=20260916-integration" defer></script>
-<script src="../shared/js/core/routing.js?v=20260919-session" defer></script>
+<script src="../shared/js/core/routing.js?v=20260921-session-content-fix" defer></script>
 <script src="../shared/js/core/SessionRefreshManager.js?v=20260919-session" defer></script>
 <script src="../shared/js/dashboard-core.js?v=20260916-integration" defer></script>
 <script src="../shared/js/state/admin.js?v=20260916-integration" defer></script>
@@ -449,7 +547,7 @@
 <script src="../shared/js/core/PortalForms.js?v=20260919-treatment-dropdown" defer></script>
 <script src="../admin-system/assets/js/AppointmentScheduler.js?v=20260919-status-actions" defer></script>
 <script src="../admin-system/assets/js/AppointmentActions.js?v=20260916-appointment-dialogs" defer></script>
-<script src="assets/js/DentistDashboard.js?v=20260919-record-wrap" defer></script>
+<script src="assets/js/DentistDashboard.js?v=20260921-attendance-report" defer></script>
 <script src="assets/js/dentist.js?v=20260916-integration" defer></script>
 
 </body>
