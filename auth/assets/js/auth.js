@@ -31,6 +31,23 @@ function loginErrorMessage(response, payload) { return ASDC.AuthApiClient.loginE
 const AUTH_ENDPOINTS = ASDC.AuthApiClient.endpoints;
 const ROLE_DESTINATIONS = ASDC.AuthApiClient.roleDestinations;
 
+function clearExpiredSessionNotice() {
+  try {
+    sessionStorage.removeItem('asdc:session-expired');
+    sessionStorage.setItem('asdc:login-submitting', '1');
+    setTimeout(() => {
+      try {
+        sessionStorage.removeItem('asdc:login-submitting');
+      } catch (e) {}
+    }, 15000);
+  } catch (e) {}
+  const params = new URLSearchParams(location.search);
+  if (!params.has('error')) return;
+  params.delete('error');
+  const clean = location.pathname + (params.toString() ? '?' + params.toString() : '') + location.hash;
+  history.replaceState(null, '', clean);
+}
+
 // =====================================================================
 // LOGIN FORM
 // =====================================================================
@@ -50,28 +67,32 @@ function initLoginForm(form) {
     const password = String(data.get('password') || '');
 
     try {
+      clearExpiredSessionNotice();
       const { response: loginResponse, payload: loginPayload } = await ASDC.AuthApiClient.login(email, password);
       if (!loginResponse.ok) {
+        try {
+          sessionStorage.removeItem('asdc:login-submitting');
+        } catch (e) {}
         showAlert(loginErrorMessage(loginResponse, loginPayload));
         return;
       }
 
-      // Attempt to verify the session was created by calling /me.
-      const meResult = await ASDC.AuthApiClient.me();
-      let user = meResult.payload && meResult.payload.user;
+      // The login endpoint already returns the authenticated user. Prefer it
+      // so a stale pre-login /me check cannot block a successful sign-in.
+      const loginData = loginPayload && (loginPayload.user || loginPayload.data);
+      let user = loginData && loginData.role ? loginData : null;
       let destination = user && ROLE_DESTINATIONS[user.role];
 
-      // Fallback: if me() failed (session cookie race), use user data from
-      // the login response to avoid forcing a needless re-login.
       if (!user || !destination) {
-        const loginData = loginPayload && loginPayload.data;
-        if (loginData && loginData.role) {
-          user = loginData;
-          destination = ROLE_DESTINATIONS[loginData.role];
-        }
+        const meResult = await ASDC.AuthApiClient.me();
+        user = meResult.payload && (meResult.payload.user || meResult.payload.data);
+        destination = user && ROLE_DESTINATIONS[user.role];
       }
 
       if (!destination) {
+        try {
+          sessionStorage.removeItem('asdc:login-submitting');
+        } catch (e) {}
         await ASDC.AuthApiClient.logout();
         showAlert('Your account session could not be verified. Please sign in again.');
         return;
@@ -79,6 +100,9 @@ function initLoginForm(form) {
 
       window.location.replace(destination);
     } catch (error) {
+      try {
+        sessionStorage.removeItem('asdc:login-submitting');
+      } catch (e) {}
       showAlert(ASDC.AuthApiClient.connectionError(ASDC.AuthApiClient.isAbortError(error)));
     } finally {
       setLoading(btn, false);

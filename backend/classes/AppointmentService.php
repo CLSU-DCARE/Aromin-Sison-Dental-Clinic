@@ -257,7 +257,7 @@ class AppointmentService
         try {
             $pdo->beginTransaction();
             $stmt = $pdo->prepare(
-                "SELECT a.appointment_id, a.scheduled_date, a.scheduled_time FROM appointments a
+                "SELECT a.appointment_id, a.dentist_id, a.scheduled_date, a.scheduled_time FROM appointments a
                  JOIN patients p ON p.patient_id=a.patient_id
                  WHERE a.appointment_id=? AND a.status='pending' AND p.archived_at IS NULL FOR UPDATE"
             );

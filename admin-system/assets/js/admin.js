@@ -703,11 +703,17 @@ initLogout('../auth/login.html');
 
 function renderUser(user){
   const set = (id, value) => { const el = document.getElementById(id); if (el) el.textContent = value; };
-  set('sideFootAvatar', user.initials);
+  const currentUser = {
+    name: user.name,
+    full_name: user.name,
+    initials: user.initials,
+    profile_image_url: window.ASDCAuthUser?.profile_image_url
+  };
+  ['sideFootAvatar', 'chipAvatar', 'menuAvatar'].forEach(id => {
+    ASDC.HtmlHelpers.setAvatarElement(document.getElementById(id), currentUser);
+  });
   set('sideFootName', user.name);
   set('sideFootRole', 'Receptionist');
-  set('chipAvatar', user.initials);
-  set('menuAvatar', user.initials);
   set('menuName', user.name);
   set('menuRole', 'Receptionist');
   set('greetingText', user.greeting);

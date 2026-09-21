@@ -102,12 +102,23 @@
 <script src="assets/js/PasswordToggle.js?v=1" defer></script>
 <script src="assets/js/AuthApiClient.js?v=2" defer></script>
 <script src="assets/js/AuthPageGuard.js?v=1" defer></script>
-<script src="../shared/js/core/routing.js?v=20260921-session" defer></script>
-<script src="assets/js/auth.js?v=12" defer></script>
+<script src="../shared/js/core/routing.js?v=20260921-session-once" defer></script>
+<script src="assets/js/auth.js?v=20260921-login-direct" defer></script>
 <script>
   document.addEventListener('DOMContentLoaded', () => {
     initLoginForm(document.getElementById('panel-login'));
-    if (new URLSearchParams(location.search).get('error') === 'session') {
+    const params = new URLSearchParams(location.search);
+    let expired = params.get('error') === 'expired';
+    try {
+      expired = expired || sessionStorage.getItem('asdc:session-expired') === '1';
+      sessionStorage.removeItem('asdc:session-expired');
+    } catch (e) {}
+    if (params.has('error')) {
+      params.delete('error');
+      const clean = location.pathname + (params.toString() ? '?' + params.toString() : '') + location.hash;
+      history.replaceState(null, '', clean);
+    }
+    if (expired && !sessionStorage.getItem('asdc:login-submitting')) {
       showAlert('Your session has expired. Please sign in again.');
     }
   });

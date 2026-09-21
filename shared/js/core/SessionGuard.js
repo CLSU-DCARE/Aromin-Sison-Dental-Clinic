@@ -68,7 +68,21 @@
       // Clear any cached user data
       window.ASDCAuthUser = null;
       // Redirect to login
-      window.location.replace(this._loginUrl + '?error=session');
+      window.location.replace(this._loginUrl);
+    }
+
+    _loginRedirectUrl(reason) {
+      if (reason === 'expired') {
+        try {
+          sessionStorage.setItem('asdc:session-expired', '1');
+        } catch (e) {}
+      }
+      return this._loginUrl;
+    }
+
+    _redirectToLogin(error) {
+      const reason = error && error.reason ? error.reason : 'signedout';
+      window.location.replace(this._loginRedirectUrl(reason));
     }
 
     _guardDashboard() {
@@ -98,9 +112,7 @@
           window.dispatchEvent(new CustomEvent('asdc:authenticated', { detail: user }));
           document.documentElement.style.visibility = '';
         })
-        .catch(() =>
-          window.location.replace(this._loginUrl + '?error=session')
-        );
+        .catch((error) => this._redirectToLogin(error));
     }
 
     _legacyGuardDashboard() {
@@ -134,20 +146,20 @@
           window.dispatchEvent(new CustomEvent('asdc:authenticated', { detail: user }));
           document.documentElement.style.visibility = '';
         })
-        .catch(() =>
-          location.replace(this._loginUrl + '?error=session')
-        );
+        .catch((error) => this._redirectToLogin(error));
     }
 
     _populateUserUI(user) {
-      const initials = String(user.full_name || '')
-        .trim()
-        .split(/\s+/)
-        .filter(Boolean)
-        .map((part) => part[0])
-        .slice(0, 2)
-        .join('')
-        .toUpperCase();
+      const initials = window.ASDC.HtmlHelpers
+        ? window.ASDC.HtmlHelpers.avatarInitials(user)
+        : String(user.full_name || '')
+          .trim()
+          .split(/\s+/)
+          .filter(Boolean)
+          .map((part) => part[0])
+          .slice(0, 2)
+          .join('')
+          .toUpperCase();
       const roleLabel =
         user.role.charAt(0).toUpperCase() + user.role.slice(1);
       const isPatient = location.pathname.includes('/patient-dashboard/');
@@ -160,6 +172,10 @@
       const setAvatar = (id) => {
         const el = document.getElementById(id);
         if (!el) return;
+        if (window.ASDC.HtmlHelpers) {
+          window.ASDC.HtmlHelpers.setAvatarElement(el, user);
+          return;
+        }
         el.classList.toggle('has-photo', Boolean(user.profile_image_url));
         if (user.profile_image_url) {
           el.innerHTML = `<img src="${this._escape(user.profile_image_url)}" alt="" loading="lazy">`;
@@ -239,11 +255,11 @@
 
     _escape(value) {
       return String(value)
-        .replace(/&/g, '&')
-        .replace(/</g, '<')
-        .replace(/>/g, '>')
-        .replace(/"/g, '"')
-        .replace(/'/g, ''');
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
     }
 
     _checkSession() {
@@ -259,15 +275,16 @@
           try {
             payload = await response.json();
           } catch (e) {}
-          if (!response.ok || !payload.user) {
-            // Session check failed, try auto-login with remember token
-            return this._tryAutoLogin();
+          const user = payload.user || payload.data || null;
+          if (!response.ok || !user) {
+            // Session check failed, try auto-login with remember token.
+            return this._tryAutoLogin(payload && payload.code);
           }
-          return payload.user;
+          return user;
         });
     }
 
-    _tryAutoLogin() {
+    _tryAutoLogin(sessionErrorCode) {
       // Try to use remember token for auto-login
       return fetch('../backend/api/auth/auto-login.php', {
         method: 'POST',
@@ -284,32 +301,27 @@
           try {
             payload = await response.json();
           } catch (e) {}
-          if (!response.ok || !payload.user) {
-            throw new Error('unauthenticated');
+          const user = payload.user || payload.data || null;
+          if (!response.ok || !user) {
+            const error = new Error('unauthenticated');
+            error.reason = sessionErrorCode === 'SESSION_EXPIRED' ? 'expired' : 'signedout';
+            throw error;
           }
-          return payload.user;
+          return user;
         });
     }
 
     _initBfcache() {
       window.addEventListener('pageshow', (e) => {
         if (!e.persisted) return;
-        this._checkSession().catch(() => {
-          window.location.replace(
-            this._loginUrl + '?error=session'
-          );
-        });
+        this._checkSession().catch((error) => this._redirectToLogin(error));
       });
     }
 
     _initVisibilityChange() {
       document.addEventListener('visibilitychange', () => {
         if (document.hidden) return;
-        this._checkSession().catch(() => {
-          window.location.replace(
-            this._loginUrl + '?error=session'
-          );
-        });
+        this._checkSession().catch((error) => this._redirectToLogin(error));
       });
     }
 

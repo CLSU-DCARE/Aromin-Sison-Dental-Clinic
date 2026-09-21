@@ -33,7 +33,7 @@ class PortalEvent
                     a.scheduled_time, a.status, a.notes,
                     CONCAT(p.first_name, ' ', p.last_name) AS patient_name,
                     p.email, p.contact_number,
-                    d.full_name AS dentist_name
+                    a.dentist_id, d.full_name AS dentist_name
              FROM appointments a
              JOIN patients p ON p.patient_id = a.patient_id
              LEFT JOIN users d ON d.user_id = a.dentist_id
@@ -77,7 +77,9 @@ class PortalEvent
                 self::renderTemplate(self::templateKeyForAppointment($action, 'staff'), self::appointmentMessage($row, $action, 'staff', $context), $replacements),
                 'appt',
                 (int) $row['patient_id'],
-                $action === 'confirmed'
+                $action === 'confirmed',
+                isset($row['dentist_id']) ? (int) $row['dentist_id'] : null,
+                true
             );
         }
     }
@@ -87,7 +89,7 @@ class PortalEvent
         $stmt = Database::pdo()->prepare(
             "SELECT r.request_id, r.first_name, r.last_name, r.email, r.contact_number,
                     r.service_type, r.requested_date, r.requested_time, r.status,
-                    r.notes, d.full_name AS dentist_name
+                    r.notes, r.preferred_dentist_id, d.full_name AS dentist_name
              FROM appointment_requests r
              LEFT JOIN users d ON d.user_id = r.preferred_dentist_id
              WHERE r.request_id = ?"
@@ -101,7 +103,15 @@ class PortalEvent
             self::requestMessage($row, 'staff'),
             self::requestReplacements($row)
         );
-        self::staff('New Appointment Request', $message, 'appt');
+        self::staff(
+            'New Appointment Request',
+            $message,
+            'appt',
+            null,
+            false,
+            isset($row['preferred_dentist_id']) ? (int) $row['preferred_dentist_id'] : null,
+            true
+        );
         if ($action === 'received') {
             self::emailRequestSubmitter($row);
         }
@@ -112,10 +122,31 @@ class PortalEvent
         self::staff($title, $message, $type, $patientId, $includeActor);
     }
 
-    private static function staff(string $title, string $message, string $type, ?int $patientId = null, bool $includeActor = false): void
+    private static function staff(
+        string $title,
+        string $message,
+        string $type,
+        ?int $patientId = null,
+        bool $includeActor = false,
+        ?int $dentistId = null,
+        bool $includeAllDentistsWhenUnassigned = false
+    ): void
     {
-        $stmt = Database::pdo()->query("SELECT user_id FROM users WHERE is_active=1 AND role='receptionist'");
-        foreach ($stmt->fetchAll(\PDO::FETCH_COLUMN) as $userId) {
+        $pdo = Database::pdo();
+        $stmt = $pdo->query("SELECT user_id FROM users WHERE is_active=1 AND role='receptionist'");
+        $recipientIds = array_map('intval', $stmt->fetchAll(\PDO::FETCH_COLUMN));
+
+        if ($dentistId) {
+            $stmt = $pdo->prepare("SELECT user_id FROM users WHERE user_id=? AND is_active=1 AND role='dentist'");
+            $stmt->execute([$dentistId]);
+            $dentistRecipient = $stmt->fetchColumn();
+            if ($dentistRecipient) $recipientIds[] = (int) $dentistRecipient;
+        } elseif ($includeAllDentistsWhenUnassigned) {
+            $stmt = $pdo->query("SELECT user_id FROM users WHERE is_active=1 AND role='dentist'");
+            $recipientIds = array_merge($recipientIds, array_map('intval', $stmt->fetchAll(\PDO::FETCH_COLUMN)));
+        }
+
+        foreach (array_values(array_unique($recipientIds)) as $userId) {
             if ($includeActor || (int) $userId !== (int) ($_SESSION['user_id'] ?? 0)) {
                 UserNotificationService::create((int) $userId, $title, $message, $type, $patientId);
             }

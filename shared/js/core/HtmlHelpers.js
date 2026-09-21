@@ -14,8 +14,50 @@
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#39;');
 
-  const nameCell = (initials, name, sub) =>
-    `<div class="cell-name"><div class="mini-avatar">${escapeHtml(initials)}</div><div class="name-block">` +
+  const initials = (name) =>
+    String(name || '').trim().split(/\s+/).filter(Boolean).map(w => w[0]).slice(0, 2).join('').toUpperCase();
+
+  const avatarInitials = (user, fallback = '?') => {
+    const value = typeof user === 'string'
+      ? user
+      : (user && (user.initials || user.full_name || user.name || user.email)) || '';
+    return initials(String(value)) || fallback;
+  };
+
+  const profileImageUrl = (user) =>
+    (user && (user.profile_image_url || user.profileImageUrl || user.profile_image_path || user.profileImagePath)) || '';
+
+  const avatarHtml = (user, options = {}) => {
+    const label = avatarInitials(user, options.fallback || '?');
+    const imageUrl = profileImageUrl(user);
+    const className = options.className || 'mini-avatar';
+    if (imageUrl) {
+      return `<div class="${escapeHtml(className)} has-photo"><img src="${escapeHtml(imageUrl)}" alt="" loading="lazy" onerror="this.parentNode.classList.remove('has-photo');this.parentNode.textContent='${escapeHtml(label)}';"></div>`;
+    }
+    return `<div class="${escapeHtml(className)}">${escapeHtml(label)}</div>`;
+  };
+
+  const setAvatarElement = (element, user, options = {}) => {
+    if (!element) return;
+    const label = avatarInitials(user, options.fallback || '?');
+    const imageUrl = profileImageUrl(user);
+    element.classList.toggle('has-photo', Boolean(imageUrl));
+    if (imageUrl) {
+      element.innerHTML = `<img src="${escapeHtml(imageUrl)}" alt="" loading="lazy">`;
+      const image = element.querySelector('img');
+      if (image) {
+        image.addEventListener('error', () => {
+          element.classList.remove('has-photo');
+          element.textContent = label;
+        }, { once: true });
+      }
+    } else {
+      element.textContent = label;
+    }
+  };
+
+  const nameCell = (initialsValue, name, sub) =>
+    `<div class="cell-name">${avatarHtml({ initials: initialsValue || initials(name), name })}<div class="name-block">` +
     `<div class="full">${escapeHtml(name)}</div>${
       sub ? `<div class="sub">${escapeHtml(sub)}</div>` : ''
     }</div></div>`;
@@ -60,12 +102,13 @@
   const trashIcon =
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>';
 
-  const initials = (name) =>
-    name.trim().split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase();
-
   window.ASDC.HtmlHelpers = {
     escapeHtml,
     nameCell,
+    avatarHtml,
+    avatarInitials,
+    profileImageUrl,
+    setAvatarElement,
     statusTag,
     statCard,
     emptyState,

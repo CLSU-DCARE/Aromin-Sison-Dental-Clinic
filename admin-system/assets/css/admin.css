@@ -1031,22 +1031,64 @@ body.sidebar-open{overflow:hidden;}
 .record-row td{
   vertical-align:top;
   white-space:normal;
+  padding-top:20px;
+  padding-bottom:20px;
+}
+.record-row .check-cell{
+  padding-top:22px;
+}
+.record-row .cell-name{
+  align-items:flex-start;
+  padding-top:1px;
+}
+.record-row .name-block{
+  display:grid;
+  gap:4px;
+  line-height:1.35;
+}
+.record-row td:nth-child(2){
+  width:180px;
+  min-width:180px;
+}
+.record-row .name-block .full{
+  font-weight:500;
+  white-space:nowrap;
 }
 .record-row td:nth-child(3){
-  width:52%;
-  min-width:360px;
+  width:48%;
+  min-width:340px;
   max-width:680px;
+}
+.record-row td:nth-child(4){
+  width:104px;
+  min-width:104px;
+  white-space:nowrap;
+  line-height:1.35;
+}
+.record-row td:nth-child(5){
+  width:132px;
+  min-width:132px;
+  line-height:1.35;
+}
+.record-row td:nth-child(6){
+  width:126px;
+  min-width:126px;
+}
+.record-row td:nth-child(7){
+  width:72px;
+  min-width:72px;
 }
 .record-summary-cell{
   display:flex;
   flex-direction:column;
-  gap:7px;
+  gap:6px;
   max-width:680px;
   white-space:normal;
+  margin-top:-2px;
 }
 .record-summary-cell strong{
   display:block;
-  font-weight:700;
+  font-weight:600;
   color:var(--ink, #1B1B19);
   line-height:1.35;
   max-width:72ch;
@@ -1060,7 +1102,7 @@ body.sidebar-open{overflow:hidden;}
   background:rgba(156,139,62,0.1);
   color:var(--gold-text, #7a6825);
   font-size:10px;
-  font-weight:700;
+  font-weight:600;
   letter-spacing:.06em;
   text-transform:uppercase;
 }
@@ -1078,6 +1120,15 @@ body.sidebar-open{overflow:hidden;}
   overflow-wrap:anywhere;
   word-break:normal;
   white-space:normal;
+}
+#recordsBody .tag{
+  margin-top:0;
+}
+#recordsBody .row-actions{
+  align-items:flex-start;
+}
+#recordsBody .row-actions .icon-btn{
+  margin-top:-4px;
 }
 .record-date-cell{
   display:flex;

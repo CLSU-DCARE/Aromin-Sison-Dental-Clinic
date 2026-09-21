@@ -134,14 +134,13 @@ window.PatientProfileEditor = class PatientProfileEditor {
   }
 
   _paintAvatars (user) {
-    const name = user?.full_name || this.state.user.name || '';
-    const initials = name
-      .trim()
-      .split(/\s+/)
-      .map(part => part.charAt(0))
-      .join('')
-      .slice(0, 2)
-      .toUpperCase() || 'P';
+    const avatarUser = {
+      name: this.state.user.name,
+      full_name: user?.full_name || this.state.user.name || '',
+      initials: this.state.user.initials,
+      profile_image_url: user?.profile_image_url || null
+    };
+    this.state.user.profile_image_url = avatarUser.profile_image_url;
 
     [
       'chipAvatar',
@@ -149,14 +148,10 @@ window.PatientProfileEditor = class PatientProfileEditor {
       'sideFootAvatar',
       'profileAvatar'
     ].forEach(id => {
-      const element = document.getElementById(id);
-      if (!element) return;
-      element.classList.toggle('has-photo', Boolean(user?.profile_image_url));
-      if (user?.profile_image_url) {
-        element.innerHTML = `<img src="${this._escape(user.profile_image_url)}" alt="" loading="lazy">`;
-      } else {
-        element.textContent = initials;
-      }
+      ASDC.HtmlHelpers.setAvatarElement(
+        document.getElementById(id),
+        avatarUser
+      );
     });
   }
 

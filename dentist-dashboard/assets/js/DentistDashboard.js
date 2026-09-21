@@ -390,11 +390,17 @@ if (inboxEmpty) inboxEmpty.textContent = 'Loading notifications...';
   DentistDashboard.prototype._renderAll = function(){
     var user = AdminState.user;
     this._set = function(id, value){ var el = document.getElementById(id); if (el) el.textContent = value; };
-    this._set('sideFootAvatar', user.initials);
+    var currentUser = {
+      name: user.name,
+      full_name: user.name,
+      initials: user.initials,
+      profile_image_url: window.ASDCAuthUser && window.ASDCAuthUser.profile_image_url
+    };
+    ['sideFootAvatar', 'chipAvatar', 'menuAvatar'].forEach(function(id) {
+      ASDC.HtmlHelpers.setAvatarElement(document.getElementById(id), currentUser);
+    });
     this._set('sideFootName', user.name);
     this._set('sideFootRole', 'Dentist');
-    this._set('chipAvatar', user.initials);
-    this._set('menuAvatar', user.initials);
     this._set('menuName', user.name);
     this._set('menuRole', 'Dentist');
     this._set('greetingText', user.greeting);

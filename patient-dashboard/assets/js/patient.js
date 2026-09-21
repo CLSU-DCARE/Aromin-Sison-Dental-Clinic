@@ -494,10 +494,24 @@ function renderUser(user) {
     }
   };
 
-  setValue(
+  const currentUser = {
+    name: user.name,
+    full_name: user.name,
+    initials: user.initials,
+    profile_image_url: user.profile_image_url || window.ASDCAuthUser?.profile_image_url
+  };
+
+  [
     'sideFootAvatar',
-    user.initials
-  );
+    'chipAvatar',
+    'menuAvatar',
+    'profileAvatar'
+  ].forEach(id => {
+    ASDC.HtmlHelpers.setAvatarElement(
+      document.getElementById(id),
+      currentUser
+    );
+  });
 
   setValue(
     'sideFootName',
@@ -507,16 +521,6 @@ function renderUser(user) {
   setValue(
     'sideFootRole',
     user.pid
-  );
-
-  setValue(
-    'chipAvatar',
-    user.initials
-  );
-
-  setValue(
-    'menuAvatar',
-    user.initials
   );
 
   setValue(
@@ -537,11 +541,6 @@ function renderUser(user) {
   setValue(
     'welcomeText',
     user.nextVisit
-  );
-
-  setValue(
-    'profileAvatar',
-    user.initials
   );
 
   setValue(
@@ -1161,6 +1160,7 @@ function applyPatientSnapshot(data, changed) {
   PatientState.user.pid = '#P-' + profile.patient_id;
   PatientState.user.name = profile.first_name + ' ' + profile.last_name;
   PatientState.user.initials = PatientState.user.name.split(/\s+/).map(s => s[0]).slice(0,2).join('').toUpperCase();
+  PatientState.user.profile_image_url = window.ASDCAuthUser?.profile_image_url || PatientState.user.profile_image_url || null;
   renderUser(PatientState.user);
   inbox.setItems(data.notifications || []);
   const dentistSelect = document.getElementById('bookDentist');
@@ -1221,7 +1221,7 @@ const patientLiveSync = new PatientLiveSync({
       unavailable: 'Unable to load clinic records. Retrying…',
       'signed-out': 'Your session has ended. Please sign in again.'
     }[status];
-    if (status === 'signed-out') window.location.replace('../auth/login.html?error=session');
+    if (status === 'signed-out') window.location.replace('../auth/login.html');
   }
 });
 window.addEventListener('asdc:authenticated', () => patientLiveSync.start());
