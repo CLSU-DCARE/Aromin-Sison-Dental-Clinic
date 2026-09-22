@@ -76,21 +76,6 @@ function template_bodies_exclude_contact_details(PDO $pdo, array $keys): bool
     return (int) $stmt->fetchColumn() === 0;
 }
 
-function seed_dentist_passwords_are_current(PDO $pdo): bool
-{
-    $stmt = $pdo->prepare(
-        'SELECT COUNT(*) FROM users WHERE '
-        . '(email = ? AND password_hash = ?) OR (email = ? AND password_hash = ?)'
-    );
-    $stmt->execute([
-        'arsenia.aromin@arominsison.local',
-        '$2y$10$XZufABQCw6oroU/Kfkcu2OjRDf/Sjxihczayedp7WOyAkwxYSlCma',
-        'kathrine.sison@arominsison.local',
-        '$2y$10$XZufABQCw6oroU/Kfkcu2OjRDf/Sjxihczayedp7WOyAkwxYSlCma',
-    ]);
-    return (int) $stmt->fetchColumn() === 2;
-}
-
 const APPOINTMENT_TEMPLATE_KEYS = [
     'appointment_request_submitted_patient', 'appointment_request_submitted_staff',
     'appointment_confirmed_patient', 'appointment_confirmed_staff',
@@ -124,7 +109,6 @@ function migration_already_present(PDO $pdo, string $name): bool
         '009_promotion_images_dates.sql' => has_columns($pdo, 'promotions', ['image_path', 'start_date', 'end_date']),
         '010_patient_archival.sql' => has_columns($pdo, 'patients', ['archived_at', 'archived_by', 'retention_note']),
         '011_remove_sms_notifications.sql' => column_type($pdo, 'notification_templates', 'channel') === "enum('email')",
-        '012_rotate_seed_dentist_passwords.sql' => seed_dentist_passwords_are_current($pdo),
         '013_appointment_audience_templates.sql' => template_keys_exist($pdo, APPOINTMENT_TEMPLATE_KEYS),
         '014_billing_audience_templates.sql' => template_keys_exist($pdo, BILLING_TEMPLATE_KEYS),
         '015_deactivate_redundant_email_templates.sql' => template_keys_are_inactive($pdo, LEGACY_TEMPLATE_KEYS),

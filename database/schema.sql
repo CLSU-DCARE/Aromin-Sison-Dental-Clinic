@@ -5,8 +5,9 @@
 -- Expand fields as your admin/patient dashboards need them.
 -- ============================================================
 
-CREATE DATABASE IF NOT EXISTS aromin_sison_dental;
-USE aromin_sison_dental;
+-- Import this file INTO the database you already created (phpMyAdmin: select the
+-- database first, then Import). It does not create or pick a database itself, so it
+-- also works on hosts that give you a fixed database name.
 
 -- ---------- USERS & ROLES ----------
 -- Covers login for Admin System staff AND Patient Dashboard accounts
@@ -22,10 +23,12 @@ CREATE TABLE users (
 );
 
 -- Seed active dentist accounts used by appointment assignment.
--- Password hashes are for unknown random passwords; set real dentist passwords through reset/bootstrap flow.
+-- The password is '!' on purpose. It is not a real hash, so nobody can log in
+-- to these accounts until a real password is set with:
+--   php database/set_staff_password.php   (see README)
 INSERT INTO users (role, email, password_hash, full_name, is_active) VALUES
-('dentist', 'arsenia.aromin@arominsison.local', '$2y$10$XZufABQCw6oroU/Kfkcu2OjRDf/Sjxihczayedp7WOyAkwxYSlCma', 'Dr. Arsenia Aromin', 1),
-('dentist', 'kathrine.sison@arominsison.local', '$2y$10$XZufABQCw6oroU/Kfkcu2OjRDf/Sjxihczayedp7WOyAkwxYSlCma', 'Dr. Kathrine Sison', 1)
+('dentist', 'arsenia.aromin@arominsison.local', '!', 'Dr. Arsenia Aromin', 1),
+('dentist', 'kathrine.sison@arominsison.local', '!', 'Dr. Kathrine Sison', 1)
 ON DUPLICATE KEY UPDATE
     role = VALUES(role),
     password_hash = VALUES(password_hash),

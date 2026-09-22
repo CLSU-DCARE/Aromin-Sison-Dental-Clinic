@@ -221,17 +221,45 @@ class AuthMiddleware
         return !empty($_SESSION['user_id']);
     }
 
+    /**
+     * The visitor's IP address, used for login lockouts.
+     *
+     * X-Forwarded-For and X-Real-IP are sent by the VISITOR'S OWN BROWSER, so anyone
+     * can set them to any value. If we always believed them, a person could type a
+     * different fake IP with every login attempt and never get locked out — the 30
+     * second lockout after 5 wrong passwords would do nothing.
+     *
+     * We only read those headers when the request comes from a proxy we run and
+     * trust ourselves (for example Nginx in front of PHP on the same server). Set
+     * ASDC_TRUSTED_PROXIES in .env to a comma-separated list of that proxy's own
+     * IP addresses. Without it, only the connection's real address is used, which
+     * is always correct on a plain Apache/PHP setup like this project's.
+     */
     public static function getClientIp(): string
     {
+        $remoteAddr = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+        if (!filter_var($remoteAddr, FILTER_VALIDATE_IP)) {
+            $remoteAddr = '0.0.0.0';
+        }
+
+        $trustedProxies = array_filter(array_map('trim', explode(',', (string) Env::get('ASDC_TRUSTED_PROXIES', ''))));
+        if (!in_array($remoteAddr, $trustedProxies, true)) {
+            // The request did not come through a proxy we trust: use its real address.
+            return $remoteAddr;
+        }
+
         $forwarded = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? '';
         if ($forwarded !== '') {
+            // When a request passes through several proxies, the ORIGINAL visitor's
+            // address is the first one in the list; the rest are proxies (including
+            // ours), which is why we don't just take the last entry.
             $ip = trim(explode(',', $forwarded)[0]);
             if (filter_var($ip, FILTER_VALIDATE_IP)) {
                 return $ip;
             }
         }
-        $real = $_SERVER['HTTP_X_REAL_IP'] ?? $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
-        return filter_var($real, FILTER_VALIDATE_IP) ? $real : '0.0.0.0';
+        $real = $_SERVER['HTTP_X_REAL_IP'] ?? $remoteAddr;
+        return filter_var($real, FILTER_VALIDATE_IP) ? $real : $remoteAddr;
     }
 
     public static function getSessionTimeout(): int
