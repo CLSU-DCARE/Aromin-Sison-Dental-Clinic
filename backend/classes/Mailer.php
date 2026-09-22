@@ -29,6 +29,11 @@ class Mailer
 
         $autoload = dirname(__DIR__, 2) . '/vendor/autoload.php';
         if (!is_file($autoload)) {
+            // PHPMailer is not installed (nobody ran "composer install" on this server).
+            // We can still send mail with the fallback below, but say so once per request
+            // so this does not go unnoticed forever.
+            error_log('[MAILER] vendor/autoload.php is missing. Run "composer install" so PHPMailer '
+                . 'is used. Falling back to a basic built-in SMTP sender for now.');
             return self::sendViaSmtp($gmailAddress, $gmailAppPassword, $fromName, $to, $subject, $body);
         }
         require_once $autoload;
@@ -69,11 +74,16 @@ class Mailer
             return ['ok' => false, 'error' => 'Recipient email address is invalid.'];
         }
 
+        // Check the server's certificate properly. Turning this off would let anyone
+        // between us and Gmail read or change the email (including the password reset link).
         $context = stream_context_create([
             'ssl' => [
-                'verify_peer' => false,
-                'verify_peer_name' => false,
-                'allow_self_signed' => true,
+                'verify_peer'       => true,
+                'verify_peer_name'  => true,
+                'peer_name'         => 'smtp.gmail.com',
+                'allow_self_signed' => false,
+                'cafile'            => ini_get('openssl.cafile') ?: null,
+                'capath'            => ini_get('openssl.capath') ?: null,
             ],
         ]);
         $socket = @stream_socket_client('tcp://smtp.gmail.com:587', $errno, $errstr, 15, STREAM_CLIENT_CONNECT, $context);
@@ -87,8 +97,11 @@ class Mailer
             self::expect($socket, [220]);
             self::command($socket, 'EHLO aromin-sison.local', [250]);
             self::command($socket, 'STARTTLS', [220]);
-            if (!stream_socket_enable_crypto($socket, true, STREAM_CRYPTO_METHOD_TLS_CLIENT)) {
-                throw new \RuntimeException('TLS failed');
+            // If Gmail's certificate cannot be verified, this fails closed (throws) instead
+            // of quietly sending the email — and the password reset link inside it —
+            // over a connection that might be intercepted.
+            if (!@stream_socket_enable_crypto($socket, true, STREAM_CRYPTO_METHOD_TLS_CLIENT)) {
+                throw new \RuntimeException('TLS certificate verification failed');
             }
             self::command($socket, 'EHLO aromin-sison.local', [250]);
             self::command($socket, 'AUTH LOGIN', [334]);
