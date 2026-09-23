@@ -115,6 +115,9 @@ function migration_already_present(PDO $pdo, string $name): bool
         '016_remove_contact_email_from_notification_templates.sql' => template_bodies_exclude_contact_details($pdo, array_merge(APPOINTMENT_TEMPLATE_KEYS, BILLING_TEMPLATE_KEYS)),
         '017_user_profile_pictures.sql' => has_columns($pdo, 'users', ['profile_image_path']),
         '019_general_treatment_billing.sql' => table_exists($pdo, 'treatment_bills') && table_exists($pdo, 'treatment_payments'),
+        '025_shared_staff_accounts_and_dentists.sql' => table_exists($pdo, 'dentists')
+            && (int) $pdo->query("SELECT COUNT(*) FROM users WHERE is_active=1 AND ((role='dentist' AND email<>'dentist@arominsison.com') OR (role='receptionist' AND email<>'receptionist@arominsison.com'))")->fetchColumn() === 0
+            && (int) $pdo->query("SELECT COUNT(*) FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME IN ('appointments','appointment_requests','treatment_records','braces_contracts') AND REFERENCED_TABLE_NAME='dentists'")->fetchColumn() >= 4,
         default => false,
     };
 }
@@ -139,6 +142,20 @@ foreach ($files as $path) {
     }
 
     try {
+        if ($name === '025_shared_staff_accounts_and_dentists.sql') {
+            $foreignKeys = $pdo->query(
+                "SELECT TABLE_NAME, CONSTRAINT_NAME FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE
+                 WHERE TABLE_SCHEMA=DATABASE()
+                   AND TABLE_NAME IN ('appointments','appointment_requests','treatment_records','braces_contracts')
+                   AND REFERENCED_TABLE_NAME='users'
+                   AND COLUMN_NAME IN ('dentist_id','preferred_dentist_id')"
+            )->fetchAll();
+            foreach ($foreignKeys as $foreignKey) {
+                $table = preg_replace('/[^a-zA-Z0-9_]/', '', $foreignKey['TABLE_NAME']);
+                $constraint = preg_replace('/[^a-zA-Z0-9_]/', '', $foreignKey['CONSTRAINT_NAME']);
+                $pdo->exec("ALTER TABLE `{$table}` DROP FOREIGN KEY `{$constraint}`");
+            }
+        }
         $pdo->exec($sql);
         $stmt = $pdo->prepare('INSERT INTO schema_migrations (migration) VALUES (?)');
         $stmt->execute([$name]);

@@ -2,8 +2,8 @@
 /**
  * Data scoping utility: Aromin-Sison Dental Clinic System.
  *
- * Ensures dentists only see their own patients and appointments.
- * Receptionists and patients see all data they're authorized for.
+ * Shared dentist and receptionist roles can access clinic-wide staff data;
+ * patient sessions remain scoped to their own linked patient profile.
  *
  * Usage:
  *   $scope = DataScope::current();
@@ -69,8 +69,8 @@ class DataScope
     }
 
     /**
-     * SQL fragment to scope appointments to the current dentist.
-     * Returns '1=1' for non-dentist roles (no filtering).
+     * Shared staff roles see all active patient appointments; patients see
+     * appointments linked to their own profile.
      *
      * @return array{sql: string, params: array}
      */
@@ -79,30 +79,22 @@ class DataScope
         if ($this->isPatient()) return ['a.patient_id IN (SELECT patient_id FROM patients WHERE user_id=? AND archived_at IS NULL)', [$this->userId]];
         if (!$this->hasFullAccess() && !$this->isDentist()) return ['1=0', []];
         $active = 'a.patient_id IN (SELECT patient_id FROM patients WHERE archived_at IS NULL)';
-        if (!$this->isDentist() || !$this->userId) {
-            return [$active, []];
-        }
-        return ["a.dentist_id = ? AND {$active}", [$this->userId]];
+        return [$active, []];
     }
 
     /**
-     * SQL fragment to scope appointment requests to the current dentist.
-     * Returns '1=1' for non-dentist roles.
+     * SQL fragment to scope appointment requests to the current role.
      *
      * @return array{sql: string, params: array}
      */
     public function requestFilter(): array
     {
         if (!$this->hasFullAccess() && !$this->isDentist()) return ['1=0', []];
-        if (!$this->isDentist() || !$this->userId) {
-            return ['1=1', []];
-        }
-        return ['r.preferred_dentist_id = ?', [$this->userId]];
+        return ['1=1', []];
     }
 
     /**
-     * SQL fragment to scope patients to those with appointments to the current dentist.
-     * Returns '1=1' for non-dentist roles.
+     * SQL fragment to scope patient rows. Patient sessions remain self-scoped.
      *
      * @return array{sql: string, params: array}
      */
@@ -111,19 +103,12 @@ class DataScope
         if ($this->isPatient()) {
             return ['p.user_id = ? AND p.archived_at IS NULL', [$this->userId]];
         }
-        if (!$this->isDentist() || !$this->userId) {
-            return ['p.archived_at IS NULL', []];
-        }
-        return [
-            'p.archived_at IS NULL AND (p.patient_id IN (SELECT patient_id FROM appointments WHERE dentist_id = ?) OR p.patient_id IN (SELECT patient_id FROM braces_contracts WHERE dentist_id = ?))',
-            [$this->userId, $this->userId],
-        ];
+        return ['p.archived_at IS NULL', []];
     }
 
     /**
-     * SQL fragment to scope braces contracts to the current dentist (only
-     * contracts assigned to them). Returns '1=1' for non-dentist roles —
-     * receptionists manage/see all contracts.
+     * Shared staff roles see all active patient contracts; patients see
+     * contracts linked to their own profile.
      *
      * @return array{sql: string, params: array}
      */
@@ -132,16 +117,11 @@ class DataScope
         if ($this->isPatient()) return ['c.patient_id IN (SELECT patient_id FROM patients WHERE user_id=? AND archived_at IS NULL)', [$this->userId]];
         if (!$this->hasFullAccess() && !$this->isDentist()) return ['1=0', []];
         $active = 'c.patient_id IN (SELECT patient_id FROM patients WHERE archived_at IS NULL)';
-        if (!$this->isDentist() || !$this->userId) {
-            return [$active, []];
-        }
-        return ["c.dentist_id = ? AND {$active}", [$this->userId]];
+        return [$active, []];
     }
 
     /**
-     * Check if the current user may update a specific contract's treatment
-     * progress. Receptionists can always manage contracts; a dentist may
-     * only update progress on a contract assigned to them.
+     * Check whether the current staff role may update contract progress.
      */
     public function canUpdateContractProgress(array $contract): bool
     {
@@ -149,7 +129,7 @@ class DataScope
             return true;
         }
         if ($this->isDentist()) {
-            return (int) ($contract['dentist_id'] ?? 0) === $this->userId;
+            return true;
         }
         return false;
     }
@@ -163,7 +143,7 @@ class DataScope
             return true;
         }
         if ($this->isDentist()) {
-            return (int) ($appointment['dentist_id'] ?? 0) === $this->userId;
+            return true;
         }
         if ($this->isPatient()) {
             $stmt = Database::pdo()->prepare('SELECT 1 FROM patients WHERE patient_id=? AND user_id=?');
@@ -182,7 +162,7 @@ class DataScope
             return true;
         }
         if ($this->isDentist()) {
-            return (int) ($request['preferred_dentist_id'] ?? 0) === $this->userId;
+            return true;
         }
         return false;
     }

@@ -385,7 +385,7 @@ if (contractFormModal.modal){
       if (!Array.isArray(data.dentists) || !data.dentists.length) throw new Error('empty');
       // Real mode needs the numeric user_id (what the backend expects for
       // dentist_id) — the display name alone isn't enough to save it.
-      cfDentist.innerHTML = data.dentists.map(d => `<option value="${d.user_id}">${escapeHtml(d.full_name)}</option>`).join('');
+      cfDentist.innerHTML = data.dentists.map(d => `<option value="${d.dentist_id}">${escapeHtml(d.full_name)}</option>`).join('');
     } catch (e) { cfDentist.innerHTML = ''; showToast('Unable to load dentists.', 'error'); }
   };
 

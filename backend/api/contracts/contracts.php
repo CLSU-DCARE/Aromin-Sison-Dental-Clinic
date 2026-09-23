@@ -4,7 +4,7 @@
  * Delegates to ASDC\ContractService.
  *
  * GET    /backend/api/contracts/contracts.php
- *   -> receptionist sees all contracts; dentist sees only their own.
+ *   -> both shared staff roles see clinic-wide contracts.
  * POST   /backend/api/contracts/contracts.php   (receptionist only)
  *   Body: { patient_id, dentist_id?, total_amount, downpayment?, monthly_payment, duration_months, start_date?, status? }
  * PATCH  /backend/api/contracts/contracts.php   (receptionist only)
@@ -32,7 +32,7 @@ require_role('receptionist');
 $body = \ASDC\ApiResponse::requireJson();
 // Validate foreign keys and money before any write; never accept a patient account as a dentist.
 if (!empty($body['dentist_id'])) {
-    $check = \ASDC\Database::pdo()->prepare("SELECT user_id FROM users WHERE user_id=? AND role='dentist' AND is_active=1");
+    $check = \ASDC\Database::pdo()->prepare('SELECT dentist_id FROM dentists WHERE dentist_id=? AND is_active=1');
     $check->execute([$body['dentist_id']]);
     if (!$check->fetchColumn()) \ASDC\ApiResponse::error(422, 'validation_failed', 'Choose an active dentist.');
 }

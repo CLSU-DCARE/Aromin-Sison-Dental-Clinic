@@ -36,7 +36,7 @@ class PortalEvent
                     a.dentist_id, d.full_name AS dentist_name
              FROM appointments a
              JOIN patients p ON p.patient_id = a.patient_id
-             LEFT JOIN users d ON d.user_id = a.dentist_id
+             LEFT JOIN dentists d ON d.dentist_id = a.dentist_id
              WHERE a.appointment_id = ?"
         );
         $stmt->execute([$id]);
@@ -91,7 +91,7 @@ class PortalEvent
                     r.service_type, r.requested_date, r.requested_time, r.status,
                     r.notes, r.preferred_dentist_id, d.full_name AS dentist_name
              FROM appointment_requests r
-             LEFT JOIN users d ON d.user_id = r.preferred_dentist_id
+             LEFT JOIN dentists d ON d.dentist_id = r.preferred_dentist_id
              WHERE r.request_id = ?"
         );
         $stmt->execute([$id]);
@@ -136,15 +136,8 @@ class PortalEvent
         $stmt = $pdo->query("SELECT user_id FROM users WHERE is_active=1 AND role='receptionist'");
         $recipientIds = array_map('intval', $stmt->fetchAll(\PDO::FETCH_COLUMN));
 
-        if ($dentistId) {
-            $stmt = $pdo->prepare("SELECT user_id FROM users WHERE user_id=? AND is_active=1 AND role='dentist'");
-            $stmt->execute([$dentistId]);
-            $dentistRecipient = $stmt->fetchColumn();
-            if ($dentistRecipient) $recipientIds[] = (int) $dentistRecipient;
-        } elseif ($includeAllDentistsWhenUnassigned) {
-            $stmt = $pdo->query("SELECT user_id FROM users WHERE is_active=1 AND role='dentist'");
-            $recipientIds = array_merge($recipientIds, array_map('intval', $stmt->fetchAll(\PDO::FETCH_COLUMN)));
-        }
+        $sharedDentist = $pdo->query("SELECT user_id FROM users WHERE is_active=1 AND role='dentist' LIMIT 1")->fetchColumn();
+        if ($sharedDentist && ($dentistId || $includeAllDentistsWhenUnassigned)) $recipientIds[] = (int) $sharedDentist;
 
         foreach (array_values(array_unique($recipientIds)) as $userId) {
             if ($includeActor || (int) $userId !== (int) ($_SESSION['user_id'] ?? 0)) {

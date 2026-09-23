@@ -168,9 +168,9 @@ class PatientService
         if (!$row) ApiResponse::error(404, 'not_found', 'Archived patient not found.');
 
         $queries = [
-            'appointments' => "SELECT a.*, d.full_name AS dentist_name FROM appointments a LEFT JOIN users d ON d.user_id=a.dentist_id WHERE a.patient_id=? ORDER BY a.scheduled_date DESC,a.scheduled_time DESC",
-            'records' => "SELECT r.*, d.full_name AS dentist_name FROM treatment_records r LEFT JOIN users d ON d.user_id=r.dentist_id WHERE r.patient_id=? ORDER BY r.date_recorded DESC,r.record_id DESC",
-            'contracts' => "SELECT c.*, d.full_name AS dentist_name FROM braces_contracts c LEFT JOIN users d ON d.user_id=c.dentist_id WHERE c.patient_id=? ORDER BY c.contract_id DESC",
+            'appointments' => "SELECT a.*, d.full_name AS dentist_name FROM appointments a LEFT JOIN dentists d ON d.dentist_id=a.dentist_id WHERE a.patient_id=? ORDER BY a.scheduled_date DESC,a.scheduled_time DESC",
+            'records' => "SELECT r.*, d.full_name AS dentist_name FROM treatment_records r LEFT JOIN dentists d ON d.dentist_id=r.dentist_id WHERE r.patient_id=? ORDER BY r.date_recorded DESC,r.record_id DESC",
+            'contracts' => "SELECT c.*, d.full_name AS dentist_name FROM braces_contracts c LEFT JOIN dentists d ON d.dentist_id=c.dentist_id WHERE c.patient_id=? ORDER BY c.contract_id DESC",
             'payments' => "SELECT cp.* FROM contract_payments cp JOIN braces_contracts c ON c.contract_id=cp.contract_id WHERE c.patient_id=? ORDER BY cp.created_at DESC,cp.payment_id DESC",
             'notifications' => "SELECT notification_id,title,message,type,created_at,read_at FROM user_notifications WHERE patient_id=? ORDER BY notification_id DESC",
         ];
@@ -192,12 +192,7 @@ class PatientService
     private static function archivedPatientFilter(DataScope $scope): array
     {
         if ($scope->isDentist()) {
-            $userId = $scope->getUserId();
-            if (!$userId) return ['1=0', []];
-            return [
-                'p.archived_at IS NOT NULL AND (p.patient_id IN (SELECT patient_id FROM appointments WHERE dentist_id = ?) OR p.patient_id IN (SELECT patient_id FROM braces_contracts WHERE dentist_id = ?))',
-                [$userId, $userId],
-            ];
+            return ['p.archived_at IS NOT NULL', []];
         }
 
         if ($scope->hasFullAccess()) {

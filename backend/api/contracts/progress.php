@@ -1,6 +1,6 @@
 <?php
 /**
- * Braces treatment progress update endpoint (dentist-only, own patients).
+ * Braces treatment progress update endpoint for shared dentist/staff access.
  * Delegates to ASDC\ContractService::updateProgress.
  *
  * PATCH /backend/api/contracts/progress.php

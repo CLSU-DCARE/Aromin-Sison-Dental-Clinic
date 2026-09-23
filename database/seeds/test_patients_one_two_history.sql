@@ -60,33 +60,33 @@ WHERE p.email IN ('patient.one@arominsison.local', 'patient.two@arominsison.loca
   AND a.notes = 'Team sync test history';
 
 INSERT INTO appointments (patient_id, dentist_id, service_type, scheduled_date, scheduled_time, status, notes)
-SELECT p.patient_id, d.user_id, 'Cleaning & Check-up', '2026-08-12', '09:00:00', 'completed', 'Team sync test history'
+SELECT p.patient_id, d.dentist_id, 'Cleaning & Check-up', '2026-08-12', '09:00:00', 'completed', 'Team sync test history'
 FROM patients p
-LEFT JOIN users d ON d.role = 'dentist' AND d.is_active = 1
+LEFT JOIN dentists d ON d.is_active = 1
 WHERE p.email = 'patient.one@arominsison.local'
-ORDER BY d.user_id
+ORDER BY d.dentist_id
 LIMIT 1;
 
 INSERT INTO appointments (patient_id, dentist_id, service_type, scheduled_date, scheduled_time, status, notes)
-SELECT p.patient_id, d.user_id, 'Consultation', '2026-08-26', '10:30:00', 'completed', 'Team sync test history'
+SELECT p.patient_id, d.dentist_id, 'Consultation', '2026-08-26', '10:30:00', 'completed', 'Team sync test history'
 FROM patients p
-LEFT JOIN users d ON d.role = 'dentist' AND d.is_active = 1
+LEFT JOIN dentists d ON d.is_active = 1
 WHERE p.email = 'patient.one@arominsison.local'
-ORDER BY d.user_id
+ORDER BY d.dentist_id
 LIMIT 1;
 
 INSERT INTO appointments (patient_id, dentist_id, service_type, scheduled_date, scheduled_time, status, notes)
-SELECT p.patient_id, d.user_id, 'Teeth Whitening', '2026-08-13', '13:00:00', 'completed', 'Team sync test history'
+SELECT p.patient_id, d.dentist_id, 'Teeth Whitening', '2026-08-13', '13:00:00', 'completed', 'Team sync test history'
 FROM patients p
-LEFT JOIN users d ON d.role = 'dentist' AND d.is_active = 1
+LEFT JOIN dentists d ON d.is_active = 1
 WHERE p.email = 'patient.two@arominsison.local'
-ORDER BY d.user_id
+ORDER BY d.dentist_id
 LIMIT 1;
 
 INSERT INTO appointments (patient_id, dentist_id, service_type, scheduled_date, scheduled_time, status, notes)
-SELECT p.patient_id, d.user_id, 'Braces Adjustment', '2026-08-27', '14:30:00', 'completed', 'Team sync test history'
+SELECT p.patient_id, d.dentist_id, 'Braces Adjustment', '2026-08-27', '14:30:00', 'completed', 'Team sync test history'
 FROM patients p
-LEFT JOIN users d ON d.role = 'dentist' AND d.is_active = 1
+LEFT JOIN dentists d ON d.is_active = 1
 WHERE p.email = 'patient.two@arominsison.local'
-ORDER BY d.user_id
+ORDER BY d.dentist_id
 LIMIT 1;

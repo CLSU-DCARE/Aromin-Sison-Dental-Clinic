@@ -109,7 +109,7 @@
     const data = await apiFetch('../backend/api/contracts/dentists.php');
     if (!data.dentists.length) throw new Error('No active dentist is available for assignment.');
     return new Promise(resolve => {
-      form('Approve appointment and assign dentist', field('Treating dentist', `<select name="dentist_id" required>${data.dentists.map(d => `<option value="${Number(d.user_id)}" ${Number(d.user_id) === Number(appointment.dentist_id) ? 'selected' : ''}>${esc(d.full_name)}</option>`).join('')}</select>`),
+      form('Approve appointment and assign dentist', field('Treating dentist', `<select name="dentist_id" required>${data.dentists.map(d => `<option value="${Number(d.dentist_id)}" ${Number(d.dentist_id) === Number(appointment.dentist_id) ? 'selected' : ''}>${esc(d.full_name)}</option>`).join('')}</select>`),
         async values => { await write('appointments/actions.php', { action: 'approve', resource_type: 'appointment', appointment_id: appointment.appointment_id, dentist_id: Number(values.dentist_id) }, 'POST'); resolve(); });
     });
   };
@@ -118,7 +118,7 @@
     const data = await apiFetch('../backend/api/contracts/dentists.php');
     if (!data.dentists.length) throw new Error('No active dentist is available for assignment.');
     return new Promise(resolve => {
-      form('Approve request and assign dentist', field('Treating dentist', `<select name="dentist_id" required>${data.dentists.map(d => `<option value="${Number(d.user_id)}" ${Number(d.user_id) === Number(request.preferred_dentist_id) ? 'selected' : ''}>${esc(d.full_name)}</option>`).join('')}</select>`),
+      form('Approve request and assign dentist', field('Treating dentist', `<select name="dentist_id" required>${data.dentists.map(d => `<option value="${Number(d.dentist_id)}" ${Number(d.dentist_id) === Number(request.preferred_dentist_id) ? 'selected' : ''}>${esc(d.full_name)}</option>`).join('')}</select>`),
         async values => { await write('appointments/actions.php', { action: 'approve', resource_type: 'request', request_id: request.request_id, dentist_id: Number(values.dentist_id) }, 'POST'); resolve(); });
     });
   };

@@ -139,7 +139,7 @@ Either works: both give you Apache + MySQL + PHP locally, no hosting needed for 
 2. Copy the whole `asdc_v2/` folder into `C:\xampp\htdocs\`
 3. Open `http://localhost/phpmyadmin`, create a database, import `database/schema.sql`
 4. Apply migrations: `php database/migrate.php`
-5. Create a receptionist account with `database/bootstrap_receptionist.php`
+5. Provision the shared dentist and receptionist accounts with `database/bootstrap_staff.php`
 6. Test: `http://localhost/asdc_v2/backend/api/patients/list.php`
 
 **Laragon:**
@@ -147,7 +147,7 @@ Either works: both give you Apache + MySQL + PHP locally, no hosting needed for 
 2. Copy the whole `asdc_v2/` folder into `C:\laragon\www\`
 3. Right-click the Laragon tray icon → **MySQL** → **phpMyAdmin** (or **HeidiSQL**), create a database, import `database/schema.sql`
 4. Apply migrations: `php database/migrate.php`
-5. Create a receptionist account with `database/bootstrap_receptionist.php`
+5. Set the two shared staff passwords securely and run `database/bootstrap_staff.php`
 6. Test: `http://asdc-v2.test/backend/api/patients/list.php` (Laragon auto-generates the `.test` domain) or `http://localhost/asdc_v2/backend/api/patients/list.php`
 
 Either way you should get a JSON response (empty array is fine until you add data).
@@ -164,13 +164,13 @@ php database/migrate.php
 
 The runner records applied files in `schema_migrations` and skips objects that already exist on older local databases.
 
-Create or update the receptionist bootstrap account with environment variables. Do not commit real staff passwords.
+The clinic uses one shared account per staff role. Set both passwords through environment variables, then run the bootstrap script. It creates or updates only `dentist@arominsison.com` and `receptionist@arominsison.com`, disabling any legacy duplicate staff logins. Provider names remain separate from login accounts. Do not commit real staff passwords.
 
 ```sh
-set ASDC_BOOTSTRAP_RECEPTIONIST_EMAIL=receptionist@example.test
-set ASDC_BOOTSTRAP_RECEPTIONIST_PASSWORD=Choose-A-Unique-Password
-set ASDC_BOOTSTRAP_RECEPTIONIST_NAME=Clinic Receptionist
-php database/bootstrap_receptionist.php
+$env:ASDC_BOOTSTRAP_RECEPTIONIST_PASSWORD = '<set securely>'
+$env:ASDC_BOOTSTRAP_DENTIST_PASSWORD = '<set securely>'
+php database/bootstrap_staff.php
+Remove-Item Env:ASDC_BOOTSTRAP_RECEPTIONIST_PASSWORD, Env:ASDC_BOOTSTRAP_DENTIST_PASSWORD
 ```
 
 ### Future shared development database
