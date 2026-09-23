@@ -55,7 +55,6 @@ asdc_v2/
 │   │   ├── db.php            PDO connection: include this at the top of every endpoint
 │   │   ├── auth.php          Session helper: require_login(), require_role(), secure_session_start()
 │   │   ├── mail.php          Email helpers: send_email(), render_template()
-│   │   └── notifications.php Auto-trigger helper: notify_event($pdo, $event, $patientId, $replacements)
 │   └── api/
 │       ├── auth/
 │       │   ├── login.php     POST endpoint, prepared statement, session
@@ -223,15 +222,15 @@ can reuse pre-written messages with dynamic `{placeholders}`.
 
 Notifications can be sent in two ways:
 
-1. **Automatic** - fire from PHP endpoints when events happen (appointment booked, payment approved, etc.) using the `notify_event()` helper in `backend/config/notifications.php`
+1. **Automatic** - fire from PHP endpoints when events happen (appointment booked, payment approved, etc.) using `ASDC\NotificationService`
 2. **Manual** - admin staff use the Notifications view in the admin dashboard to pick a patient, choose a template, and send
 
-### Auto-trigger helper
+### Automatic notification service
 
-Include `backend/config/notifications.php` in any endpoint, then call:
+Use the autoloaded notification service from an endpoint:
 
 ```php
-notify_event($pdo, 'appointment.booked', $patientId, [
+\ASDC\NotificationService::notifyEvent($pdo, 'appointment.booked', $patientId, [
     'date'    => '2026-09-01',
     'time'    => '10:00 AM',
     'service' => 'Cleaning',
