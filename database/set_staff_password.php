@@ -1,6 +1,5 @@
 <?php
-// Command line only. Sets a new password for an EXISTING dentist or receptionist.
-// Use it for the seeded dentists, and any time a staff member forgets their password.
+// Command line only. Updates passwords only for the canonical shared accounts.
 //
 //   set ASDC_STAFF_EMAIL=dentist@example.com
 //   set ASDC_STAFF_PASSWORD=A-long-unique-password
@@ -27,7 +26,7 @@ if (strlen($password) < 12 || strlen($password) > 72) {
 $pdo = \ASDC\Database::pdo();
 
 // Only staff accounts can be changed here. Patients use the normal reset flow.
-$find = $pdo->prepare("SELECT user_id FROM users WHERE email = ? AND role IN ('dentist','receptionist')");
+$find = $pdo->prepare("SELECT user_id FROM users WHERE email = ? AND ((email='dentist@arominsison.com' AND role='dentist') OR (email='receptionist@arominsison.com' AND role='receptionist')) AND is_active=1");
 $find->execute([$email]);
 $userId = $find->fetchColumn();
 if (!$userId) {

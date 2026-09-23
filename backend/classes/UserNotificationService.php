@@ -45,7 +45,7 @@ class UserNotificationService
                     d.full_name AS dentist_name
              FROM appointments a
              JOIN patients p ON p.patient_id = a.patient_id
-             LEFT JOIN users d ON d.user_id = a.dentist_id
+             LEFT JOIN dentists d ON d.dentist_id = a.dentist_id
              WHERE a.patient_id = ?
              ORDER BY a.appointment_id DESC
              LIMIT 1"

@@ -22,18 +22,17 @@ CREATE TABLE users (
     is_active BOOLEAN DEFAULT TRUE
 );
 
--- Seed active dentist accounts used by appointment assignment.
--- The password is '!' on purpose. It is not a real hash, so nobody can log in
--- to these accounts until a real password is set with:
---   php database/set_staff_password.php   (see README)
-INSERT INTO users (role, email, password_hash, full_name, is_active) VALUES
-('dentist', 'arsenia.aromin@arominsison.local', '!', 'Dr. Arsenia Aromin', 1),
-('dentist', 'kathrine.sison@arominsison.local', '!', 'Dr. Kathrine Sison', 1)
-ON DUPLICATE KEY UPDATE
-    role = VALUES(role),
-    password_hash = VALUES(password_hash),
-    full_name = VALUES(full_name),
-    is_active = VALUES(is_active);
+-- Provider identities are not login accounts. Staff use a single shared
+-- dentist account, provisioned securely with database/bootstrap_staff.php.
+CREATE TABLE dentists (
+    dentist_id INT AUTO_INCREMENT PRIMARY KEY,
+    full_name VARCHAR(150) NOT NULL UNIQUE,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+INSERT INTO dentists (full_name, is_active) VALUES
+('Dr. Arsenia Aromin', 1),
+('Dr. Kathrine Sison', 1);
 
 -- ---------- PASSWORD RESET TOKENS ----------
 -- Only a SHA-256 hash of the emailed token is stored.
@@ -91,7 +90,7 @@ CREATE TABLE patients (
 CREATE TABLE appointments (
     appointment_id INT AUTO_INCREMENT PRIMARY KEY,
     patient_id INT NOT NULL,
-    dentist_id INT NULL,                    -- FK to users where role = 'dentist'
+    dentist_id INT NULL,                    -- FK to dentists; provider identity, not login
     service_type VARCHAR(150) NOT NULL,     -- e.g. 'Cleaning', 'Braces Adjustment'
     scheduled_date DATE NOT NULL,
     scheduled_time TIME NOT NULL,
@@ -102,7 +101,7 @@ CREATE TABLE appointments (
     INDEX idx_appointment_dentist_slot (dentist_id, scheduled_date, scheduled_time, status),
     INDEX idx_appointment_patient_slot (patient_id, scheduled_date, scheduled_time, status),
     FOREIGN KEY (patient_id) REFERENCES patients(patient_id) ON DELETE CASCADE,
-    FOREIGN KEY (dentist_id) REFERENCES users(user_id) ON DELETE SET NULL
+    FOREIGN KEY (dentist_id) REFERENCES dentists(dentist_id) ON DELETE SET NULL
 );
 
 -- Public bookings are requests, not patient portal accounts. Staff approval
@@ -127,7 +126,7 @@ CREATE TABLE appointment_requests (
     INDEX idx_request_week (requested_date, requested_time, status),
     INDEX idx_request_dentist_slot (preferred_dentist_id, requested_date, requested_time, status),
     INDEX idx_request_contact (contact_number, requested_date, requested_time, status),
-    FOREIGN KEY (preferred_dentist_id) REFERENCES users(user_id) ON DELETE SET NULL,
+    FOREIGN KEY (preferred_dentist_id) REFERENCES dentists(dentist_id) ON DELETE SET NULL,
     FOREIGN KEY (appointment_id) REFERENCES appointments(appointment_id) ON DELETE SET NULL,
     FOREIGN KEY (reviewed_by) REFERENCES users(user_id) ON DELETE SET NULL
 );
@@ -144,7 +143,7 @@ CREATE TABLE treatment_records (
     date_recorded DATE NOT NULL,
     FOREIGN KEY (patient_id) REFERENCES patients(patient_id) ON DELETE CASCADE,
     FOREIGN KEY (appointment_id) REFERENCES appointments(appointment_id) ON DELETE SET NULL,
-    FOREIGN KEY (dentist_id) REFERENCES users(user_id) ON DELETE SET NULL
+    FOREIGN KEY (dentist_id) REFERENCES dentists(dentist_id) ON DELETE SET NULL
 );
 
 -- ---------- BRACES CONTRACTS ----------
@@ -165,7 +164,7 @@ CREATE TABLE braces_contracts (
     progress_note TEXT NULL,
     next_note VARCHAR(255) NULL,
     progress_updated_at TIMESTAMP NULL,
-    FOREIGN KEY (dentist_id) REFERENCES users(user_id) ON DELETE SET NULL,
+    FOREIGN KEY (dentist_id) REFERENCES dentists(dentist_id) ON DELETE SET NULL,
     FOREIGN KEY (patient_id) REFERENCES patients(patient_id) ON DELETE CASCADE
 );
 

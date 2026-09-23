@@ -114,12 +114,12 @@ class PatientAppointmentService
 
         if ($preferred !== '' && $preferred !== 'No preference') {
             $dentist = $pdo->prepare(
-                "SELECT user_id FROM users WHERE role='dentist' AND full_name=? AND is_active=1 LIMIT 1"
+                "SELECT dentist_id FROM dentists WHERE full_name=? AND is_active=1 LIMIT 1"
             );
             $dentist->execute([$preferred]);
             $row = $dentist->fetch();
             if ($row) {
-                $dentistId = (int) $row['user_id'];
+                $dentistId = (int) $row['dentist_id'];
             } else {
                 $pdo->rollBack();
                 ApiResponse::error(422, 'validation_failed', 'Choose an active dentist or no preference.');
@@ -303,7 +303,7 @@ class PatientAppointmentService
             SELECT a.appointment_id, a.service_type, a.scheduled_date,
                    a.scheduled_time, a.status, a.notes, d.full_name AS dentist_name
             FROM appointments a
-            LEFT JOIN users d ON d.user_id = a.dentist_id
+            LEFT JOIN dentists d ON d.dentist_id = a.dentist_id
             WHERE a.patient_id = ? AND ($where)
             ORDER BY $order
         ");

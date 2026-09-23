@@ -80,7 +80,7 @@ class BracesService
                     c.next_note, c.progress_updated_at,
                     du.full_name AS dentist_name
              FROM braces_contracts c
-             LEFT JOIN users du ON du.user_id = c.dentist_id
+             LEFT JOIN dentists du ON du.dentist_id = c.dentist_id
              WHERE c.patient_id = ? AND c.status <> 'cancelled'
              ORDER BY (c.status = 'active') DESC, c.contract_id DESC
              LIMIT 1"

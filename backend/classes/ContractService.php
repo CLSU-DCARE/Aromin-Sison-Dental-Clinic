@@ -2,8 +2,8 @@
 /**
  * Braces contract management service: Aromin-Sison Dental Clinic System.
  *
- * Receptionist-facing: create/edit contracts, list all (or scoped to a
- * dentist). Dentist-facing: update treatment progress on their own
+ * Receptionist-facing: create/edit contracts and list all. Dentist-facing:
+ * update treatment progress across clinic contracts through the shared account.
  * contracts. Used by backend/api/admin/contracts.php and
  * backend/api/dentist/progress.php.
  *
@@ -33,7 +33,7 @@ class ContractService
 
     /**
      * List contracts for the Admin/Dentist "Patients"/"Braces Contracts"
-     * tables. Dentists only see contracts assigned to them.
+     * tables. Both staff roles see clinic-wide contracts.
      */
     public static function listAll(DataScope $scope): array
     {
@@ -49,7 +49,7 @@ class ContractService
                     du.full_name AS dentist_name
              FROM braces_contracts c
              JOIN patients p ON p.patient_id = c.patient_id
-             LEFT JOIN users du ON du.user_id = c.dentist_id
+             LEFT JOIN dentists du ON du.dentist_id = c.dentist_id
              LEFT JOIN (
                 SELECT contract_id, SUM(amount_paid) AS approved_total
                 FROM contract_payments
@@ -171,7 +171,7 @@ class ContractService
 
     /**
      * Dentist-side: update treatment stage/percentage/notes. Enforces that
-     * a dentist (not receptionist) can only touch their own patients.
+     * dentists and receptionists can update clinic contracts.
      */
     public static function updateProgress(int $contractId, array $data, DataScope $scope): array
     {
@@ -192,7 +192,7 @@ class ContractService
         }
         if (!$scope->canUpdateContractProgress($existing)) {
             $pdo->rollBack();
-            ApiResponse::error(403, 'forbidden', 'You can only update progress for your own patients.');
+            ApiResponse::error(403, 'forbidden', 'You do not have permission to update this contract.');
         }
 
         $stage = in_array($data['current_stage'], self::STAGE_ORDER, true)
@@ -283,7 +283,7 @@ class ContractService
     private static function dentistName($dentistId): ?string
     {
         if (!$dentistId) return null;
-        $stmt = Database::pdo()->prepare("SELECT full_name FROM users WHERE user_id = ? AND role = 'dentist'");
+        $stmt = Database::pdo()->prepare('SELECT full_name FROM dentists WHERE dentist_id = ?');
         $stmt->execute([$dentistId]);
         $name = $stmt->fetchColumn();
         return $name ?: null;

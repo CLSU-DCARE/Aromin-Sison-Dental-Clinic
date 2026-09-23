@@ -17,7 +17,7 @@ class PatientDashboardService
             $stmt = $pdo->prepare('SELECT patient_id, first_name, last_name, email, contact_number, registered_at FROM patients WHERE patient_id = ?');
             $stmt->execute([$patientId]);
             $profile = $stmt->fetch();
-            $stmt = $pdo->prepare('SELECT r.record_id, r.treatment_given, r.diagnosis, r.treatment_protocol, r.date_recorded, u.full_name AS dentist FROM treatment_records r LEFT JOIN users u ON u.user_id = r.dentist_id WHERE r.patient_id = ? ORDER BY r.date_recorded DESC, r.record_id DESC');
+            $stmt = $pdo->prepare('SELECT r.record_id, r.treatment_given, r.diagnosis, r.treatment_protocol, r.date_recorded, u.full_name AS dentist FROM treatment_records r LEFT JOIN dentists u ON u.dentist_id = r.dentist_id WHERE r.patient_id = ? ORDER BY r.date_recorded DESC, r.record_id DESC');
             $stmt->execute([$patientId]);
             $treatments = array_map(static fn(array $r) => [
                 'id' => (int) $r['record_id'], 'title' => $r['treatment_given'] ?: ($r['diagnosis'] ?: 'Treatment record'),
@@ -25,7 +25,7 @@ class PatientDashboardService
                 'meta' => $r['date_recorded'] . ($r['dentist'] ? ' · ' . $r['dentist'] : ''),
             ], $stmt->fetchAll());
             $notifications = UserNotificationService::listForUser((int) $_SESSION['user_id']);
-            $dentists = $pdo->query("SELECT user_id,full_name FROM users WHERE role='dentist' AND is_active=1 ORDER BY full_name")->fetchAll();
+            $dentists = $pdo->query("SELECT dentist_id,full_name FROM dentists WHERE is_active=1 ORDER BY full_name")->fetchAll();
             $announcements = $pdo->query("SELECT promo_id AS id,title,description AS `desc`,image_path,status,start_date,end_date FROM promotions WHERE status IN ('live','scheduled') AND (end_date IS NULL OR end_date>=CURRENT_DATE()) ORDER BY promo_id DESC")->fetchAll();
             $pdo->commit();
             return compact('appointments', 'braces', 'submissions', 'profile', 'treatments', 'notifications', 'dentists', 'announcements');

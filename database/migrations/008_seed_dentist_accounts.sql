@@ -1,12 +1,9 @@
--- Seed active dentist accounts for appointment assignment.
--- The password is '!' on purpose. It is not a real hash, so nobody can log in
--- to these accounts until a real password is set with:
---   php database/set_staff_password.php   (see README)
-INSERT INTO users (role, email, password_hash, full_name, is_active) VALUES
-('dentist', 'arsenia.aromin@arominsison.local', '!', 'Dr. Arsenia Aromin', 1),
-('dentist', 'kathrine.sison@arominsison.local', '!', 'Dr. Kathrine Sison', 1)
-ON DUPLICATE KEY UPDATE
-    role = VALUES(role),
-    password_hash = VALUES(password_hash),
-    full_name = VALUES(full_name),
-    is_active = VALUES(is_active);
+-- Provider profiles are not accounts. Account provisioning is handled by
+-- database/bootstrap_staff.php after migrations have been applied.
+CREATE TABLE IF NOT EXISTS dentists (
+    dentist_id INT AUTO_INCREMENT PRIMARY KEY,
+    full_name VARCHAR(150) NOT NULL UNIQUE,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+INSERT IGNORE INTO dentists (full_name, is_active) VALUES
+('Dr. Arsenia Aromin', 1), ('Dr. Kathrine Sison', 1);
