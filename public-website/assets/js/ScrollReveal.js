@@ -94,6 +94,10 @@
       var summary = item.querySelector('summary');
       var answer = item.querySelector('.faq-answer');
       if (!summary || !answer) return;
+      // Holds the pending fallback timer for whichever animation (open or
+      // close) is currently running, so a stale timer from a previous click
+      // can never fire in the middle of a newer one.
+      var fallbackTimer = null;
 
       summary.addEventListener('click', function(e){
         e.preventDefault();
@@ -108,13 +112,23 @@
         answer.style.overflow = 'hidden';
         answer.style.height = '0px';
         var target = answer.scrollHeight;
+        // Wait two frames, not one: a single rAF can still land before the
+        // browser has actually painted the height:0 starting point, which is
+        // what caused the open/close stutter (the transition would get
+        // skipped and the content would jump, or briefly flash fully open,
+        // instead of animating smoothly).
         requestAnimationFrame(function(){
-          answer.style.transition = 'height .38s var(--ease)';
-          answer.style.height = target + 'px';
+          requestAnimationFrame(function(){
+            answer.style.transition = 'height .38s var(--ease)';
+            answer.style.height = target + 'px';
+          });
         });
         answer.addEventListener('transitionend', onOpenEnd);
+        clearTimeout(fallbackTimer);
+        fallbackTimer = setTimeout(onOpenEnd, 450);
       }
       function onOpenEnd(){
+        clearTimeout(fallbackTimer);
         answer.removeEventListener('transitionend', onOpenEnd);
         answer.style.height = '';
         answer.style.overflow = '';
@@ -126,12 +140,17 @@
         answer.style.overflow = 'hidden';
         answer.style.height = answer.scrollHeight + 'px';
         requestAnimationFrame(function(){
-          answer.style.transition = 'height .3s var(--ease)';
-          answer.style.height = '0px';
+          requestAnimationFrame(function(){
+            answer.style.transition = 'height .3s var(--ease)';
+            answer.style.height = '0px';
+          });
         });
         answer.addEventListener('transitionend', onCloseEnd);
+        clearTimeout(fallbackTimer);
+        fallbackTimer = setTimeout(onCloseEnd, 400);
       }
       function onCloseEnd(){
+        clearTimeout(fallbackTimer);
         answer.removeEventListener('transitionend', onCloseEnd);
         item.removeAttribute('open');
         answer.style.height = '';

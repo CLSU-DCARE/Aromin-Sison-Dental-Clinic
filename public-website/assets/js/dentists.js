@@ -5,14 +5,43 @@
 (function(){
   const DENTISTS = [
     {
-      initials: 'DA',
+      initials: 'KS',
+      photo: '../shared/images/dr kathrine.png',
+      name: 'Dr. Kathrine Anne A. Sison',
+      title: 'Lead Dentist: Orthodontics &amp; Cosmetic Dentistry',
+      alt: true,
+      bio: [
+        'Dr. Kathrine Anne A. Sison joined the clinic as part of its second generation of clinicians, bringing a focus on orthodontics and cosmetic dentistry that has become central to the practice. From first consultation through every adjustment along the way, Dr. Sison manages braces and cosmetic treatment plans with the same unhurried approach the clinic was built on.',
+        'Known among patients for a calm, detail-oriented chairside manner, Dr. Sison takes particular care with younger patients and first-time orthodontic cases, walking through each stage of treatment before it begins.'
+      ],
+      quote: '"A smile is something people carry with them every day. I want every patient to feel confident about the plan we\'ve built together, not just the end result."',
+      expertise: [
+        'Orthodontics &amp; Braces',
+        'Cosmetic Dentistry',
+        'Teeth Whitening',
+        'Veneers',
+        'Smile Design'
+      ],
+      creds: [
+        'Doctor of Dental Medicine (DMD)',
+        'Licensed Dentist, Professional Regulation Commission (PRC)',
+        'Certificate in Clinical Orthodontics',
+        'Advanced Training, Cosmetic &amp; Aesthetic Dentistry'
+      ],
+      awards: [
+        'Member, Philippine Dental Association',
+        'Member, Philippine Orthodontic Society'
+      ]
+    },
+    {
+      initials: 'AA',
       photo: '../shared/images/dr arsenia.png',
-      name: 'Dr. Arsenia Aromin',
+      name: 'Dr. Arsenia A. Aromin',
       title: 'Founding Dentist: General &amp; Restorative Dentistry',
       alt: false,
       bio: [
-        'Dr. Arsenia Aromin founded Aromin-Sison Dental Clinic in 1985 with a simple goal: to make world-class dental care feel personal rather than clinical. Over four decades, that founding philosophy has shaped every part of how the clinic runs: from unhurried appointment scheduling to the way treatment plans are explained.',
-        'Today, Dr. Arsenia Aromin leads diagnostics and restorative treatment, with a particular focus on digital imaging and long-term oral health planning. Patients often describe the experience as feeling more like a conversation with a trusted advisor than a routine dental visit.'
+        'Dr. Arsenia A. Aromin founded Aromin-Sison Dental Clinic in 1985 with a simple goal: to make world-class dental care feel personal rather than clinical. Over four decades, that founding philosophy has shaped every part of how the clinic runs: from unhurried appointment scheduling to the way treatment plans are explained.',
+        'Today, Dr. Aromin leads diagnostics and restorative treatment, with a particular focus on digital imaging and long-term oral health planning. Patients often describe the experience as feeling more like a conversation with a trusted advisor than a routine dental visit.'
       ],
       quote: '"I\'ve always believed that if you take the time to explain what you see, patients make better decisions about their own health, and trust follows naturally."',
       expertise: [
@@ -32,35 +61,6 @@
         'Member, Philippine Dental Association',
         'Featured, Manila Dental Review (2026)',
         '40 Years of Continuous Practice, Nueva Ecija'
-      ]
-    },
-    {
-      initials: 'DS',
-      photo: '../shared/images/dr kathrine.png',
-      name: 'Dr. Kathrine Sison',
-      title: 'Lead Dentist: Orthodontics &amp; Cosmetic Dentistry',
-      alt: true,
-      bio: [
-        'Dr. Kathrine Sison joined the clinic as part of its second generation of clinicians, bringing a focus on orthodontics and cosmetic dentistry that has become central to the practice. From first consultation through every adjustment along the way, Dr. Kathrine Sison manages braces and cosmetic treatment plans with the same unhurried approach the clinic was built on.',
-        'Known among patients for a calm, detail-oriented chairside manner, Dr. Kathrine Sison takes particular care with younger patients and first-time orthodontic cases, walking through each stage of treatment before it begins.'
-      ],
-      quote: '"A smile is something people carry with them every day. I want every patient to feel confident about the plan we\'ve built together, not just the end result."',
-      expertise: [
-        'Orthodontics &amp; Braces',
-        'Cosmetic Dentistry',
-        'Teeth Whitening',
-        'Veneers',
-        'Smile Design'
-      ],
-      creds: [
-        'Doctor of Dental Medicine (DMD)',
-        'Licensed Dentist, Professional Regulation Commission (PRC)',
-        'Certificate in Clinical Orthodontics',
-        'Advanced Training, Cosmetic &amp; Aesthetic Dentistry'
-      ],
-      awards: [
-        'Member, Philippine Dental Association',
-        'Member, Philippine Orthodontic Society'
       ]
     }
   ];

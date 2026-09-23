@@ -476,7 +476,7 @@ header.scrolled .nav-toggle:hover{border-color:var(--gold);background:var(--ivor
   line-height:1.65;
 }
 .hero-verse{
-  margin-top:18px;
+  margin-top:28px;
   max-width:1240px;
   font-family:'Fraunces',serif;
   font-style:italic;
@@ -1003,6 +1003,14 @@ header.scrolled .nav-toggle:hover{border-color:var(--gold);background:var(--ivor
   overflow:hidden;
   transition:border-color .25s ease, box-shadow .25s ease;
 }
+/* Recent Chromium versions animate <details> open/close natively through the
+   ::details-content pseudo-element (it ships with its own "transition: all"
+   by default). Our JS below already animates .faq-answer's height directly,
+   so the two transitions were running at once, and fighting for the same
+   open/close was the actual cause of the stutter/flicker/jump. Turning the
+   native one off leaves a single, smooth, JS-driven animation. Browsers that
+   don't support ::details-content simply ignore this rule. */
+.faq-item::details-content{transition:none;}
 .faq-item:hover{border-color:rgba(199,184,118,0.45);}
 .faq-item[open]{border-color:var(--gold-soft);box-shadow:0 8px 24px rgba(17,17,16,0.3);}
 .faq-item summary{
