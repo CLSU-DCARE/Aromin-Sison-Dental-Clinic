@@ -109,13 +109,6 @@ section[id]{scroll-margin-top:110px;}
   align-items:center;
   gap:10px;
 }
-.eyebrow::before{
-  content:'';
-  width:22px;height:1px;
-  background:var(--gold);
-  display:inline-block;
-  flex-shrink:0;
-}
 .serif{font-family:'Fraunces',serif;}
 .serif-italic{font-family:'Fraunces',serif;font-style:italic;font-weight:400;}
 
@@ -453,15 +446,30 @@ header.scrolled .nav-toggle:hover{border-color:var(--gold);background:var(--ivor
   width:55vw;height:55vw;max-width:700px;max-height:700px;
   border-color:rgba(216,189,145,0.12);
 }
-.hero-inner{position:relative;z-index:2;padding-bottom:44px;padding-top:210px;}
-.hero-copy{width:100%;}
+.hero-inner{
+  position:relative;
+  z-index:2;
+  width:min(1240px, 100%);
+  min-height:100vh;
+  min-height:100svh;
+  padding:clamp(96px, 12vh, 128px) 40px;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:flex-start;
+}
+.hero-copy{
+  width:min(760px, 68vw);
+  text-align:left;
+}
 .hero-greeting{
   font-family:'Fraunces',serif;
   font-weight:300;
   color:var(--ivory);
-  font-size:clamp(40px, 11vw, 104px);
-  line-height:0.98;
-  letter-spacing:-0.01em;
+  margin-top:14px;
+  font-size:clamp(52px, 5.4vw, 88px);
+  line-height:0.94;
+  letter-spacing:-0.025em;
 }
 .hero-greeting em{
   font-style:italic;
@@ -476,8 +484,8 @@ header.scrolled .nav-toggle:hover{border-color:var(--gold);background:var(--ivor
   line-height:1.65;
 }
 .hero-verse{
-  margin-top:28px;
-  max-width:1240px;
+  margin-top:24px;
+  max-width:620px;
   font-family:'Fraunces',serif;
   font-style:italic;
   font-weight:400;
@@ -486,13 +494,17 @@ header.scrolled .nav-toggle:hover{border-color:var(--gold);background:var(--ivor
   opacity:0.85;
 }
 .hero-cta-row{
-  margin-top:44px;
+  margin-top:34px;
   display:flex;
+  justify-content:flex-start;
   gap:16px;
   flex-wrap:wrap;
 }
 .hero-meta{
-  margin-top:96px;
+  position:absolute;
+  left:40px;
+  right:40px;
+  bottom:38px;
   display:flex;
   justify-content:space-between;
   align-items:flex-end;
@@ -505,6 +517,7 @@ header.scrolled .nav-toggle:hover{border-color:var(--gold);background:var(--ivor
   color:rgba(247,243,236,0.65);
   flex-wrap:wrap;
   gap:16px;
+  text-align:left;
 }
 
 /* ===== SMILE DIVIDER (signature element) ===== */
@@ -1166,7 +1179,7 @@ header.scrolled .nav-toggle:hover{border-color:var(--gold);background:var(--ivor
   width:74%;
 }
 /* Solo mode (a filtered category with only one photo) makes the featured
-   card wider, so it needs its own, shorter box to match — this ratio is
+   card wider, so it needs its own, shorter box to match; this ratio is
    independent of screen width since it's a straight proportion. */
 .carousel-stage.is-solo{
   aspect-ratio:1.95/1;
@@ -1630,7 +1643,6 @@ header.scrolled .nav-toggle:hover{border-color:var(--gold);background:var(--ivor
   overflow:hidden;
 }
 .about-hero .eyebrow{color:var(--gold-soft);}
-.about-hero .eyebrow::before{background:var(--gold-soft);}
 /* Gallery page: the filter bar follows the hero, so the hero can be tighter. */
 .gallery-hero{padding-bottom:120px;}
 .about-hero h1{
@@ -1673,7 +1685,6 @@ header.scrolled .nav-toggle:hover{border-color:var(--gold);background:var(--ivor
   letter-spacing:-0.02em;
 }
 .dentist-hero .eyebrow{color:var(--gold-soft);}
-.dentist-hero .eyebrow::before{background:var(--gold-soft);}
 .dentist-hero h1{
   font-family:'Fraunces',serif;
   font-weight:300;
@@ -1954,7 +1965,7 @@ header.scrolled .nav-toggle:hover{border-color:var(--gold);background:var(--ivor
   transition:transform 0.8s cubic-bezier(0.25,0.46,0.45,0.94);
   /* Forces its own GPU compositing layer. Without this, this image
      sometimes loads and positions correctly (confirmed via computed
-     styles) but never actually gets painted on screen — a known
+     styles) but never actually gets painted on screen; a known
      Chromium quirk with absolutely-positioned cover images inside an
      aspect-ratio + overflow:hidden + border-radius parent. A transform
      nudges the compositor into repainting it properly every time. */
@@ -2156,8 +2167,21 @@ footer{
   .logo img{height:42px;}
   header.scrolled .logo img{height:38px;}
   /* Compact the hero so the CTA sits above the fold on short phones. */
-  .hero-inner{padding-top:120px;padding-bottom:28px;}
-  .hero-meta{margin-top:48px;}
+  .hero-inner{
+    width:100%;
+    min-height:100svh;
+    padding:96px 22px 36px;
+    justify-content:center;
+  }
+  .hero-copy{width:100%;}
+  .hero-greeting{font-size:clamp(46px,14vw,68px);}
+  .hero-meta{
+    position:static;
+    width:100%;
+    margin-top:42px;
+    padding-top:18px;
+    text-align:left;
+  }
   .hero-sub{font-size:16.5px;}
 }
 @media (max-width:1150px){

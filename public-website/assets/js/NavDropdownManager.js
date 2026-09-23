@@ -1,5 +1,5 @@
 /* =====================================================================
-   NavDropdownManager — Desktop navigation dropdown hover/click toggles
+   NavDropdownManager: Desktop navigation dropdown hover/click toggles
    Manages open/close for .nav-drop elements with hover and click support.
    ================================================================= */
 

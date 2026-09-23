@@ -1,5 +1,5 @@
 /* =====================================================================
-   CtaBookingForm — Handles the CTA booking form submission on public pages
+   CtaBookingForm: Handles the CTA booking form submission on public pages
    Posts to the public appointment-requests endpoint with loading state.
    ================================================================= */
 

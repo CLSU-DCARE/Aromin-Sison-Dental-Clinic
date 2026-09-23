@@ -1,5 +1,5 @@
 /* =====================================================================
-   MobileMenu — Fullscreen mobile navigation overlay
+   MobileMenu: Fullscreen mobile navigation overlay
    Handles open/close, Escape key, focus trap, and desktop breakpoint auto-close.
    ================================================================= */
 

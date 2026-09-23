@@ -1,5 +1,5 @@
 /* =====================================================================
-   ScrollReveal — Scroll-triggered reveal animations, stat counters,
+   ScrollReveal: Scroll-triggered reveal animations, stat counters,
    and FAQ accordion for public website pages.
    ================================================================= */
 
