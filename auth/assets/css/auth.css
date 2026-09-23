@@ -239,9 +239,6 @@ button{font-family:inherit;cursor:pointer;background:none;border:none;color:inhe
    never reachable by Tab, so no outline is drawn on them (the previous
    h2:focus-visible rule showed a gold ring on page load that only
    disappeared after clicking elsewhere). */
-.role-card:focus-visible,
-.role-tab:focus-visible,
-.auth-tab:focus-visible,
 .link-btn:focus-visible,
 .modal-close:focus-visible,
 .auth-role-back:focus-visible,

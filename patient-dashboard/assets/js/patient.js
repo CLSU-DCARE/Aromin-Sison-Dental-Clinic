@@ -1,8 +1,6 @@
 // =====================================================================
 const PATIENT_APPOINTMENTS_ENDPOINT =
   '../backend/api/patients/appointments.php';
-const PATIENT_BRACES_ENDPOINT =
-  '../backend/api/patients/braces.php';
 let appointmentsLoaded = false;
 
 const PatientDashboardVisibility = {

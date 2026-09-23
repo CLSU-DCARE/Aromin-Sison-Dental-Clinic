@@ -351,13 +351,6 @@ const contractFormModal = new Modal('contractFormModal');
 let editingContract = null;
 let bracesRaw = []; // Last loaded contracts, used by the edit form.
 const peso = n => '₱' + Number(n).toLocaleString('en-US');
-// small helpers used by the contract form (same rules PatientTableManager uses)
-const initialsOf = name => name.trim().split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase();
-const tagFor = status => {
-  if (status === 'Current') return 'amber';
-  if (status === 'Overdue') return 'red';
-  return 'green';
-};
 
 if (contractFormModal.modal){
   contractFormModal.registerClose(document.getElementById('contractFormClose'));
@@ -908,10 +901,6 @@ function renderReports(reports){
       <td>${statusTag({ status: row.status, tag: row.tag })}</td>
     </tr>`
   ).join('');
-}
-
-function renderInventory(items){
-  inventoryMgr.apply();
 }
 
 function renderPayments(){

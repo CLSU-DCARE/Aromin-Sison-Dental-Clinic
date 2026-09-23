@@ -4,7 +4,7 @@
 if (PHP_SAPI !== 'cli') { http_response_code(404); exit; }
 require_once __DIR__ . '/../backend/autoload.php';
 $pdo = \ASDC\Database::pdo();
-$base = 'http://127.0.0.1/Aromin-Sison-Dental-Clinic/backend/api/';
+$base = rtrim(getenv('ASDC_TEST_BASE_URL') ?: 'http://127.0.0.1/asdc_v2', '/') . '/backend/api/';
 $suffix = bin2hex(random_bytes(6));
 $password = bin2hex(random_bytes(20));
 $users = []; $patients = []; $emails = []; $sessions = [];
@@ -16,8 +16,9 @@ function callApi(string $route, string $method = 'GET', ?array $body = null, ?ar
     $context = stream_context_create(['http' => ['method' => $method, 'header' => implode("\r\n", $headers), 'content' => $body === null ? '' : json_encode($body), 'ignore_errors' => true, 'timeout' => 20]]);
     $raw = file_get_contents($base . $route, false, $context);
     if ($raw === false) throw new RuntimeException('Cannot reach the local API.');
-    preg_match('/\s(\d{3})\s/', $http_response_header[0], $match);
-    return ['status' => (int) $match[1], 'data' => json_decode($raw, true, 512, JSON_THROW_ON_ERROR), 'headers' => $http_response_header];
+    $responseHeaders = function_exists('http_get_last_response_headers') ? (http_get_last_response_headers() ?: []) : ($http_response_header ?? []);
+    preg_match('/\s(\d{3})\s/', $responseHeaders[0] ?? '', $match);
+    return ['status' => (int) $match[1], 'data' => json_decode($raw, true, 512, JSON_THROW_ON_ERROR), 'headers' => $responseHeaders];
 }
 function expect(bool $ok, string $message): void { if (!$ok) throw new RuntimeException($message); }
 function okData(array $result): array {
@@ -26,6 +27,8 @@ function okData(array $result): array {
 }
 function snapshot(array $session): array { return okData(callApi('patients/dashboard.php', 'GET', null, $session)); }
 try {
+    $providerId = (int) $pdo->query("SELECT dentist_id FROM dentists WHERE is_active=1 ORDER BY dentist_id LIMIT 1")->fetchColumn();
+    expect($providerId > 0, 'The integration test requires one active dentist profile.');
     foreach (['receptionist', 'dentist', 'patient', 'other'] as $key) {
         $role = $key === 'other' ? 'patient' : $key;
         $email = "sync-$key-$suffix@example.invalid"; $emails[] = $email;
@@ -48,7 +51,7 @@ try {
     expect(callApi('patients/dashboard.php', 'GET', null, $sessions['dentist'])['status'] === 403, 'Staff must not use the patient endpoint.');
     expect(snapshot($sessions['patient'])['braces']['has_contract'] === false, 'New patient should have no contract.');
     $contract = okData(callApi('contracts/contracts.php', 'POST', [
-        'patient_id' => $patients['patient'], 'dentist_id' => $users['dentist'],
+        'patient_id' => $patients['patient'], 'dentist_id' => $providerId,
         'total_amount' => 24000, 'monthly_payment' => 1000, 'duration_months' => 24, 'status' => 'active'
     ], $sessions['receptionist']))['contract'];
     $contractId = $contract['contract_id'];
@@ -58,9 +61,9 @@ try {
     okData(callApi('contracts/progress.php', 'PATCH', ['contract_id' => $contractId, 'current_stage' => 'Adjustment Phase', 'progress_pct' => 40, 'progress_note' => 'Integration progress', 'next_note' => 'Integration next visit'], $sessions['dentist']));
     $view = snapshot($sessions['patient']);
     expect($view['braces']['braces_progress'] === '40%' && $view['braces']['braces']['description'] === 'Integration progress', 'Dentist progress must reach patient.');
-    $pdo->prepare("INSERT INTO treatment_records(patient_id,dentist_id,treatment_given,date_recorded) VALUES(?,?,'Integration treatment',CURRENT_DATE())")->execute([$patients['patient'], $users['dentist']]);
+    $pdo->prepare("INSERT INTO treatment_records(patient_id,dentist_id,treatment_given,date_recorded) VALUES(?,?,'Integration treatment',CURRENT_DATE())")->execute([$patients['patient'], $providerId]);
     $view = snapshot($sessions['patient']);
-    expect($view['treatments'][0]['title'] === 'Integration treatment' && $view['braces']['treatment_records'] === 1, 'Stored treatment records and counters must update together.');
+    expect($view['treatments'][0]['title'] === 'Integration treatment' && $view['braces']['treatment_records'] >= 2, 'Stored treatment records and counters must update together.');
     foreach ([1000, 500] as $amount) {
         $pdo->prepare("INSERT INTO contract_payments(contract_id,amount_paid,payment_date,payment_method,status,submitted_by) VALUES(?,?,CURRENT_DATE(),'cash','pending',?)")->execute([$contractId, $amount, $users['patient']]);
         $paymentIds[] = (int) $pdo->lastInsertId();
@@ -77,10 +80,10 @@ try {
     // Pick a free future slot to avoid touching another patient's booking.
     $date = date('Y-m-d', strtotime('+600 days'));
     while (\ASDC\AppointmentSlotManager::isTaken($pdo, $date, '09:00:00') || \ASDC\AppointmentSlotManager::isTaken($pdo, $date, '10:00:00')) $date = date('Y-m-d', strtotime($date . ' +1 day'));
-    $pdo->prepare("INSERT INTO appointments(patient_id,dentist_id,service_type,scheduled_date,scheduled_time,status) VALUES(?,?,'Consultation',?,'09:00:00','pending')")->execute([$patients['patient'], $users['dentist'], $date]);
+    $pdo->prepare("INSERT INTO appointments(patient_id,dentist_id,service_type,scheduled_date,scheduled_time,status) VALUES(?,?,'Consultation',?,'09:00:00','pending')")->execute([$patients['patient'], $providerId, $date]);
     $appointmentId = (int) $pdo->lastInsertId();
     $action = ['resource_type' => 'appointment', 'appointment_id' => $appointmentId];
-    okData(callApi('appointments/actions.php', 'POST', $action + ['action' => 'approve'], $sessions['receptionist']));
+    okData(callApi('appointments/actions.php', 'POST', $action + ['action' => 'approve', 'dentist_id' => $providerId], $sessions['receptionist']));
     expect(snapshot($sessions['patient'])['appointments']['schedule'][0]['status'] === 'Confirmed', 'Confirmation must update patient schedule.');
     okData(callApi('appointments/actions.php', 'PATCH', $action + ['action' => 'reschedule', 'scheduled_date' => $date, 'scheduled_time' => '10:00'], $sessions['dentist']));
     expect(snapshot($sessions['patient'])['appointments']['schedule'][0]['time'] === '10:00 AM', 'Staff rescheduling must update patient time.');

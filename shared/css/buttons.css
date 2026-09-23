@@ -17,9 +17,8 @@
      Outline          .btn-outline     light surfaces / dashboards
                       .btn-outline-light  on dark surfaces (hero, banner)
                       .btn-outline-dark   on light surfaces (public site)
-     Ghost / text     .btn-ghost .btn-ghost-light · .btn-link
+     Text             .btn-link
      Destructive      .btn-danger      Delete · Log Out
-     Icon-only        .btn-icon .btn-icon-sm   topbar / table row actions
      Sizes            .btn-sm · .btn-lg
      Layout           .btn-block (full width)  · .btn (inline-flex)
 
@@ -100,14 +99,6 @@
 .btn-outline-dark{color:var(--dark);border-color:rgba(27,27,25,0.32);}
 .btn-outline-dark:hover{background:rgba(15,43,38,0.06);border-color:var(--gold);}
 
-/* ---- Ghost / text buttons ---- */
-.btn-ghost{color:var(--ink);}
-.btn-ghost:hover{background:var(--ivory-2);transform:none;}
-.btn-ghost:active{background:rgba(241,237,227,0.75);transform:none;}
-.btn-ghost-light{color:var(--ivory);}
-.btn-ghost-light:hover{background:rgba(250,250,247,0.1);transform:none;}
-.btn-ghost-light:active{background:rgba(250,250,247,0.16);transform:none;}
-
 /* ---- Link-style text button (inline "see all" links, etc.) ---- */
 .btn-link{
   min-height:auto;padding:6px 12px;
@@ -137,22 +128,8 @@
 /* ---- Full-width ---- */
 .btn-block{display:flex;width:100%;white-space:normal;}
 
-/* ---- Icon-only buttons (topbar, table row actions) ---- */
-.btn-icon{
-  width:42px;height:42px;min-height:auto;padding:0;flex-shrink:0;
-  display:inline-flex;align-items:center;justify-content:center;
-  border-radius:50%;
-  background:var(--white);border:1px solid var(--line);
-  color:rgba(27,27,25,0.68);
-}
-.btn-icon svg{width:18px;height:18px;}
-.btn-icon:hover{background:var(--ivory-2);border-color:rgba(156,139,62,0.45);color:var(--gold);transform:none;}
-.btn-icon:active{transform:scale(.92);}
-.btn-icon-sm{width:40px;height:40px;border-radius:10px;}
-.btn-icon-sm svg{width:16px;height:16px;}
-
 /* ---- Disabled ---- */
-.btn:disabled,.btn.is-disabled,.btn[aria-disabled="true"]{
+.btn:disabled,.btn[aria-disabled="true"]{
   opacity:.55;
   cursor:not-allowed;
   transform:none !important;
@@ -174,9 +151,7 @@
 .btn-secondary .btn-spinner,
 .btn-outline .btn-spinner,
 .btn-outline-light .btn-spinner,
-.btn-outline-dark .btn-spinner,
-.btn-ghost .btn-spinner,
-.btn-ghost-light .btn-spinner{border-color:rgba(27,27,25,0.2);border-top-color:var(--ink);}
+.btn-outline-dark .btn-spinner{border-color:rgba(27,27,25,0.2);border-top-color:var(--ink);}
 .btn.is-loading{cursor:wait;pointer-events:none;opacity:.85;}
 .btn.is-loading .btn-spinner{display:inline-block;}
 .btn.is-loading .btn-label::after{content:'\2026';}

@@ -304,9 +304,9 @@ Promotions can be managed by receptionists from the admin dashboard and are disp
 
 ### Automatic patient updates
 
-The patient dashboard reads a patient-scoped server snapshot every three seconds while visible. Returning to the tab or reconnecting refreshes immediately. Appointments, contracts, dentist progress, payment reviews, balances, and stored treatment records update without reloading the page. Form inputs remain intact; open rescheduling dialogs track appointment IDs rather than row positions.
+The patient dashboard reads a patient-scoped server snapshot every ten seconds while visible. Returning to the tab or reconnecting refreshes immediately. Appointments, contracts, dentist progress, payment reviews, balances, and stored treatment records update without reloading the page. Form inputs remain intact; open rescheduling dialogs track appointment IDs rather than row positions.
 
-During connection failures, the last successful data stays visible with a retry notice. Retries back off to at most 30 seconds. This is polling, so delivery takes roughly three seconds plus request time under a healthy connection.
+During connection failures, the last successful data stays visible with a retry notice. Retries back off to at most 30 seconds. This is polling, so delivery takes roughly ten seconds plus request time under a healthy connection.
 
 Apply database migrations after importing the base schema:
 
@@ -323,6 +323,7 @@ php tests/patient_sync_integration.php
 ```
 
 The integration test uses local Apache and MySQL, exercises separate receptionist/dentist/patient sessions, and removes its temporary records. Its patients have no email or phone, so it sends no external messages.
+It defaults to `http://127.0.0.1/asdc_v2`; set `ASDC_TEST_BASE_URL` when the project uses another local URL.
 
 ### Remaining setup
 
