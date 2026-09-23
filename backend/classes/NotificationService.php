@@ -3,8 +3,6 @@
  * Notification facade/orchestrator: Aromin-Sison Dental Clinic System.
  *
  * Ties together template lookup, rendering, sending, and logging.
- * Used by the notify_event() helper and other endpoints.
- *
  * Usage:
  *   $result = NotificationService::notifyEvent($pdo, 'appointment.booked', $patientId, $replacements);
  */
