@@ -97,7 +97,7 @@ Each public-website HTML file loads three stylesheets in this order:
 <link rel="stylesheet" href="assets/css/main.css">           <!-- page-specific styles -->
 ```
 
-Dashboard HTML files load four — adding `panels.css` for the popover dropdowns:
+Dashboard HTML files load four - adding `panels.css` for the popover dropdowns:
 ```html
 <link rel="stylesheet" href="../shared/css/variables.css">
 <link rel="stylesheet" href="../shared/css/buttons.css">
@@ -223,8 +223,8 @@ can reuse pre-written messages with dynamic `{placeholders}`.
 
 Notifications can be sent in two ways:
 
-1. **Automatic** — fire from PHP endpoints when events happen (appointment booked, payment approved, etc.) using the `notify_event()` helper in `backend/config/notifications.php`
-2. **Manual** — admin staff use the Notifications view in the admin dashboard to pick a patient, choose a template, and send
+1. **Automatic** - fire from PHP endpoints when events happen (appointment booked, payment approved, etc.) using the `notify_event()` helper in `backend/config/notifications.php`
+2. **Manual** - admin staff use the Notifications view in the admin dashboard to pick a patient, choose a template, and send
 
 ### Auto-trigger helper
 
@@ -284,9 +284,9 @@ Email uses the installed PHPMailer dependency with Gmail SMTP over STARTTLS on
 port 587. Configure these Windows **System environment variables** (do not put
 the App Password in this repository):
 
-- `ASDC_GMAIL_ADDRESS` — the complete Gmail address used to authenticate and send
-- `ASDC_GMAIL_APP_PASSWORD` — the 16-character Gmail App Password
-- `ASDC_MAIL_FROM_NAME` — optional; defaults to `Aromin-Sison Dental Clinic`
+- `ASDC_GMAIL_ADDRESS` - the complete Gmail address used to authenticate and send
+- `ASDC_GMAIL_APP_PASSWORD` - the 16-character Gmail App Password
+- `ASDC_MAIL_FROM_NAME` - optional; defaults to `Aromin-Sison Dental Clinic`
 
 After adding or changing them, fully exit the XAMPP Control Panel, reopen it,
 and restart Apache so PHP inherits the updated environment. If Apache is

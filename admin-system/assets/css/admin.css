@@ -458,7 +458,7 @@ body.dentist-dashboard .date-control input[type="date"]::-webkit-calendar-picker
    Payment" were invisible on phones with no way to reach them. */
 .table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;position:relative;}
 /* Subtle edge fade + hint so a scrollable table doesn't look like it just
-   ends mid-column — nudges people to swipe for the rest on narrow screens,
+   ends mid-column - nudges people to swipe for the rest on narrow screens,
    without changing the table itself. Fades out once nothing scrollable is
    left offscreen would require JS to detect precisely; this stays simple
    and only shows where the layout is actually prone to overflowing. */
@@ -951,7 +951,7 @@ body.sidebar-open{overflow:hidden;}
   .sidebar-toggle{width:38px;height:38px;flex-shrink:0;}
   .sidebar-toggle svg{width:18px;height:18px;}
   /* Every action stays a compact, equally-sized icon on one row instead
-     of wrapping onto its own line — a full-width text button ("View
+     of wrapping onto its own line - a full-width text button ("View
      Public Site") used to force a whole extra row by itself here. */
   .topbar-right{width:auto;order:0;gap:6px;flex-wrap:nowrap;flex-shrink:0;}
   .icon-btn{width:38px;height:38px;flex-shrink:0;}
@@ -986,7 +986,7 @@ body.sidebar-open{overflow:hidden;}
 @media (max-width:380px){
   .topbar h1{font-size:15px;}
   /* At the very narrowest phone widths, the avatar is the one control
-     that can safely step aside — everything else is already a minimal
+     that can safely step aside - everything else is already a minimal
      icon, and the account menu is still reachable from the sidebar. */
   .topbar-right{gap:4px;}
 }

@@ -876,7 +876,7 @@ body.sidebar-open{overflow:hidden;}
   .sidebar-toggle{width:38px;height:38px;flex-shrink:0;}
   .sidebar-toggle svg{width:18px;height:18px;}
   /* Every action stays a compact, equally-sized icon on one row instead
-     of wrapping onto its own line — a full-width text button ("Book
+     of wrapping onto its own line - a full-width text button ("Book
      Appointment") used to force a whole extra row by itself here. */
   .topbar-right{width:auto;order:0;gap:6px;flex-wrap:nowrap;flex-shrink:0;}
   .icon-btn{width:38px;height:38px;flex-shrink:0;}

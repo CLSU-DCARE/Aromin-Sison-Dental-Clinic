@@ -226,7 +226,7 @@ class AuthMiddleware
      *
      * X-Forwarded-For and X-Real-IP are sent by the VISITOR'S OWN BROWSER, so anyone
      * can set them to any value. If we always believed them, a person could type a
-     * different fake IP with every login attempt and never get locked out — the 30
+     * different fake IP with every login attempt and never get locked out - the 30
      * second lockout after 5 wrong passwords would do nothing.
      *
      * We only read those headers when the request comes from a proxy we run and

@@ -95,7 +95,7 @@ class BracesService
 
         // Progress calculation. A dentist's own update (once they've ever
         // used "Update Progress") always takes priority over the plain
-        // elapsed-time estimate below — that estimate only exists so a
+        // elapsed-time estimate below - that estimate only exists so a
         // brand new contract still shows *something* reasonable before any
         // dentist has actually touched it.
         $dentistSet = $contractRow && !empty($contractRow['progress_updated_at']);
@@ -173,7 +173,7 @@ class BracesService
             ];
         }
 
-        // Next label — a dentist's own note takes priority over the
+        // Next label - a dentist's own note takes priority over the
         // system's next-scheduled-appointment guess.
         $nextLabel = 'No upcoming braces appointment.';
         if ($nextAppointment) {
@@ -218,7 +218,7 @@ class BracesService
                     'date'   => $pay['status'] === 'pending' ? self::fmtDate(substr($pay['created_at'], 0, 10)) : self::fmtDate($pay['payment_date']),
                     'amount' => self::fmtMoney((float) $pay['amount_paid']),
                     'method' => ucwords(str_replace('_', ' ', $pay['payment_method'])),
-                    'or'     => $pay['or_number'] ?: '—',
+                    'or'     => $pay['or_number'] ?: '-',
                     'status' => $pay['status'],
                 ];
             }
@@ -292,7 +292,7 @@ class BracesService
 
     private static function fmtDate(?string $value): string
     {
-        if (!$value) return '—';
+        if (!$value) return '-';
         $date = DateTime::createFromFormat('Y-m-d', $value);
         return $date ? $date->format('M j, Y') : $value;
     }

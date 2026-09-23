@@ -89,7 +89,7 @@
   ASDC.confirmAction = confirmAction;
   ASDC.openProfileForm = patient => form('Edit patient profile',
     field('Full name', `<input name="name" required maxlength="100" value="${esc(patient.name)}">`) +
-    field('Contact number', `<input name="contact_number" maxlength="20" value="${esc(patient.contact === '—' ? '' : patient.contact)}">`),
+    field('Contact number', `<input name="contact_number" maxlength="20" value="${esc(patient.contact === '-' ? '' : patient.contact)}">`),
     values => write('patients/profile.php', { ...values, patient_id: patient.pid }));
 
   ASDC.openClinicalForm = (snapshot, record = null) => {

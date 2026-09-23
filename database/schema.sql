@@ -1,5 +1,5 @@
 -- ============================================================
--- Aromin-Sison Dental Clinic — Starter Database Schema
+-- Aromin-Sison Dental Clinic - Starter Database Schema
 -- Engine: MySQL / MariaDB
 -- This is a STARTING POINT covering the modules in your scope.
 -- Expand fields as your admin/patient dashboards need them.
@@ -266,7 +266,7 @@ CREATE TABLE inventory_items (
 --   Attendance % = completed / (completed + no_show + cancelled) * 100
 --   Active Braces Patients = COUNT(*) FROM braces_contracts WHERE status = 'active'
 --
--- No separate attendance table is strictly required — keeping status accurate
+-- No separate attendance table is strictly required - keeping status accurate
 -- on `appointments` is enough to generate all report views listed in your scope.
 
 -- ---------- NOTIFICATIONS ----------
@@ -288,24 +288,24 @@ CREATE TABLE notification_templates (
 -- Seed default templates for common clinic notifications.
 INSERT INTO notification_templates (template_key, name, channel, subject, body) VALUES
 ('appointment_reminder', 'Appointment Reminder', 'email',
- 'Appointment Reminder — Aromin-Sison Dental Clinic',
- 'Hi {patient_name}, this is a friendly reminder of your appointment on {date} at {time} for {service}. If you need to reschedule, please call us at least 24 hours in advance. — Aromin-Sison Dental Clinic'),
+ 'Appointment Reminder - Aromin-Sison Dental Clinic',
+ 'Hi {patient_name}, this is a friendly reminder of your appointment on {date} at {time} for {service}. If you need to reschedule, please call us at least 24 hours in advance. - Aromin-Sison Dental Clinic'),
 
 ('appointment_confirmation', 'Appointment Confirmation', 'email',
- 'Appointment Confirmed — Aromin-Sison Dental Clinic',
- 'Hi {patient_name}, your appointment has been confirmed for {date} at {time} ({service}) with {dentist}. We look forward to seeing you! — Aromin-Sison Dental Clinic'),
+ 'Appointment Confirmed - Aromin-Sison Dental Clinic',
+ 'Hi {patient_name}, your appointment has been confirmed for {date} at {time} ({service}) with {dentist}. We look forward to seeing you! - Aromin-Sison Dental Clinic'),
 
 ('appointment_cancellation', 'Appointment Cancellation', 'email',
- 'Appointment Cancelled — Aromin-Sison Dental Clinic',
- 'Hi {patient_name}, your appointment on {date} at {time} ({service}) has been cancelled. To rebook, please visit our website or call us. — Aromin-Sison Dental Clinic'),
+ 'Appointment Cancelled - Aromin-Sison Dental Clinic',
+ 'Hi {patient_name}, your appointment on {date} at {time} ({service}) has been cancelled. To rebook, please visit our website or call us. - Aromin-Sison Dental Clinic'),
 
 ('payment_due', 'Payment Due Reminder', 'email',
- 'Payment Reminder — Aromin-Sison Dental Clinic',
- 'Hi {patient_name}, this is a reminder that your next braces contract payment of {amount} is due. Your remaining balance is {balance}. Please visit the clinic or contact us for payment options. — Aromin-Sison Dental Clinic'),
+ 'Payment Reminder - Aromin-Sison Dental Clinic',
+ 'Hi {patient_name}, this is a reminder that your next braces contract payment of {amount} is due. Your remaining balance is {balance}. Please visit the clinic or contact us for payment options. - Aromin-Sison Dental Clinic'),
 
 ('payment_received', 'Payment Received Confirmation', 'email',
- 'Payment Received — Aromin-Sison Dental Clinic',
- 'Hi {patient_name}, we have received your payment of {amount}. Your remaining balance is {balance}. Thank you! — Aromin-Sison Dental Clinic'),
+ 'Payment Received - Aromin-Sison Dental Clinic',
+ 'Hi {patient_name}, we have received your payment of {amount}. Your remaining balance is {balance}. Thank you! - Aromin-Sison Dental Clinic'),
 
 ('payment_rejected', 'Payment Rejected', 'email',
  'Payment Update - Aromin-Sison Dental Clinic',

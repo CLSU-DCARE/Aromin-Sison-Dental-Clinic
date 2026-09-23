@@ -134,14 +134,14 @@
   // patient session stays fully intact underneath, so coming back to the
   // dashboard (or clicking browser Back) never forces a re-login. This used
   // to call the same session-destroy routine as the real Sign Out button,
-  // which was the bug — logging people out just for viewing the public
+  // which was the bug - logging people out just for viewing the public
   // site. Real sign-out is still handled separately by LogoutManager, and
   // is not affected by this.
   window.wirePublicSiteLinks = () => {
     // Intentionally a no-op: plain <a href="../public-website/..."> links
     // already navigate normally and keep the session cookie, so nothing
     // needs to be intercepted here. Kept as a named hook (rather than
-    // deleted outright) in case a future need — e.g. opening in a new tab —
+    // deleted outright) in case a future need - e.g. opening in a new tab -
     // wants a single place to wire it up, without reintroducing a logout.
   };
 

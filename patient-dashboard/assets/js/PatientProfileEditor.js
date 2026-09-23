@@ -51,7 +51,7 @@ window.PatientProfileEditor = class PatientProfileEditor {
     };
 
     document.getElementById('epName').value    = this.state.user.name;
-    document.getElementById('epContact').value = getVal('Contact Number') === '—' ? '' : getVal('Contact Number');
+    document.getElementById('epContact').value = getVal('Contact Number') === '-' ? '' : getVal('Contact Number');
     document.getElementById('epEmail').value   = getVal('Email Address');
     document.getElementById('epEmail').readOnly = true;
     document.getElementById('epEmail').title = 'Contact the clinic to change your login email.';

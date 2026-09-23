@@ -108,7 +108,7 @@
                 : ['pending', 'rescheduled'].includes(apptStatus)
                   ? '<span class="tag tag-amber">' + esc(apptStatus.charAt(0).toUpperCase() + apptStatus.slice(1)) + '</span>'
                   : '<span class="tag tag-red">' + esc(apptStatus.charAt(0).toUpperCase() + apptStatus.slice(1)) + '</span>')
-            : '<span class="tag tag-gray">—</span>';
+            : '<span class="tag tag-gray">-</span>';
           const subject = log.subject || '\u2014';
           const date = log.sent_at
             ? new Date(log.sent_at).toLocaleString('en-US', {

@@ -98,7 +98,7 @@ class Mailer
             self::command($socket, 'EHLO aromin-sison.local', [250]);
             self::command($socket, 'STARTTLS', [220]);
             // If Gmail's certificate cannot be verified, this fails closed (throws) instead
-            // of quietly sending the email — and the password reset link inside it —
+            // of quietly sending the email - and the password reset link inside it -
             // over a connection that might be intercepted.
             if (!@stream_socket_enable_crypto($socket, true, STREAM_CRYPTO_METHOD_TLS_CLIENT)) {
                 throw new \RuntimeException('TLS certificate verification failed');

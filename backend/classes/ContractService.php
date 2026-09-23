@@ -140,7 +140,7 @@ class ContractService
         $newBalance = max(0, $total - $paidSoFar);
         $status = $data['status'] ?? $existing['status'];
         // Preserve the existing dentist assignment unless a new one was
-        // explicitly sent — otherwise every edit that doesn't touch the
+        // explicitly sent - otherwise every edit that doesn't touch the
         // dentist field would silently unassign the contract.
         $dentistId = array_key_exists('dentist_id', $data) && $data['dentist_id']
             ? $data['dentist_id']

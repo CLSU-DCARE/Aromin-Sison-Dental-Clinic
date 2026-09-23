@@ -13,10 +13,10 @@
 // =====================================================================
 
 // =====================================================================
-// Helpers & shared cell builders — now provided by ASDC.HtmlHelpers
+// Helpers & shared cell builders - now provided by ASDC.HtmlHelpers
 // (escapeHtml, nameCell, statusTag, statCard, eyeIcon, pencilIcon,
 // trashIcon are global via dashboard-core.js).
-// PDF export — now provided by ASDC.ReportExporter
+// PDF export - now provided by ASDC.ReportExporter
 // (exportTablePDF, getLogoDataUrl are global via dashboard-core.js).
 // =====================================================================
 
@@ -384,7 +384,7 @@ if (contractFormModal.modal){
       const data = await apiFetch('../backend/api/contracts/dentists.php');
       if (!Array.isArray(data.dentists) || !data.dentists.length) throw new Error('empty');
       // Real mode needs the numeric user_id (what the backend expects for
-      // dentist_id) — the display name alone isn't enough to save it.
+      // dentist_id) - the display name alone isn't enough to save it.
       cfDentist.innerHTML = data.dentists.map(d => `<option value="${d.dentist_id}">${escapeHtml(d.full_name)}</option>`).join('');
     } catch (e) { cfDentist.innerHTML = ''; showToast('Unable to load dentists.', 'error'); }
   };
@@ -399,7 +399,7 @@ if (contractFormModal.modal){
     await Promise.all([fillPatients(), fillDentists()]);
     editingContract = contract || null;
     document.getElementById('contractFormTitle').textContent = contract
-      ? 'Edit Contract — ' + contract.name
+      ? 'Edit Contract - ' + contract.name
       : 'New Braces Contract';
     contractSaveBtn.querySelector('.btn-label').textContent = contract ? 'Save Changes' : 'Create Contract';
     // Editing doesn't reassign which patient the contract belongs to, so
@@ -933,7 +933,7 @@ const notificationManager = new ASDC.NotificationManager();
 renderUser(AdminState.user);
 renderDashboardStats(AdminState.dashboard.stats);
 renderWeekGrid('dashWeekGrid', AdminState.dashboard.week);
-// NOTE: the appointments page's own week grid loads itself — see
+// NOTE: the appointments page's own week grid loads itself - see
 // appointmentScheduler.init() a few lines above, which already calls
 // loadWeek(). The old loadAppointmentWeek() global function was removed
 // when this was refactored into the AppointmentScheduler class, but this

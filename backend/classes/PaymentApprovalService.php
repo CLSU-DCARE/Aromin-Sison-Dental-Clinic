@@ -6,7 +6,7 @@
  * Receptionist-facing: list pending submissions, approve/reject them.
  * Approving applies the amount to the contract's balance (via
  * ContractService::applyPayment) and logs a real notification to the
- * patient — this is what actually connects "Patient submits payment" to
+ * patient - this is what actually connects "Patient submits payment" to
  * "Receptionist approves" to "Patient sees updated balance" end to end.
  *
  * Usage:

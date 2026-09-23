@@ -115,7 +115,7 @@ function initLoginForm(form) {
 }
 
 // =====================================================================
-// REUSABLE MODAL — ASDC.Modal (from shared core)
+// REUSABLE MODAL - ASDC.Modal (from shared core)
 // =====================================================================
 function setupModal(modalId, triggerIds = [], closeIds = []) {
   const modal = new ASDC.Modal(modalId);
@@ -190,7 +190,7 @@ function wireResetPasswordForm(form) {
 }
 
 // =====================================================================
-// AUTHENTICATED-USER GUARD — ASDC.AuthPageGuard
+// AUTHENTICATED-USER GUARD - ASDC.AuthPageGuard
 // =====================================================================
 function guardAuthPages() { ASDC.AuthPageGuard.init(); }
 

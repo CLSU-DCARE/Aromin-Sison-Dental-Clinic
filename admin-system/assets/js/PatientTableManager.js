@@ -45,9 +45,9 @@ window.PatientTableManager = class PatientTableManager {
         const name = p.first_name + ' ' + p.last_name;
         return {
           id: '#P-' + p.patient_id, pid: p.patient_id, name, initials: this._initialsOf(name),
-          contact: p.contact_number || '—', email: p.email || '', lastVisit: p.last_visit || '—',
+          contact: p.contact_number || '-', email: p.email || '', lastVisit: p.last_visit || '-',
           contract: contract ? contract.id : null,
-          balance: contract ? ContractFormat.peso(contract.balance) : '—',
+          balance: contract ? ContractFormat.peso(contract.balance) : '-',
           status: contract ? contract.status : 'No contract', tag: contract ? contract.tag : 'green'
         };
       });
@@ -244,7 +244,7 @@ window.PatientTableManager = class PatientTableManager {
     if (!this._detailModal.modal) return;
     document.getElementById('detailTitle').textContent = 'Patient Details';
     document.getElementById('detailRows').innerHTML = [
-      ['Patient ID', p.id], ['Contract', p.contract || '—'], ['Contact', escapeHtml(p.contact)],
+      ['Patient ID', p.id], ['Contract', p.contract || '-'], ['Contact', escapeHtml(p.contact)],
       ['Last Visit', p.lastVisit], ['Balance', p.balance],
       ['Status', `<span class="tag tag-${p.tag}">${p.status}</span>`]
     ].map(([label, value]) => `<div class="row"><span>${label}</span><span>${value}</span></div>`).join('');

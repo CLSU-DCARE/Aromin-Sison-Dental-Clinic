@@ -1,4 +1,4 @@
-# Uploaded receipt images only — never execute anything here as PHP,
+# Uploaded receipt images only - never execute anything here as PHP,
 # and don't let visitors browse the directory listing.
 <IfModule mod_php.c>
   php_flag engine off

@@ -63,7 +63,7 @@ class NotificationService
                 $error  = 'Patient has no email on file.';
             } else {
                 if ($ch === 'email') {
-                    $r = Mailer::sendEmail($recipient, $renderedSubject ?: 'Notification — Aromin-Sison Dental Clinic', $renderedBody);
+                    $r = Mailer::sendEmail($recipient, $renderedSubject ?: 'Notification - Aromin-Sison Dental Clinic', $renderedBody);
                 } else {
                     $r = ['ok' => false, 'error' => 'Unsupported notification channel.'];
                 }

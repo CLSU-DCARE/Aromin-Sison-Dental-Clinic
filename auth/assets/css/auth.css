@@ -31,7 +31,6 @@ button{font-family:inherit;cursor:pointer;background:none;border:none;color:inhe
   color:var(--gold-soft);
   display:flex;align-items:center;gap:10px;
 }
-.eyebrow::before{content:'';width:24px;height:1px;background:var(--gold-soft);display:inline-block;flex-shrink:0;}
 
 /* ===== SHELL ===== */
 .auth-shell{display:flex;min-height:100vh;min-height:100svh;}
@@ -99,8 +98,6 @@ button{font-family:inherit;cursor:pointer;background:none;border:none;color:inhe
    aside but fails contrast on ivory, so use the accessible gold tone. */
 .auth-card-head .eyebrow,
 .modal .eyebrow{color:var(--gold-text);}
-.auth-card-head .eyebrow::before,
-.modal .eyebrow::before{background:var(--gold-text);}
 
 /* ---- Alert ---- */
 .auth-alert{

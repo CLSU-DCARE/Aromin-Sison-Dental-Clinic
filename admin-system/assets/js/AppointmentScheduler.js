@@ -46,7 +46,7 @@ window.AppointmentScheduler = class AppointmentScheduler {
       // A real, working endpoint always returns these two arrays (even empty
       // ones for a genuinely quiet week). If they're missing, the endpoint
       // isn't actually implemented yet (e.g. a dev server just serving the
-      // raw .php file as text) — treat that the same as a failed request.
+      // raw .php file as text) - treat that the same as a failed request.
       if (!Array.isArray(data.appointments) || !Array.isArray(data.requests)) {
         throw new Error('Appointments endpoint did not return the expected data.');
       }
@@ -231,7 +231,7 @@ window.AppointmentScheduler = class AppointmentScheduler {
           `<td>${escapeHtml(request.service_type)}</td>` +
           `<td><strong>${escapeHtml(this._dateLabel(request.scheduled_date))}</strong>` +
           `<div class="request-time">${escapeHtml(this._timeLabel(request.scheduled_time))}</div></td>` +
-          `<td>${escapeHtml(request.contact_number || '—')}</td>` +
+          `<td>${escapeHtml(request.contact_number || '-')}</td>` +
           `<td>${this._statusTag(request.status)}</td>` +
           `<td><div class="appointment-request-actions">` +
           `<button type="button" class="btn btn-sm btn-approve" data-request-action="approve" data-request-id="${Number(request.request_id)}">Approve</button>` +
