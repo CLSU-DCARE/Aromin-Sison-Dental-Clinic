@@ -3,7 +3,7 @@
   "rewrites": [
     {
       "source": "/backend/:path*",
-      "destination": "https://REPLACE_WITH_YOUR_RAILWAY_DOMAIN/backend/:path*"
+      "destination": "https://asdc-api-production.up.railway.app/backend/:path*"
     }
   ],
   "headers": [
