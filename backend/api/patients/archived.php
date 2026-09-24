@@ -24,8 +24,12 @@ if ($method === 'GET') {
 $body = \ASDC\ApiResponse::requireJson();
 $patientId = \ASDC\InputValidator::positiveId($body['patient_id'] ?? null);
 $action = is_string($body['action'] ?? null) ? strtolower(trim($body['action'])) : '';
-if (!$patientId || $action !== 'restore') {
-    \ASDC\ApiResponse::error(422, 'validation_failed', 'Choose an archived patient to restore.');
+if (!$patientId || !in_array($action, ['restore', 'purge'], true)) {
+    \ASDC\ApiResponse::error(422, 'validation_failed', 'Choose an archived patient action.');
 }
 
-\ASDC\ApiResponse::ok(\ASDC\PatientService::restore($patientId), 'Patient restored.');
+if ($action === 'restore') {
+    \ASDC\ApiResponse::ok(\ASDC\PatientService::restore($patientId), 'Patient restored.');
+}
+
+\ASDC\ApiResponse::ok(\ASDC\PatientService::purgeArchived($patientId), 'Archived patient permanently deleted.');

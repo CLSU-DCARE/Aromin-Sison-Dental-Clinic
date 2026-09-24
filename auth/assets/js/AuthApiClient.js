@@ -48,7 +48,7 @@
 
     static loginError(response, payload) {
       if (response.status === 401)
-        return 'Invalid email or password. Please try again.';
+        return 'Invalid email address, mobile number, or password. Please try again.';
       if (response.status === 429)
         return (
           payload.error?.message ||
@@ -128,14 +128,14 @@
       }
     }
 
-    static async login(email, password, rememberMe = false) {
+    static async login(identifier, password, rememberMe = false) {
       const response = await AuthApiClient.fetchWithTimeout(
         ENDPOINTS.login,
         {
           method: 'POST',
           credentials: 'same-origin',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password, remember_me: rememberMe }),
+          body: JSON.stringify({ identifier, password, remember_me: rememberMe }),
         }
       );
       const payload = await AuthApiClient.readJson(response);

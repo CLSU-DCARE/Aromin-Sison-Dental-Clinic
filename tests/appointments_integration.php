@@ -27,8 +27,9 @@ function request(string $base, string $path, string $method='GET', ?array $body=
     return [(int)($match[1] ?? 0), json_decode($raw ?: '{}', true), $raw, $responseHeaders];
 }
 
-function login(string $base, string $email, string $password): array {
-    $response=request($base,'/backend/api/auth/login.php','POST',['email'=>$email,'password'=>$password]);
+function login(string $base, string $identifier, string $password, bool $legacyEmailPayload = false): array {
+    $payload = $legacyEmailPayload ? ['email'=>$identifier,'password'=>$password] : ['identifier'=>$identifier,'password'=>$password];
+    $response=request($base,'/backend/api/auth/login.php','POST',$payload);
     $cookie = null;
     foreach($response[3] as $header) if(preg_match('/^Set-Cookie:\s*ASDC_SESSION=([^;]+)/i',$header,$match)) $cookie = $match[1];
     if ($cookie) {
@@ -55,8 +56,9 @@ try {
     $stmt=$pdo->prepare('INSERT INTO patients(user_id,first_name,last_name,contact_number,email) VALUES(?,?,?,?,?)');
     $stmt->execute([$patientUserId,'Module','Three',$phone,$email]);
     $patientId=(int)$pdo->lastInsertId();
-    $staffSession=login($base,"staff-$email",$password);
+    $staffSession=login($base,"staff-$email",$password,true);
     $patientSession=login($base,$email,$password);
+    $patientMobileSession=login($base,'+63 '.substr($phone, 1, 3).' '.substr($phone, 4, 3).' '.substr($phone, 7),$password);
     $date=date('Y-m-d',strtotime('+30 days'));
     $date2=date('Y-m-d',strtotime('+31 days'));
 
@@ -92,7 +94,7 @@ try {
         $pdo->prepare('DELETE FROM patients WHERE patient_id=?')->execute([$patientId]);
     }
     foreach (array_reverse($createdUserIds) as $id) $pdo->prepare('DELETE FROM users WHERE user_id=?')->execute([$id]);
-    foreach ([$staffSession ?? null, $patientSession ?? null] as $sessionId) {
+    foreach ([$staffSession ?? null, $patientSession ?? null, $patientMobileSession ?? null] as $sessionId) {
         if ($sessionId) @unlink(__DIR__ . '/sessions/sess_' . $sessionId['cookie']);
     }
 }

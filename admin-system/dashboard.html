@@ -259,7 +259,11 @@
         <div class="panel" id="archivedDetailPanel" hidden>
           <div class="panel-head">
             <h3 id="archivedDetailTitle">Archived Patient</h3>
-            <button class="btn btn-gold btn-sm" id="archivedRestoreBtn">Restore Patient</button>
+            <div class="row-actions">
+              <button class="btn btn-outline btn-sm" id="archivedCloseBtn" type="button" aria-label="Close archived patient details">Close</button>
+              <button class="btn btn-danger btn-sm" id="archivedDeleteBtn" type="button">Delete Permanently</button>
+              <button class="btn btn-gold btn-sm" id="archivedRestoreBtn" type="button">Restore Patient</button>
+            </div>
           </div>
           <div id="archivedDetailBody"></div>
         </div>

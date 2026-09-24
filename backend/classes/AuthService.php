@@ -6,7 +6,7 @@
  * password forgot/reset, and current-user lookup.
  *
  * Usage:
- *   $result = AuthService::login($email, $password);
+ *   $result = AuthService::login($identifier, $password);
  *   $user   = AuthService::me();
  *   AuthService::logout();
  *   $result = AuthService::register($data);
@@ -28,7 +28,7 @@ class AuthService
     public const ALLOWED_ROLES = ['dentist', 'receptionist', 'patient'];
 
     /**
-     * Authenticate a user by email + password.
+     * Authenticate a user by registered email address or mobile number + password.
      *
      * On success, sets session variables and regenerates the session ID.
      * On failure, tracks brute-force attempts.
@@ -36,21 +36,19 @@ class AuthService
      * @param bool $rememberMe If true, creates a remember token for persistent login
      * @return array{success: true, user: array}|array{success: false, error: string, code: int}
      */
-    public static function login(string $email, string $password, bool $rememberMe = false): array
+    public static function login(string $identifier, string $password, bool $rememberMe = false): array
     {
-        $email = strtolower(trim($email));
+        $loginIdentifier = self::normalizeLoginIdentifier($identifier);
 
-        if (!$email || !$password) {
-            return ['success' => false, 'error' => 'Email and password are required.', 'code' => 400];
+        if (!$loginIdentifier || !$password) {
+            return ['success' => false, 'error' => 'Email address or mobile number and password are required.', 'code' => 400];
         }
-        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            return ['success' => false, 'error' => 'A valid email address is required.', 'code' => 400];
-        }
+        $rateLimitKey = 'login:' . $loginIdentifier['type'] . ':' . $loginIdentifier['value'];
 
         AuthMiddleware::secureSessionStart();
 
-        // Brute-force check (email + IP)
-        $lockout = RateLimiter::lockoutRemaining("login:{$email}");
+        // Brute-force check (registered identifier + IP)
+        $lockout = RateLimiter::lockoutRemaining($rateLimitKey);
         $ipLockout = RateLimiter::lockoutRemaining('ip:' . AuthMiddleware::getClientIp());
         if ($lockout > 0 || $ipLockout > 0) {
             $wait = max($lockout, $ipLockout);
@@ -58,20 +56,18 @@ class AuthService
         }
 
         $pdo = Database::pdo();
-        $stmt = $pdo->prepare('SELECT user_id, role, email, password_hash, full_name, is_active FROM users WHERE email = ?');
-        $stmt->execute([$email]);
-        $user = $stmt->fetch();
+        $user = self::findUserForLogin($pdo, $loginIdentifier);
 
         if (!$user || !(bool) $user['is_active'] || !password_verify($password, $user['password_hash'])) {
-            RateLimiter::record("login:{$email}", self::LOGIN_MAX_ATTEMPTS, self::LOGIN_LOCKOUT_SECONDS);
+            RateLimiter::record($rateLimitKey, self::LOGIN_MAX_ATTEMPTS, self::LOGIN_LOCKOUT_SECONDS);
             RateLimiter::record('ip:' . AuthMiddleware::getClientIp(), self::LOGIN_MAX_ATTEMPTS, self::LOGIN_LOCKOUT_SECONDS);
-            $remaining = RateLimiter::lockoutRemaining("login:{$email}");
+            $remaining = RateLimiter::lockoutRemaining($rateLimitKey);
             $ipRemaining = RateLimiter::lockoutRemaining('ip:' . AuthMiddleware::getClientIp());
             $wait = max($remaining, $ipRemaining);
             if ($wait > 0) {
                 return ['success' => false, 'error' => 'Too many failed attempts. This account is locked for 30 seconds.', 'code' => 429];
             }
-            return ['success' => false, 'error' => 'Invalid email or password.', 'code' => 401];
+            return ['success' => false, 'error' => 'Invalid email address, mobile number, or password.', 'code' => 401];
         }
 
         if (!in_array($user['role'], self::ALLOWED_ROLES, true)) {
@@ -80,7 +76,7 @@ class AuthService
         }
 
         // Success
-        RateLimiter::reset("login:{$email}");
+        RateLimiter::reset($rateLimitKey);
         RateLimiter::reset('ip:' . AuthMiddleware::getClientIp());
 
         // Always give the user a brand-new session ID at login. If we kept the ID
@@ -125,13 +121,81 @@ class AuthService
             RememberToken::setCookie($token);
         }
 
-        unset($user['password_hash'], $user['is_active']);
+        unset($user['password_hash'], $user['is_active'], $user['user_contact_number'], $user['patient_contact_number']);
 
         // Audit log
         $sessionId = session_id();
         SessionAudit::logCreate($user['user_id'], $sessionId, $rememberMe);
 
         return ['success' => true, 'user' => $user];
+    }
+
+    /**
+     * Normalize a supported login identifier without changing stored account data.
+     * Philippine mobile formats such as +63 917 123 4567 and 0917-123-4567
+     * resolve to the same registered number; other 7-15 digit numbers are
+     * retained as entered after punctuation is removed.
+     *
+     * @return array{type: 'email'|'mobile', value: string}|null
+     */
+    private static function normalizeLoginIdentifier(string $identifier): ?array
+    {
+        $identifier = trim($identifier);
+        if ($identifier === '') {
+            return null;
+        }
+
+        $email = strtolower($identifier);
+        if (filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return ['type' => 'email', 'value' => $email];
+        }
+
+        $digits = preg_replace('/\D+/', '', $identifier);
+        if ($digits === null || strlen($digits) < 7 || strlen($digits) > 15) {
+            return null;
+        }
+        if (strlen($digits) === 12 && str_starts_with($digits, '63')) {
+            $digits = '0' . substr($digits, 2);
+        } elseif (strlen($digits) === 10 && str_starts_with($digits, '9')) {
+            $digits = '0' . $digits;
+        }
+
+        return ['type' => 'mobile', 'value' => $digits];
+    }
+
+    /**
+     * Find one user for the supplied identifier. A mobile number may be stored
+     * on either the account or its patient profile. Ambiguous registrations are
+     * deliberately treated as a failed login instead of choosing an account.
+     */
+    private static function findUserForLogin(PDO $pdo, array $identifier): ?array
+    {
+        if ($identifier['type'] === 'email') {
+            $stmt = $pdo->prepare('SELECT user_id, role, email, password_hash, full_name, is_active FROM users WHERE email = ?');
+            $stmt->execute([$identifier['value']]);
+            return $stmt->fetch() ?: null;
+        }
+
+        $stmt = $pdo->query(
+            'SELECT u.user_id, u.role, u.email, u.password_hash, u.full_name, u.is_active, '
+            . 'u.contact_number AS user_contact_number, p.contact_number AS patient_contact_number '
+            . 'FROM users u LEFT JOIN patients p ON p.user_id = u.user_id '
+            . 'WHERE u.contact_number IS NOT NULL OR p.contact_number IS NOT NULL'
+        );
+        $matches = [];
+        foreach ($stmt->fetchAll() as $candidate) {
+            foreach (['user_contact_number', 'patient_contact_number'] as $field) {
+                if (!empty($candidate[$field])) {
+                    $number = self::normalizeLoginIdentifier((string) $candidate[$field]);
+                    if ($number && $number['type'] === 'mobile' && $number['value'] === $identifier['value']) {
+                        $matches[(int) $candidate['user_id']] = $candidate;
+                        break;
+                    }
+                }
+            }
+        }
+
+        return count($matches) === 1 ? reset($matches) : null;
     }
 
     /**

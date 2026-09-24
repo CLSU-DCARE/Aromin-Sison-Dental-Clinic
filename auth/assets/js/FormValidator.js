@@ -6,6 +6,7 @@
   'use strict';
 
   const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const MOBILE_RE = /^[+0-9() .-]{7,20}$/;
 
   class FormValidator {
     static setFieldError(inputEl, message) {
@@ -39,6 +40,13 @@
         FormValidator.setFieldError(
           input,
           'Please enter a valid email address.'
+        );
+        return false;
+      }
+      if (input.hasAttribute('data-login-identifier') && value && !EMAIL_RE.test(value) && !MOBILE_RE.test(value)) {
+        FormValidator.setFieldError(
+          input,
+          'Enter the email address or mobile number registered with the clinic.'
         );
         return false;
       }

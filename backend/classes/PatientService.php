@@ -227,6 +227,50 @@ class PatientService
     }
 
     /**
+     * Permanently remove an archived patient and every record whose foreign
+     * key is configured to cascade from the patient profile.
+     *
+     * This is intentionally limited to archived profiles so active patient
+     * data cannot be removed through the archive UI.
+     *
+     * @return array{patient_id: int, user_deleted: bool}
+     */
+    public static function purgeArchived(int $patientId): array
+    {
+        $pdo = Database::pdo();
+        $pdo->beginTransaction();
+        try {
+            $stmt = $pdo->prepare('SELECT user_id, archived_at FROM patients WHERE patient_id=? FOR UPDATE');
+            $stmt->execute([$patientId]);
+            $patient = $stmt->fetch();
+            if (!$patient) {
+                $pdo->rollBack();
+                ApiResponse::error(404, 'not_found', 'Archived patient not found.');
+            }
+            if (!$patient['archived_at']) {
+                $pdo->rollBack();
+                ApiResponse::error(409, 'not_archived', 'Only archived patients can be permanently deleted.');
+            }
+
+            $userId = $patient['user_id'] ? (int) $patient['user_id'] : null;
+            $pdo->prepare('DELETE FROM patients WHERE patient_id=?')->execute([$patientId]);
+
+            $userDeleted = false;
+            if ($userId) {
+                $deleteUser = $pdo->prepare("DELETE FROM users WHERE user_id=? AND role='patient'");
+                $deleteUser->execute([$userId]);
+                $userDeleted = $deleteUser->rowCount() === 1;
+            }
+
+            $pdo->commit();
+            return ['patient_id' => $patientId, 'user_deleted' => $userDeleted];
+        } catch (\Throwable $e) {
+            if ($pdo->inTransaction()) $pdo->rollBack();
+            throw $e;
+        }
+    }
+
+    /**
      * Resolve patient_id from user_id, or respond with 404.
      */
     public static function resolvePatientId(int $userId): int

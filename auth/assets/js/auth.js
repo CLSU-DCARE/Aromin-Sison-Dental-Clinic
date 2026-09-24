@@ -58,14 +58,14 @@ function initLoginForm(form) {
     setLoading(btn, true);
 
     const data = new FormData(form);
-    const email = String(data.get('email') || '').trim();
+    const identifier = String(data.get('identifier') || '').trim();
     const password = String(data.get('password') || '');
 
     try {
       clearExpiredSessionNotice();
       // "Remember me" checkbox (only on the login form)
       const rememberMe = data.get('remember') !== null;
-      const { response: loginResponse, payload: loginPayload } = await ASDC.AuthApiClient.login(email, password, rememberMe);
+      const { response: loginResponse, payload: loginPayload } = await ASDC.AuthApiClient.login(identifier, password, rememberMe);
       if (!loginResponse.ok) {
         try {
           sessionStorage.removeItem('asdc:login-submitting');

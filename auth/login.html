@@ -45,7 +45,7 @@
       <div class="auth-card-head">
         <div class="eyebrow">Sign In</div>
         <h2 class="serif" id="formHeading" tabindex="-1">Welcome back</h2>
-        <p>Sign in with your registered email and password. Your role will be identified automatically.</p>
+        <p>Sign in with your registered email address or mobile number and password. Your role will be identified automatically.</p>
       </div>
 
       <div id="authAlert" class="auth-alert" role="alert" hidden>
@@ -55,8 +55,8 @@
 
       <form class="auth-panel" id="panel-login" data-panel="login" novalidate>
         <div class="form-group">
-          <label for="loginEmail">Email Address</label>
-          <input type="email" id="loginEmail" name="email" required placeholder="you@email.com" autocomplete="email">
+          <label for="loginIdentifier">Email Address or Mobile Number</label>
+          <input type="text" id="loginIdentifier" name="identifier" required data-login-identifier placeholder="you@email.com or 0917 123 4567" autocomplete="username" inputmode="text">
           <div class="field-error"></div>
         </div>
         <div class="form-group">
@@ -83,7 +83,7 @@
         <details class="signin-help">
           <summary>Having trouble signing in?</summary>
           <ul>
-            <li>Use the email address registered with the clinic.</li>
+            <li>Use the email address or mobile number registered with the clinic.</li>
             <li>Contact clinic staff if your account is not active.</li>
           </ul>
         </details>
@@ -100,12 +100,12 @@
 <script src="../shared/js/core/namespace.js?v=1" defer></script>
 <script src="../shared/js/core/Modal.js?v=1" defer></script>
 <script src="assets/js/AlertManager.js?v=1" defer></script>
-<script src="assets/js/FormValidator.js?v=1" defer></script>
+<script src="assets/js/FormValidator.js?v=20260924-mobile-login" defer></script>
 <script src="assets/js/PasswordToggle.js?v=1" defer></script>
-<script src="assets/js/AuthApiClient.js?v=20260921-sessionfix" defer></script>
+<script src="assets/js/AuthApiClient.js?v=20260924-mobile-login" defer></script>
 <script src="assets/js/AuthPageGuard.js?v=20260921-sessionfix" defer></script>
 <script src="../shared/js/core/routing.js?v=20260921-session-once" defer></script>
-<script src="assets/js/auth.js?v=20260921-sessionfix" defer></script>
+<script src="assets/js/auth.js?v=20260924-mobile-login" defer></script>
 <script>
   document.addEventListener('DOMContentLoaded', () => {
     initLoginForm(document.getElementById('panel-login'));
