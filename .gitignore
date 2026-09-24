@@ -23,3 +23,5 @@ backend/uploads/profiles/*
 # uploaded promotion images
 backend/uploads/promotions/*
 !backend/uploads/promotions/.gitignore
+
+.vercel

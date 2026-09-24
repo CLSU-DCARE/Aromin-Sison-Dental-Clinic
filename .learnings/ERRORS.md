@@ -78,3 +78,23 @@ Use a signed-in Railway and Vercel browser session, or install and authenticate 
 
 ### Metadata
 - Reproducible: environment-dependent
+
+## [ERR-20260924-005] Railway Docker build missing Composer extractor
+
+**Priority**: medium
+**Status**: resolved
+**Area**: infra
+
+### Summary
+The Railway image build could not install the locked PHPMailer dependency because neither the PHP zip extension nor an unzip executable was present.
+
+### Error information
+```
+The zip extension and unzip/7z commands are both missing
+```
+
+### Recommended resolution
+Install `unzip` in the production image before running `composer install`.
+
+### Metadata
+- Reproducible: yes
