@@ -33,4 +33,7 @@
   Header setifempty X-Content-Type-Options "nosniff"
   Header setifempty X-Frame-Options "SAMEORIGIN"
   Header setifempty Referrer-Policy "strict-origin-when-cross-origin"
+  # Browsers accept HSTS only over HTTPS. TLS-terminating proxies should set
+  # this header themselves because Apache sees their upstream HTTP connection.
+  Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains" "expr=%{HTTPS} == 'on'"
 </IfModule>

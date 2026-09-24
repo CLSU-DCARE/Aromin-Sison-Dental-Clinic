@@ -18,16 +18,31 @@ class AuthMiddleware
     private const SESSION_NAME = 'ASDC_SESSION';
 
     /**
-     * True when the request came in over HTTPS (also when a proxy in front of
-     * Apache terminates HTTPS and tells us so). Used to decide the Secure flag
-     * on cookies.
+     * True when the request came in over HTTPS (also when a configured trusted
+     * proxy in front of Apache terminates HTTPS). Used to decide the Secure
+     * flag on cookies. A visitor-controlled X-Forwarded-Proto header is never
+     * trusted directly.
      */
     public static function isHttps(): bool
     {
         if (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') {
             return true;
         }
-        return strtolower((string) ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '')) === 'https';
+        return self::isTrustedProxyRequest()
+            && strtolower((string) ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '')) === 'https';
+    }
+
+    private static function isTrustedProxyRequest(): bool
+    {
+        $remoteAddr = $_SERVER['REMOTE_ADDR'] ?? '';
+        if (!filter_var($remoteAddr, FILTER_VALIDATE_IP)) {
+            return false;
+        }
+        $trustedProxies = array_filter(array_map(
+            'trim',
+            explode(',', (string) Env::get('ASDC_TRUSTED_PROXIES', ''))
+        ));
+        return in_array($remoteAddr, $trustedProxies, true);
     }
 
     public static function secureSessionStart(): void
