@@ -19,4 +19,10 @@ chmod 0755 /var/www/html/backend/uploads \
            /var/www/html/backend/uploads/promotions \
            /var/www/html/backend/uploads/.sessions
 
+# Railway's runtime can re-enable the event MPM. PHP's Apache integration
+# requires prefork, so enforce exactly that one just before startup.
+rm -f /etc/apache2/mods-enabled/mpm_event.conf \
+      /etc/apache2/mods-enabled/mpm_event.load \
+      /etc/apache2/mods-enabled/mpm_worker.conf \
+      /etc/apache2/mods-enabled/mpm_worker.load
 exec apache2-foreground

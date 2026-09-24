@@ -98,3 +98,37 @@ Install `unzip` in the production image before running `composer install`.
 
 ### Metadata
 - Reproducible: yes
+
+## [ERR-20260924-006] Railway IaC CLI compatibility check fails on Windows
+
+**Priority**: low
+**Status**: pending
+**Area**: tools
+
+### Summary
+Railway CLI 5.62.1 on this Windows installation cannot evaluate the generated
+TypeScript IaC file and incorrectly reports that a newer CLI is required.
+
+### Recommended resolution
+Use the deployed `railway.toml` configuration until Railway resolves the
+Windows CLI/IaC compatibility issue; keep the equivalent IaC file in source.
+
+### Metadata
+- Reproducible: environment-dependent
+
+## [ERR-20260924-007] Railway runtime enables a conflicting Apache MPM
+
+**Priority**: medium
+**Status**: resolved
+**Area**: infra
+
+### Summary
+The Railway runtime enabled `mpm_event` alongside PHP Apache's required
+`mpm_prefork`, preventing Apache from starting.
+
+### Recommended resolution
+Remove event and worker MPM module links in the container startup script before
+starting Apache.
+
+### Metadata
+- Reproducible: yes
