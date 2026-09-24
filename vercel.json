@@ -1,9 +1,14 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "rewrites": [
+  "routes": [
     {
-      "source": "/backend/:path*",
-      "destination": "https://asdc-api-production.up.railway.app/backend/:path*"
+      "src": "/backend/(.*)",
+      "dest": "https://asdc-api-production.up.railway.app/backend/$1",
+      "headers": {
+        "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+        "Pragma": "no-cache",
+        "Expires": "0"
+      }
     }
   ],
   "headers": [
