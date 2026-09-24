@@ -3,6 +3,10 @@
  * Appointment slot locking and availability: Aromin-Sison Dental Clinic System.
  *
  * Uses MySQL GET_LOCK for pessimistic row-level locking during booking.
+ *
+ * Clinic policy: a date/time is clinic-wide capacity, not dentist capacity.
+ * A second appointment or request at the same time is therefore unavailable
+ * even when it names a different dentist.
  * Usage:
  *   $lock = AppointmentSlotManager::lock($pdo, $date, $time);
  *   // ... do work ...

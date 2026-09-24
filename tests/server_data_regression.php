@@ -11,4 +11,16 @@ if ($where !== 'p.user_id = ? AND p.archived_at IS NULL' || $params !== [42]) {
 if ($where !== 'p.archived_at IS NULL' || $params !== []) {
     throw new RuntimeException('Receptionist patient access changed unexpectedly.');
 }
-echo "PASS: patient profile scoping.\n";
+[$where, $params] = \ASDC\DataScope::forUser(8, 'dentist')->patientFilter();
+if ($where !== 'p.archived_at IS NULL' || $params !== []) {
+    throw new RuntimeException('Dentists must retain clinic-wide patient access.');
+}
+[$where, $params] = \ASDC\DataScope::forUser(8, 'dentist')->appointmentFilter();
+if ($where !== 'a.patient_id IN (SELECT patient_id FROM patients WHERE archived_at IS NULL)' || $params !== []) {
+    throw new RuntimeException('Dentists must retain clinic-wide appointment access.');
+}
+[$where, $params] = \ASDC\DataScope::forUser(8, 'dentist')->contractFilter();
+if ($where !== 'c.patient_id IN (SELECT patient_id FROM patients WHERE archived_at IS NULL)' || $params !== []) {
+    throw new RuntimeException('Dentists must retain clinic-wide contract access.');
+}
+echo "PASS: patient scoping and clinic-wide dentist access.\n";

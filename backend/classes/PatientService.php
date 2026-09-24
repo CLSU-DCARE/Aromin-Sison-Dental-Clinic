@@ -111,8 +111,9 @@ class PatientService
     }
 
     /**
-     * List all patients (admin dashboard).
-     * Dentists see only patients who have appointments with them.
+     * List all active patients for the staff dashboard.
+     * Receptionists and dentists both have clinic-wide access; only a patient
+     * portal session is restricted to its linked profile.
      *
      * @return array<int, array{patient_id: int, first_name: string, last_name: string, contact_number: ?string, email: ?string, registered_at: string}>
      */
@@ -184,8 +185,8 @@ class PatientService
     }
 
     /**
-     * Archived-patient scope. Receptionists may inspect all archived records;
-     * dentists only see archived patients with their appointments or contracts.
+     * Archived-patient scope. Both staff roles may inspect all archived records;
+     * patient portal sessions never receive archived data.
      *
      * @return array{0: string, 1: array<int, mixed>}
      */
