@@ -1,5 +1,10 @@
 # Production deployment checklist
 
+For the supported Vercel static frontend + Railway PHP/MySQL deployment, follow
+[the deployment guide](vercel-railway-deployment.md) first. It covers the
+same-origin `/backend/*` proxy, Railway Volume, database initialization, and
+platform-specific variables.
+
 This repository is ready for production deployment only after every item below
 is completed on the live environment. Do not place production secrets in the
 repository or in `.env.example`.

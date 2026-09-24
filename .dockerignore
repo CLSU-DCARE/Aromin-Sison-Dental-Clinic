@@ -1,25 +1,16 @@
-node_modules/
-vendor/
-.DS_Store
-Thumbs.db
-*.log
-dist/
+.git
+.github
 .env
 .env.local
-*.swp
-*.swo
-*~
-.idea/
-.vscode/
-
-# uploaded payment receipts
+node_modules
+vendor
+.dist
+tests
+docs
+.learnings
 backend/uploads/receipts/*
 !backend/uploads/receipts/.gitignore
-
-# uploaded profile pictures
 backend/uploads/profiles/*
 !backend/uploads/profiles/.gitignore
-
-# uploaded promotion images
 backend/uploads/promotions/*
 !backend/uploads/promotions/.gitignore

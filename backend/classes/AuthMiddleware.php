@@ -25,6 +25,12 @@ class AuthMiddleware
      */
     public static function isHttps(): bool
     {
+        // Managed platforms such as Railway terminate TLS before Apache and
+        // do not offer a stable proxy IP allowlist. This is deliberately an
+        // explicit deployment setting, never inferred from client headers.
+        if (Env::get('ASDC_FORCE_HTTPS') === '1') {
+            return true;
+        }
         if (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') {
             return true;
         }
