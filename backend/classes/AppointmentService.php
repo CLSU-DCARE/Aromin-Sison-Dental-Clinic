@@ -378,7 +378,17 @@ class AppointmentService
             $stmt = $pdo->prepare('SELECT patient_id FROM patients WHERE contact_number=? AND archived_at IS NULL ORDER BY user_id IS NOT NULL DESC LIMIT 1');
             $stmt->execute([$request['contact_number']]);
             $patient = $stmt->fetchColumn();
-            if ($patient) return (int) $patient;
+            if ($patient) {
+                /* A public booking can supply contact details that were absent
+                   from a receptionist-created patient record. Preserve an
+                   existing email, but fill an empty one before notifications
+                   are generated for the new appointment. */
+                if ($request['email']) {
+                    $pdo->prepare("UPDATE patients SET email=? WHERE patient_id=? AND (email IS NULL OR TRIM(email)='')")
+                        ->execute([$request['email'], (int) $patient]);
+                }
+                return (int) $patient;
+            }
         }
 
         $stmt = $pdo->prepare('INSERT INTO patients(first_name,last_name,contact_number,email) VALUES(?,?,?,?)');

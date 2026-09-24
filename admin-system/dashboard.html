@@ -541,6 +541,10 @@
             </table>
           </div>
         </div>
+        <div class="panel panel-gap">
+          <div class="panel-head"><div><h3>Automatic Usage Rules</h3><p class="panel-subtext">Supplies deducted when a matching treatment is completed.</p></div><button class="btn btn-outline btn-sm" id="addUsageRuleBtn">+ Add Rule</button></div>
+          <div class="table-scroll"><table><thead><tr><th>Service</th><th>Supply</th><th>Quantity Used</th><th></th></tr></thead><tbody id="usageRulesBody"></tbody></table></div>
+        </div>
       </section>
 
       <!-- ===== NOTIFICATIONS ===== -->
@@ -582,6 +586,19 @@
       </section>
 
     </main>
+  </div>
+</div>
+
+<!-- ===== INVENTORY USAGE RULE MODAL ===== -->
+<div class="modal-overlay" id="usageRuleModal" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="usageRuleTitle">
+    <button class="modal-close" id="usageRuleClose" aria-label="Close dialog">×</button>
+    <h3 id="usageRuleTitle">Add Automatic Usage Rule</h3>
+    <div class="form-group"><label for="usageService">Completed Service</label><input id="usageService" maxlength="150" placeholder="e.g. Braces Adjustment"></div>
+    <div class="form-group"><label for="usageItem">Supply</label><select id="usageItem"></select></div>
+    <div class="form-group"><label for="usageQuantity">Quantity Used</label><input id="usageQuantity" type="number" min="1" value="1"></div>
+    <p class="form-note" id="usageRuleNote" role="status" hidden></p>
+    <div class="modal-actions"><button class="btn btn-secondary" id="usageRuleCancel">Cancel</button><button class="btn btn-gold" id="usageRuleSave">Save Rule</button></div>
   </div>
 </div>
 
@@ -1051,7 +1068,7 @@
 <script src="assets/js/PaymentApprovalManager.js?v=20260919-due-date" defer></script>
 <script src="assets/js/PatientTableManager.js?v=20260916-patient-delete" defer></script>
 <script src="assets/js/RecordTableManager.js?v=20260919-record-ui" defer></script>
-<script src="assets/js/InventoryTableManager.js?v=20260918-inventory-stock" defer></script>
+<script src="assets/js/InventoryTableManager.js?v=20260924-inventory-usage" defer></script>
 <script src="../patient-dashboard/assets/js/PatientLiveSync.js?v=20260916-integration" defer></script>
 <script src="../shared/js/core/PortalSync.js?v=20260921-sessionfix" defer></script>
 <script src="../shared/js/core/PortalForms.js?v=20260919-treatment-dropdown" defer></script>

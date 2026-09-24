@@ -58,6 +58,7 @@ class ClinicalRecordService
                 }
                 $pdo->prepare('INSERT INTO treatment_records(patient_id,dentist_id,diagnosis,treatment_given,treatment_protocol,date_recorded,appointment_id) VALUES(?,?,?,?,?,?,?)')->execute([$patientId, $dentistId, ...array_values($texts), $date, $appointmentId]);
                 $recordId = (int) $pdo->lastInsertId();
+                InventoryUsageService::consumeForTreatment($pdo, $recordId, $texts['treatment_given']);
             }
             PortalEvent::patient($patientId, 'Treatment record updated', 'Your clinic treatment record has been updated.', 'info');
             $pdo->commit();
@@ -96,7 +97,9 @@ class ClinicalRecordService
             $appointmentId,
         ]);
 
-        return (int) $pdo->lastInsertId();
+        $recordId = (int) $pdo->lastInsertId();
+        InventoryUsageService::consumeForTreatment($pdo, $recordId, (string) $appointment['service_type']);
+        return $recordId;
     }
 
     public static function recordBracesProgress(\PDO $pdo, array $contract, string $stage, int $percent, ?string $note, ?string $nextNote): ?int

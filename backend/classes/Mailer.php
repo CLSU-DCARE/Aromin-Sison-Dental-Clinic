@@ -55,6 +55,9 @@ class Mailer
             $mail->isHTML(false);
             $mail->Subject = $subject;
             $mail->Body    = $body;
+            $mail->addCustomHeader('Importance', 'High');
+            $mail->addCustomHeader('Priority', 'urgent');
+            $mail->addCustomHeader('X-Priority', '1 (Highest)');
             $mail->send();
             return ['ok' => true];
         } catch (\Throwable $e) {
@@ -76,18 +79,20 @@ class Mailer
 
         // Check the server's certificate properly. Turning this off would let anyone
         // between us and Gmail read or change the email (including the password reset link).
-        $context = stream_context_create([
-            'ssl' => [
-                'verify_peer'       => true,
-                'verify_peer_name'  => true,
-                'peer_name'         => 'smtp.gmail.com',
-                'allow_self_signed' => false,
-                'cafile'            => ini_get('openssl.cafile') ?: null,
-                'capath'            => ini_get('openssl.capath') ?: null,
-            ],
-        ]);
+        $ssl = [
+            'verify_peer'       => true,
+            'verify_peer_name'  => true,
+            'peer_name'         => 'smtp.gmail.com',
+            'allow_self_signed' => false,
+        ];
+        /* PHP 8.3 rejects an empty cafile/capath value. When neither is
+           configured, OpenSSL uses its platform trust store instead. */
+        if (($cafile = trim((string) ini_get('openssl.cafile'))) !== '') $ssl['cafile'] = $cafile;
+        if (($capath = trim((string) ini_get('openssl.capath'))) !== '') $ssl['capath'] = $capath;
+        $context = stream_context_create(['ssl' => $ssl]);
         $socket = @stream_socket_client('tcp://smtp.gmail.com:587', $errno, $errstr, 15, STREAM_CLIENT_CONNECT, $context);
         if (!$socket) {
+            error_log('[MAILER] Gmail SMTP connection failed: ' . $errstr . ' (' . $errno . ')');
             return ['ok' => false, 'error' => 'Email delivery failed.'];
         }
 
@@ -117,6 +122,7 @@ class Mailer
             return ['ok' => true];
         } catch (\Throwable $e) {
             if (is_resource($socket)) fclose($socket);
+            error_log('[MAILER] Gmail SMTP fallback failed: ' . $e->getMessage());
             return ['ok' => false, 'error' => self::safeError($e->getMessage())];
         }
     }
@@ -171,6 +177,9 @@ class Mailer
             'From: ' . $encodedFrom,
             'To: <' . $to . '>',
             'Subject: ' . $encodedSubject,
+            'Importance: High',
+            'Priority: urgent',
+            'X-Priority: 1 (Highest)',
             'MIME-Version: 1.0',
             'Content-Type: text/plain; charset=UTF-8',
             'Content-Transfer-Encoding: 8bit',
