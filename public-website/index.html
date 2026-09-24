@@ -300,13 +300,13 @@
     </div>
     <form class="cta-form-card" id="ctaForm">
       <div class="cta-form-fields">
-        <div class="field"><label for="ctaFirstName">First Name</label><input type="text" id="ctaFirstName" maxlength="100" required></div>
-        <div class="field"><label for="ctaLastName">Last Name</label><input type="text" id="ctaLastName" maxlength="100" required></div>
-        <div class="field"><label for="ctaEmail">Email (optional)</label><input type="email" id="ctaEmail" maxlength="150"></div>
-        <div class="field"><label for="ctaContact">Contact Number</label><input type="tel" id="ctaContact" maxlength="20" required></div>
+        <div class="field"><label for="ctaFirstName">First Name</label><input type="text" id="ctaFirstName" name="first_name" maxlength="100" autocomplete="given-name" required></div>
+        <div class="field"><label for="ctaLastName">Last Name</label><input type="text" id="ctaLastName" name="last_name" maxlength="100" autocomplete="family-name" required></div>
+        <div class="field"><label for="ctaEmail">Email (optional)</label><input type="email" id="ctaEmail" name="email" maxlength="150" autocomplete="email" spellcheck="false"></div>
+        <div class="field"><label for="ctaContact">Contact Number</label><input type="tel" id="ctaContact" name="contact_number" maxlength="20" autocomplete="tel" inputmode="tel" required></div>
         <div class="field field-full">
           <label for="ctaService">Service</label>
-          <select id="ctaService">
+          <select id="ctaService" name="service_type" required>
             <option>Consultation</option>
             <option>Cleaning &amp; Check-up</option>
             <option>Braces Adjustment</option>
@@ -315,9 +315,9 @@
         </div>
         <div class="field">
           <label for="ctaDate">Preferred Date</label>
-          <input type="date" id="ctaDate">
+          <input type="date" id="ctaDate" name="requested_date" required>
         </div>
-        <div class="field"><label for="ctaTime">Preferred Time</label><input type="time" id="ctaTime" required></div>
+        <div class="field"><label for="ctaTime">Preferred Time</label><input type="time" id="ctaTime" name="requested_time" required></div>
       </div>
       <button type="submit" id="ctaSubmit" class="btn btn-gold btn-lg btn-block">
         <span class="btn-label">Book Appointment →</span>

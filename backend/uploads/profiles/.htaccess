@@ -1,0 +1,7 @@
+Require all denied
+
+# Uploaded files are delivered only by the authenticated profile-image API.
+<FilesMatch "\.(php|phtml|php\d)$">
+  Require all denied
+</FilesMatch>
+Options -Indexes

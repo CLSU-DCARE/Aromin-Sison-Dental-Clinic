@@ -224,7 +224,9 @@ class AuthService
             return null;
         }
 
-        $user['profile_image_url'] = $user['profile_image_path'] ? '../backend/' . $user['profile_image_path'] : null;
+        // Keep uploaded profile images behind the authenticated API rather
+        // than exposing their storage path as a public URL.
+        $user['profile_image_url'] = $user['profile_image_path'] ? '../backend/api/auth/profile-image.php' : null;
 
         return ['user' => $user];
     }

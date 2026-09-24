@@ -276,7 +276,7 @@ header.scrolled .nav-drop-trigger{color:var(--ink);}
   background:rgba(17,17,16,0.4);
   backdrop-filter:blur(6px);
   color:var(--ivory);
-  transition:all .25s var(--ease);
+  transition:background .25s var(--ease), border-color .25s var(--ease), color .25s var(--ease), transform .25s var(--ease);
   flex-shrink:0;
 }
 .nav-icon-btn svg{width:19px;height:19px;}
@@ -304,7 +304,7 @@ header.scrolled .nav-icon-btn:hover{border-color:var(--gold);color:var(--gold);b
   color:var(--ivory);
   appearance:none;-webkit-appearance:none;
   flex-shrink:0;
-  transition:all .25s var(--ease);
+  transition:background .25s var(--ease), border-color .25s var(--ease), color .25s var(--ease), transform .25s var(--ease);
 }
 .nav-toggle svg{width:20px;height:20px;display:block;}
 .nav-toggle:hover{border-color:var(--gold-soft);background:rgba(17,17,16,0.7);}
@@ -1989,7 +1989,7 @@ header.scrolled .nav-toggle:hover{border-color:var(--gold);background:var(--ivor
   font-size:13px;
   color:var(--dark);
   font-weight:500;
-  transition:all 0.3s ease;
+  transition:background .3s ease, border-color .3s ease, color .3s ease, transform .3s ease;
 }
 .expertise-tag:hover{
   background:var(--gold);
@@ -2083,7 +2083,7 @@ footer{
   border-radius:50%;
   display:flex;align-items:center;justify-content:center;
   color:var(--ivory);
-  transition:all .25s ease;
+  transition:background .25s ease, border-color .25s ease, color .25s ease, transform .25s ease, box-shadow .25s ease;
 }
 .social-btn svg{width:18px;height:18px;}
 .social-btn:hover{background:var(--gold);border-color:var(--gold);color:var(--dark-deep);transform:translateY(-2px);box-shadow:var(--shadow-gold);}

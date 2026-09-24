@@ -51,6 +51,7 @@
   cursor:pointer;
   user-select:none;
   -webkit-user-select:none;
+  touch-action:manipulation;
   -webkit-tap-highlight-color:transparent;
   transition:background .22s var(--ease), border-color .22s var(--ease),
              color .22s var(--ease), box-shadow .22s var(--ease),

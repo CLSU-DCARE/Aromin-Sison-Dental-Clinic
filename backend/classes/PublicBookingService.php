@@ -52,6 +52,9 @@ class PublicBookingService
         if ($email !== '' && (strlen($email) > 150 || !filter_var($email, FILTER_VALIDATE_EMAIL))) {
             $fields['email'] = 'Enter a valid email address.';
         }
+        if (isset($body['notes']) && (!is_string($body['notes']) || mb_strlen(trim($body['notes'])) > 2000)) {
+            $fields['notes'] = 'Notes must be 2,000 characters or fewer.';
+        }
 
         $dentistId = isset($body['preferred_dentist_id']) ? InputValidator::positiveId($body['preferred_dentist_id']) : null;
         if (isset($body['preferred_dentist_id']) && !$dentistId) {
