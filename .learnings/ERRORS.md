@@ -57,3 +57,24 @@ Run the scoped Git staging and commit command with the workspace's approved elev
 
 ### Metadata
 - Reproducible: environment-dependent
+
+## [ERR-20260924-004] Deployment account tools unavailable
+
+**Priority**: low
+**Status**: pending
+**Area**: tools
+
+### Summary
+The session has no attached browser and no Railway/Vercel CLI, so provider-side deployment resources cannot be created or configured.
+
+### Error information
+```
+Browser is not available: iab
+railway and vercel commands are unavailable
+```
+
+### Recommended resolution
+Use a signed-in Railway and Vercel browser session, or install and authenticate their CLIs before provider-side deployment work.
+
+### Metadata
+- Reproducible: environment-dependent
