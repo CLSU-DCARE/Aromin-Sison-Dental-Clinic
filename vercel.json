@@ -1,6 +1,11 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "routes": [
+    { "src": "/", "dest": "/public-website/index.html" },
+    { "src": "/about", "dest": "/public-website/about.html" },
+    { "src": "/dentists", "dest": "/public-website/dentist.html" },
+    { "src": "/services", "dest": "/public-website/services.html" },
+    { "src": "/gallery", "dest": "/public-website/gallery.html" },
     {
       "src": "/backend/(.*)",
       "dest": "https://asdc-api-production.up.railway.app/backend/$1",
