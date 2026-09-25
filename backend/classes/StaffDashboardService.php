@@ -7,6 +7,7 @@ class StaffDashboardService
     {
         $scope = DataScope::current();
         $pdo = Database::pdo();
+        NotificationSchema::ensureLogAppointmentColumn();
         $pdo->exec('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ');
         $pdo->beginTransaction();
         try {

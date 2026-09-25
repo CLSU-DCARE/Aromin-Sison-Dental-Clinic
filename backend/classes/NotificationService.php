@@ -27,6 +27,8 @@ class NotificationService
      */
     public static function notifyEvent(PDO $pdo, string $event, int $patientId, array $replacements = []): array
     {
+        NotificationSchema::ensureLogAppointmentColumn();
+
         $templateKey = self::EVENT_MAP[$event] ?? null;
         if (!$templateKey) {
             return ['ok' => false, 'error' => "Unknown event: $event"];

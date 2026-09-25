@@ -131,6 +131,7 @@ function migration_already_present(PDO $pdo, string $name): bool
         '016_remove_contact_email_from_notification_templates.sql' => template_bodies_exclude_contact_details($pdo, array_merge(APPOINTMENT_TEMPLATE_KEYS, BILLING_TEMPLATE_KEYS)),
         '017_user_profile_pictures.sql' => has_columns($pdo, 'users', ['profile_image_path']),
         '019_general_treatment_billing.sql' => table_exists($pdo, 'treatment_bills') && table_exists($pdo, 'treatment_payments'),
+        '023_add_appointment_id_to_notification_logs.sql' => has_columns($pdo, 'notification_logs', ['appointment_id']),
         default => false,
     };
 }

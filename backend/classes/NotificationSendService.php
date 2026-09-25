@@ -28,6 +28,8 @@ class NotificationSendService
             return ['success' => false, 'error' => 'patient_id is required.', 'code' => 400];
         }
 
+        NotificationSchema::ensureLogAppointmentColumn();
+
         $pdo = Database::pdo();
 
         // Look up patient

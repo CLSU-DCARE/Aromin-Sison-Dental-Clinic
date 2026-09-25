@@ -20,6 +20,8 @@ class NotificationLogService
      */
     public static function list(array $filters = []): array
     {
+        NotificationSchema::ensureLogAppointmentColumn();
+
         $pdo = Database::pdo();
 
         $patientId = $filters['patient_id'] ?? null;

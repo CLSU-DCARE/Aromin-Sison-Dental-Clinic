@@ -318,6 +318,7 @@ CREATE TABLE notification_logs (
     log_id INT AUTO_INCREMENT PRIMARY KEY,
     patient_id INT NOT NULL,
     template_id INT NULL,
+    appointment_id INT NULL,
     channel ENUM('email','sms') NOT NULL,
     recipient VARCHAR(150) NOT NULL,
     subject VARCHAR(255) DEFAULT NULL,
@@ -326,5 +327,6 @@ CREATE TABLE notification_logs (
     error_message VARCHAR(255) DEFAULT NULL,    -- failure reason if status = 'failed'
     sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (patient_id) REFERENCES patients(patient_id) ON DELETE CASCADE,
-    FOREIGN KEY (template_id) REFERENCES notification_templates(template_id) ON DELETE SET NULL
+    FOREIGN KEY (template_id) REFERENCES notification_templates(template_id) ON DELETE SET NULL,
+    FOREIGN KEY (appointment_id) REFERENCES appointments(appointment_id) ON DELETE SET NULL
 );

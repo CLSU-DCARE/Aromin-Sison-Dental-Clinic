@@ -2,12 +2,117 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Redirecting…</title>
-<meta http-equiv="refresh" content="0; url=login.html">
-<link rel="canonical" href="login.html">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>Admin Sign In | Aromin-Sison Dental Clinic</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/css/variables.css?v=4">
+<link rel="stylesheet" href="../shared/css/buttons.css?v=5">
+<link rel="stylesheet" href="assets/css/auth.css?v=8">
 </head>
 <body>
-<p>Redirecting to <a href="login.html">Sign In</a>…</p>
-<script>location.replace('login.html');</script>
+
+<div class="auth-shell">
+  <aside class="auth-aside">
+    <div class="auth-aside-top">
+      <a href="../public-website/index.html" class="auth-logo">
+        <img src="../shared/images/asdc logo.png" alt="Aromin-Sison Dental Clinic">
+      </a>
+    </div>
+    <div class="auth-aside-mid">
+      <div class="eyebrow">Staff Portal</div>
+      <h1 class="serif auth-aside-title">Welcome,<br>clinic <em>team</em></h1>
+      <p class="auth-aside-quote">"The Lord is righteous in all his ways and faithful in all he does." - Psalm 145:17</p>
+    </div>
+    <div class="auth-aside-foot">
+      <span>Receptionist and dentist access</span>
+      <span>Central Luzon, Philippines</span>
+    </div>
+    <div class="auth-curve" aria-hidden="true"></div>
+  </aside>
+
+  <main class="auth-main">
+    <div class="auth-card">
+      <div class="auth-card-head">
+        <div class="eyebrow">Admin Sign In</div>
+        <h2 class="serif" id="formHeading" tabindex="-1">Staff access</h2>
+        <p>Sign in with your clinic account. Your dashboard opens automatically based on your role.</p>
+      </div>
+
+      <div id="authAlert" class="auth-alert" role="alert" hidden>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span id="authAlertText">Invalid credentials. Please try again.</span>
+      </div>
+
+      <form class="auth-panel" id="panel-login" data-panel="login" novalidate>
+        <div class="form-group">
+          <label for="loginEmail">Email Address</label>
+          <input type="email" id="loginEmail" name="email" required placeholder="staff@email.com" autocomplete="email">
+          <div class="field-error"></div>
+        </div>
+        <div class="form-group">
+          <label for="loginPassword">Password</label>
+          <div class="input-shell">
+            <input type="password" id="loginPassword" name="password" required placeholder="Password" autocomplete="current-password">
+            <button type="button" class="pw-toggle" aria-label="Show password"></button>
+          </div>
+          <div class="field-error"></div>
+        </div>
+        <div class="form-row-between">
+          <label class="checkbox-inline"><input type="checkbox" name="remember"> Remember me</label>
+          <a class="link-btn" href="forgot-password.html">Forgot password?</a>
+        </div>
+        <button type="submit" class="btn btn-block btn-gold btn-lg">
+          <span class="btn-label">Log In</span>
+          <span class="btn-spinner" aria-hidden="true"></span>
+        </button>
+        <details class="signin-help">
+          <summary>Having trouble signing in?</summary>
+          <ul>
+            <li>Use the email address registered with the clinic.</li>
+            <li>Contact the system owner if your staff account is not active.</li>
+          </ul>
+        </details>
+      </form>
+
+      <a class="auth-back-link" href="../public-website/index.html">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+        Back to website
+      </a>
+    </div>
+  </main>
+</div>
+
+<script src="../shared/js/core/namespace.js?v=1" defer></script>
+<script src="../shared/js/core/Modal.js?v=1" defer></script>
+<script src="assets/js/AlertManager.js?v=1" defer></script>
+<script src="assets/js/FormValidator.js?v=1" defer></script>
+<script src="assets/js/PasswordToggle.js?v=1" defer></script>
+<script src="assets/js/AuthApiClient.js?v=2" defer></script>
+<script src="assets/js/AuthPageGuard.js?v=1" defer></script>
+<script src="../shared/js/core/routing.js?v=20260921-session-once" defer></script>
+<script src="assets/js/auth.js?v=20260921-login-direct" defer></script>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    initLoginForm(document.getElementById('panel-login'));
+    const params = new URLSearchParams(location.search);
+    let expired = params.get('error') === 'expired';
+    try {
+      expired = expired || sessionStorage.getItem('asdc:session-expired') === '1';
+      sessionStorage.removeItem('asdc:session-expired');
+    } catch (e) {}
+    if (params.has('error')) {
+      params.delete('error');
+      const clean = location.pathname + (params.toString() ? '?' + params.toString() : '') + location.hash;
+      history.replaceState(null, '', clean);
+    }
+    if (expired && !sessionStorage.getItem('asdc:login-submitting')) {
+      showAlert('Your session has expired. Please sign in again.');
+    }
+  });
+</script>
 </body>
 </html>
