@@ -905,6 +905,58 @@ header.scrolled .nav-toggle:hover{border-color:var(--gold);background:var(--ivor
   color:rgba(18,32,28,0.65);
   font-size:16.5px;
 }
+.presentation-booking-copy,
+.cta-account-card{display:none;}
+.presentation-account-booking .legacy-booking-copy,
+.presentation-account-booking .cta-form-card--legacy{display:none;}
+.presentation-account-booking .presentation-booking-copy,
+.presentation-account-booking .cta-account-card{display:block;}
+.cta-account-card{
+  width:100%;
+  background:var(--ivory-2);
+  border:1px solid var(--line);
+  border-radius:var(--r-lg);
+  padding:38px 42px 34px;
+  box-shadow:var(--shadow-sm);
+}
+.cta-account-card-top{display:flex;align-items:center;gap:16px;}
+.cta-account-mark{
+  width:48px;height:48px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  color:var(--gold);background:rgba(199,184,118,0.14);
+  flex:0 0 auto;
+}
+.cta-account-mark svg{width:24px;height:24px;}
+.cta-account-kicker{
+  display:block;
+  font-family:var(--font-ui);
+  font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;
+  color:rgba(18,32,28,.55);margin-bottom:4px;
+}
+.cta-account-card h3{
+  font-family:'Fraunces',serif;
+  font-size:clamp(25px,2.5vw,32px);
+  font-weight:500;line-height:1.15;color:var(--dark);
+}
+.cta-account-intro{margin:24px 0 18px;color:rgba(18,32,28,.65);font-size:15px;line-height:1.65;}
+.cta-account-steps{list-style:none;margin:0;padding:0;border-top:1px solid var(--line);}
+.cta-account-steps li{
+  display:flex;align-items:flex-start;gap:13px;
+  padding:15px 0;border-bottom:1px solid var(--line);
+}
+.cta-account-steps span{
+  width:24px;height:24px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  flex:0 0 auto;margin-top:1px;
+  font-family:var(--font-ui);font-size:10px;font-weight:700;
+  color:var(--ivory);background:var(--dark);
+}
+.cta-account-steps strong{display:block;font-family:var(--font-ui);font-size:13px;color:var(--dark);}
+.cta-account-steps small{display:block;margin-top:3px;color:rgba(18,32,28,.6);font-size:12.5px;line-height:1.45;}
+.cta-account-card .btn{margin-top:25px;}
+.cta-account-signin{margin:16px 0 0;text-align:center;color:rgba(18,32,28,.62);font-size:13px;}
+.cta-account-signin a{color:var(--dark);font-weight:700;text-decoration-color:var(--gold);text-underline-offset:3px;}
+.cta-account-signin a:hover{color:var(--gold);}
 .cta-form-card{
   background:var(--ivory-2);
   border:1px solid var(--line);
@@ -2130,7 +2182,7 @@ footer{
 }
 @media (max-width:1150px){
   .cta-grid{grid-template-columns:1fr;gap:56px;}
-  .cta-form-card{width:100%;max-width:760px;justify-self:center;}
+  .cta-form-card,.cta-account-card{width:100%;max-width:760px;justify-self:center;}
   .banner-grid{grid-template-columns:1fr;gap:56px;}
   .banner-visual{aspect-ratio:16/9;max-width:560px;}
   .visit-grid{grid-template-columns:1fr;}
@@ -2220,7 +2272,7 @@ footer{
   .gallery-grid,.mvv-grid,.values-list,.team-grid{grid-template-columns:1fr;}
   .team-grid.recep-grid{grid-template-columns:1fr;}
   .tooth-item{width:190px;}
-  .cta-form-card{padding:30px 24px;}
+  .cta-form-card,.cta-account-card{padding:30px 24px;}
   .cta-form-fields{grid-template-columns:1fr;column-gap:0;}
   .cta-form-fields .field-full{grid-column:auto;}
 

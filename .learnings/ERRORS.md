@@ -132,3 +132,23 @@ starting Apache.
 
 ### Metadata
 - Reproducible: yes
+
+## [ERR-20260925-001] Inline PHP validation command was misquoted in PowerShell
+
+**Priority**: low
+**Status**: resolved
+**Area**: tools
+
+### Summary
+An inline PHP structural check used nested quoting that PowerShell parsed incorrectly, so PHP received malformed source before validation began.
+
+### Error information
+```
+PHP Parse error: syntax error, unexpected token "-", expecting ":" in Command line code on line 1
+```
+
+### Recommended resolution
+Use a PowerShell here-string or a short temporary validation file when a PHP command contains nested XPath strings and hyphenated CSS class names.
+
+### Metadata
+- Reproducible: yes
