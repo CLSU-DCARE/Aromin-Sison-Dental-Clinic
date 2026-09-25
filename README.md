@@ -55,7 +55,6 @@ asdc_v2/
 │   │   ├── db.php            PDO connection: include this at the top of every endpoint
 │   │   ├── auth.php          Session helper: require_login(), require_role(), secure_session_start()
 │   │   ├── mail.php          Email helpers: send_email(), render_template()
-│   │   └── notifications.php Auto-trigger helper: notify_event($pdo, $event, $patientId, $replacements)
 │   └── api/
 │       ├── auth/
 │       │   ├── login.php     POST endpoint, prepared statement, session
@@ -97,7 +96,7 @@ Each public-website HTML file loads three stylesheets in this order:
 <link rel="stylesheet" href="assets/css/main.css">           <!-- page-specific styles -->
 ```
 
-Dashboard HTML files load four — adding `panels.css` for the popover dropdowns:
+Dashboard HTML files load four - adding `panels.css` for the popover dropdowns:
 ```html
 <link rel="stylesheet" href="../shared/css/variables.css">
 <link rel="stylesheet" href="../shared/css/buttons.css">
@@ -139,7 +138,7 @@ Either works: both give you Apache + MySQL + PHP locally, no hosting needed for 
 2. Copy the whole `asdc_v2/` folder into `C:\xampp\htdocs\`
 3. Open `http://localhost/phpmyadmin`, create a database, import `database/schema.sql`
 4. Apply migrations: `php database/migrate.php`
-5. Create a receptionist account with `database/bootstrap_receptionist.php`
+5. Provision the shared dentist and receptionist accounts with `database/bootstrap_staff.php`
 6. Test: `http://localhost/asdc_v2/backend/api/patients/list.php`
 
 **Laragon:**
@@ -147,7 +146,7 @@ Either works: both give you Apache + MySQL + PHP locally, no hosting needed for 
 2. Copy the whole `asdc_v2/` folder into `C:\laragon\www\`
 3. Right-click the Laragon tray icon → **MySQL** → **phpMyAdmin** (or **HeidiSQL**), create a database, import `database/schema.sql`
 4. Apply migrations: `php database/migrate.php`
-5. Create a receptionist account with `database/bootstrap_receptionist.php`
+5. Set the two shared staff passwords securely and run `database/bootstrap_staff.php`
 6. Test: `http://asdc-v2.test/backend/api/patients/list.php` (Laragon auto-generates the `.test` domain) or `http://localhost/asdc_v2/backend/api/patients/list.php`
 
 Either way you should get a JSON response (empty array is fine until you add data).
@@ -164,13 +163,13 @@ php database/migrate.php
 
 The runner records applied files in `schema_migrations` and skips objects that already exist on older local databases.
 
-Create or update the receptionist bootstrap account with environment variables. Do not commit real staff passwords.
+The clinic uses one shared account per staff role. Set both passwords through environment variables, then run the bootstrap script. It creates or updates only `dentist@arominsison.com` and `receptionist@arominsison.com`, disabling any legacy duplicate staff logins. Provider names remain separate from login accounts. Do not commit real staff passwords.
 
 ```sh
-set ASDC_BOOTSTRAP_RECEPTIONIST_EMAIL=receptionist@example.test
-set ASDC_BOOTSTRAP_RECEPTIONIST_PASSWORD=Choose-A-Unique-Password
-set ASDC_BOOTSTRAP_RECEPTIONIST_NAME=Clinic Receptionist
-php database/bootstrap_receptionist.php
+$env:ASDC_BOOTSTRAP_RECEPTIONIST_PASSWORD = '<set securely>'
+$env:ASDC_BOOTSTRAP_DENTIST_PASSWORD = '<set securely>'
+php database/bootstrap_staff.php
+Remove-Item Env:ASDC_BOOTSTRAP_RECEPTIONIST_PASSWORD, Env:ASDC_BOOTSTRAP_DENTIST_PASSWORD
 ```
 
 ### Future shared development database
@@ -223,15 +222,15 @@ can reuse pre-written messages with dynamic `{placeholders}`.
 
 Notifications can be sent in two ways:
 
-1. **Automatic** — fire from PHP endpoints when events happen (appointment booked, payment approved, etc.) using the `notify_event()` helper in `backend/config/notifications.php`
-2. **Manual** — admin staff use the Notifications view in the admin dashboard to pick a patient, choose a template, and send
+1. **Automatic** - fire from PHP endpoints when events happen (appointment booked, payment approved, etc.) using `ASDC\NotificationService`
+2. **Manual** - admin staff use the Notifications view in the admin dashboard to pick a patient, choose a template, and send
 
-### Auto-trigger helper
+### Automatic notification service
 
-Include `backend/config/notifications.php` in any endpoint, then call:
+Use the autoloaded notification service from an endpoint:
 
 ```php
-notify_event($pdo, 'appointment.booked', $patientId, [
+\ASDC\NotificationService::notifyEvent($pdo, 'appointment.booked', $patientId, [
     'date'    => '2026-09-01',
     'time'    => '10:00 AM',
     'service' => 'Cleaning',
@@ -284,9 +283,9 @@ Email uses the installed PHPMailer dependency with Gmail SMTP over STARTTLS on
 port 587. Configure these Windows **System environment variables** (do not put
 the App Password in this repository):
 
-- `ASDC_GMAIL_ADDRESS` — the complete Gmail address used to authenticate and send
-- `ASDC_GMAIL_APP_PASSWORD` — the 16-character Gmail App Password
-- `ASDC_MAIL_FROM_NAME` — optional; defaults to `Aromin-Sison Dental Clinic`
+- `ASDC_GMAIL_ADDRESS` - the complete Gmail address used to authenticate and send
+- `ASDC_GMAIL_APP_PASSWORD` - the 16-character Gmail App Password
+- `ASDC_MAIL_FROM_NAME` - optional; defaults to `Aromin-Sison Dental Clinic`
 
 After adding or changing them, fully exit the XAMPP Control Panel, reopen it,
 and restart Apache so PHP inherits the updated environment. If Apache is
@@ -304,9 +303,9 @@ Promotions can be managed by receptionists from the admin dashboard and are disp
 
 ### Automatic patient updates
 
-The patient dashboard reads a patient-scoped server snapshot every three seconds while visible. Returning to the tab or reconnecting refreshes immediately. Appointments, contracts, dentist progress, payment reviews, balances, and stored treatment records update without reloading the page. Form inputs remain intact; open rescheduling dialogs track appointment IDs rather than row positions.
+The patient dashboard reads a patient-scoped server snapshot every ten seconds while visible. Returning to the tab or reconnecting refreshes immediately. Appointments, contracts, dentist progress, payment reviews, balances, and stored treatment records update without reloading the page. Form inputs remain intact; open rescheduling dialogs track appointment IDs rather than row positions.
 
-During connection failures, the last successful data stays visible with a retry notice. Retries back off to at most 30 seconds. This is polling, so delivery takes roughly three seconds plus request time under a healthy connection.
+During connection failures, the last successful data stays visible with a retry notice. Retries back off to at most 30 seconds. This is polling, so delivery takes roughly ten seconds plus request time under a healthy connection.
 
 Apply database migrations after importing the base schema:
 
@@ -323,6 +322,7 @@ php tests/patient_sync_integration.php
 ```
 
 The integration test uses local Apache and MySQL, exercises separate receptionist/dentist/patient sessions, and removes its temporary records. Its patients have no email or phone, so it sends no external messages.
+It defaults to `http://127.0.0.1/asdc_v2`; set `ASDC_TEST_BASE_URL` when the project uses another local URL.
 
 ### Remaining setup
 

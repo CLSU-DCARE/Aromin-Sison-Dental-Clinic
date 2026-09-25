@@ -38,5 +38,5 @@ if ($current) {
 $pdo->prepare('UPDATE users SET profile_image_path = ? WHERE user_id = ?')->execute([$path, $userId]);
 \ASDC\ApiResponse::ok([
     'profile_image_path' => $path,
-    'profile_image_url' => '../backend/' . $path,
+    'profile_image_url' => '../backend/api/auth/profile-image.php',
 ], 'Profile picture updated.');

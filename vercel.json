@@ -1,0 +1,38 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "routes": [
+    { "src": "/", "dest": "/public-website/index.html" },
+    { "src": "/about", "dest": "/public-website/about.html" },
+    { "src": "/dentists", "dest": "/public-website/dentist.html" },
+    { "src": "/services", "dest": "/public-website/services.html" },
+    { "src": "/gallery", "dest": "/public-website/gallery.html" },
+    {
+      "src": "/backend/(.*)",
+      "dest": "https://asdc-api-production.up.railway.app/backend/$1",
+      "headers": {
+        "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+        "Pragma": "no-cache",
+        "Expires": "0"
+      }
+    }
+  ],
+  "headers": [
+    {
+      "source": "/backend/:path*",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store, no-cache, must-revalidate, max-age=0" },
+        { "key": "Pragma", "value": "no-cache" },
+        { "key": "Expires", "value": "0" }
+      ]
+    },
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
+        { "key": "Permissions-Policy", "value": "camera=(), microphone=(), geolocation=(), payment=(), usb=()" },
+        { "key": "Strict-Transport-Security", "value": "max-age=31536000; includeSubDomains" }
+      ]
+    }
+  ]
+}

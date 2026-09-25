@@ -1,8 +1,6 @@
 // =====================================================================
 const PATIENT_APPOINTMENTS_ENDPOINT =
   '../backend/api/patients/appointments.php';
-const PATIENT_BRACES_ENDPOINT =
-  '../backend/api/patients/braces.php';
 let appointmentsLoaded = false;
 
 const PatientDashboardVisibility = {
@@ -153,7 +151,7 @@ function switchView(view) {
       // receptionist approved a payment, or the dentist updated progress)
       // since this page loaded, instead of only refreshing on a full
       // reload. Goes through the real endpoint first (same as the initial
-      // page load) — loadPatientBraces() already re-renders both the
+      // page load) - loadPatientBraces() already re-renders both the
       // braces contract view once it resolves, so nothing
       // else needs to happen here.
       loadPatientBraces();
@@ -610,7 +608,7 @@ function renderDashboardStats(stats) {
       const number =
         stat.label ===
         'Upcoming Appointment'
-          ? (appointmentsLoaded ? String(upcomingCount) : '—')
+          ? (appointmentsLoaded ? String(upcomingCount) : '-')
           : stat.num;
 
       const target = {
@@ -913,8 +911,8 @@ function renderTreatments(rows) {
       const detail = [treatment.diagnosis, treatment.notes]
         .filter(Boolean);
       const meta = String(treatment.meta || '').split(/\s+·\s+/);
-      const date = meta[0] || '—';
-      const dentist = meta.slice(1).join(' · ') || '—';
+      const date = meta[0] || '-';
+      const dentist = meta.slice(1).join(' · ') || '-';
       return `<tr>
         <td>${escapeHtml(date)}</td>
         <td>
@@ -922,7 +920,7 @@ function renderTreatments(rows) {
           ${detail.length ? `<div class="treatment-table-notes">${detail.map(text => `<p>${escapeHtml(text)}</p>`).join('')}</div>` : ''}
         </td>
         <td>${escapeHtml(dentist)}</td>
-        <td>${detail.length ? escapeHtml(detail[detail.length - 1]) : '—'}</td>
+        <td>${detail.length ? escapeHtml(detail[detail.length - 1]) : '-'}</td>
       </tr>`;
     }).join('');
 }
@@ -1176,13 +1174,13 @@ function applyPatientSnapshot(data, changed) {
   renderPromoCards(PatientState.promoCards); renderAnnouncementMinis(PatientState.dashboard.announcements);
   const dentist = (braces.contract.summary || []).find(item => item.l === 'Treating Dentist');
   PatientState.profile = {
-    memberSince: profile.registered_at ? new Date(profile.registered_at.replace(' ', 'T')).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : '—',
-    primaryDentist: dentist ? dentist.v : '—',
+    memberSince: profile.registered_at ? new Date(profile.registered_at.replace(' ', 'T')).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : '-',
+    primaryDentist: dentist ? dentist.v : '-',
     info: [
       { label: 'Full Name', value: PatientState.user.name },
       { label: 'Patient ID', value: PatientState.user.pid },
-      { label: 'Contact Number', value: profile.contact_number || '—' },
-      { label: 'Email Address', value: profile.email || '—' }
+      { label: 'Contact Number', value: profile.contact_number || '-' },
+      { label: 'Email Address', value: profile.email || '-' }
     ]
   };
   renderProfile(PatientState.profile);
@@ -1209,7 +1207,7 @@ const patientLiveSync = new PatientLiveSync({
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 10000);
     try {
-      return await apiFetch('../backend/api/patients/dashboard.php', { cache: 'no-store', signal: controller.signal });
+      return await apiFetch('../backend/api/patients/dashboard.php', { cache: 'no-store', signal: controller.signal, passive: true }); // passive: background refresh must not keep an idle session alive
     } finally { clearTimeout(timer); }
   },
   applySnapshot: applyPatientSnapshot,
@@ -1217,7 +1215,7 @@ const patientLiveSync = new PatientLiveSync({
     const label = document.getElementById('patientSyncStatus');
     if (label) label.textContent = {
       live: 'Updates automatically',
-      reconnecting: 'Connection interrupted — showing last update. Retrying…',
+      reconnecting: 'Connection interrupted - showing last update. Retrying…',
       unavailable: 'Unable to load clinic records. Retrying…',
       'signed-out': 'Your session has ended. Please sign in again.'
     }[status];

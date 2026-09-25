@@ -8,12 +8,17 @@ window.InventoryTableManager = class InventoryTableManager {
     this.filter = 'All';
     this.inventoryList = [];
     this.modal = null;
+    this.usageModal = null;
     this.editingItem = null;
+    this.editingRule = null;
+    this.usageRules = [];
   }
 
   init () {
     this._bindFilterChips();
     this._bindFormModal();
+    this._bindUsageRules();
+    this._loadUsageRules();
     this.apply();
   }
 
@@ -255,5 +260,46 @@ window.InventoryTableManager = class InventoryTableManager {
   _replaceInventory (items) {
     this.state.inventory = (items || []).map(i => this.normalize(i));
     this.apply();
+  }
+
+  async _loadUsageRules () {
+    try { const data = await apiFetch('../backend/api/inventory/usage-rules.php'); this.usageRules = data.rules || []; this._renderUsageRules(); } catch (_) { this._renderUsageRules(); }
+  }
+
+  _renderUsageRules () {
+    const body = document.getElementById('usageRulesBody');
+    if (!body) return;
+    body.innerHTML = this.usageRules.length ? this.usageRules.map(rule => `<tr><td>${escapeHtml(rule.service_name)}</td><td>${escapeHtml(rule.item_name)}</td><td>${escapeHtml(rule.quantity_required)} ${escapeHtml(rule.unit || '')}</td><td><button class="btn btn-outline btn-sm" data-rule="${rule.rule_id}">Edit</button></td></tr>`).join('') : '<tr><td colspan="4" class="empty-cell">Add a rule to deduct supplies automatically when a treatment is completed.</td></tr>';
+  }
+
+  _bindUsageRules () {
+    if (!document.getElementById('usageRuleModal')) return;
+    this.usageModal = new Modal('usageRuleModal');
+    document.getElementById('addUsageRuleBtn')?.addEventListener('click', () => this._openUsageRule());
+    ['usageRuleClose', 'usageRuleCancel'].forEach(id => document.getElementById(id)?.addEventListener('click', () => this.usageModal.close()));
+    document.getElementById('usageRuleSave')?.addEventListener('click', () => this._saveUsageRule());
+    document.getElementById('usageRulesBody')?.addEventListener('click', event => { const button = event.target.closest('[data-rule]'); if (button) this._openUsageRule(this.usageRules.find(rule => String(rule.rule_id) === button.dataset.rule)); });
+  }
+
+  _openUsageRule (rule = null) {
+    const items = (this.state.inventory || []).map(item => this.normalize(item));
+    if (!items.length) { showToast('Add an inventory supply before creating a usage rule.', 'error'); return; }
+    this.editingRule = rule || null;
+    document.getElementById('usageRuleTitle').textContent = rule ? 'Edit Automatic Usage Rule' : 'Add Automatic Usage Rule';
+    document.getElementById('usageService').value = rule?.service_name || '';
+    document.getElementById('usageItem').innerHTML = items.map(item => `<option value="${item.id}" ${Number(rule?.item_id) === item.id ? 'selected' : ''}>${escapeHtml(item.item)}</option>`).join('');
+    document.getElementById('usageQuantity').value = rule?.quantity_required || 1;
+    document.getElementById('usageRuleNote').hidden = true;
+    this.usageModal.open(document.getElementById('addUsageRuleBtn'));
+  }
+
+  async _saveUsageRule () {
+    const note = document.getElementById('usageRuleNote');
+    const payload = { service_name: document.getElementById('usageService').value.trim(), item_id: Number(document.getElementById('usageItem').value), quantity_required: Number(document.getElementById('usageQuantity').value) };
+    if (this.editingRule) payload.rule_id = this.editingRule.rule_id;
+    try {
+      const data = await apiFetch('../backend/api/inventory/usage-rules.php', { method: this.editingRule ? 'PATCH' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      this.usageRules = data.rules || []; this._renderUsageRules(); this.usageModal.close(); showToast('Automatic usage rule saved.');
+    } catch (error) { note.textContent = error.message || 'Unable to save usage rule.'; note.hidden = false; }
   }
 };

@@ -1,0 +1,18 @@
+# The Vercel project serves only the static frontend. PHP, data, and
+# deployment files remain exclusively on Railway or in source control.
+backend
+database
+docker
+docs
+tests
+vendor
+.learnings
+.railway
+.dist
+
+Dockerfile
+composer.json
+composer.lock
+railway.toml
+health
+.env.example

@@ -88,7 +88,7 @@ class NotificationSendService
                 $error  = 'Patient has no email address on file.';
             } else {
                 if ($ch === 'email') {
-                    $r = Mailer::sendEmail($recipient, $renderedSubject ?: 'Notification — Aromin-Sison Dental Clinic', $renderedBody);
+                    $r = Mailer::sendEmail($recipient, $renderedSubject ?: 'Notification - Aromin-Sison Dental Clinic', $renderedBody);
                 } else {
                     $r = ['ok' => false, 'error' => 'Unsupported notification channel.'];
                 }
@@ -165,7 +165,7 @@ class NotificationSendService
             "SELECT a.appointment_id, a.service_type, a.scheduled_date, a.scheduled_time,
                     u.full_name AS dentist_name
              FROM appointments a
-             LEFT JOIN users u ON u.user_id = a.dentist_id
+             LEFT JOIN dentists u ON u.dentist_id = a.dentist_id
              WHERE a.patient_id = ?
              ORDER BY a.scheduled_date DESC, a.scheduled_time DESC, a.appointment_id DESC
              LIMIT 1"
@@ -193,7 +193,7 @@ class NotificationSendService
                 "SELECT r.request_id, r.service_type, r.requested_date, r.requested_time,
                         u.full_name AS dentist_name
                  FROM appointment_requests r
-                 LEFT JOIN users u ON u.user_id = r.preferred_dentist_id
+                 LEFT JOIN dentists u ON u.dentist_id = r.preferred_dentist_id
                  WHERE (r.email = ? AND r.email <> '')
                     OR (r.contact_number = ? AND r.contact_number <> '')
                  ORDER BY r.requested_date DESC, r.requested_time DESC, r.request_id DESC

@@ -13,7 +13,7 @@ class Mailer
 {
     public static function sendEmail(string $to, string $subject, string $body): array
     {
-        self::loadLocalEnv();
+        Env::load();
 
         $gmailAddress    = trim((string) getenv('ASDC_GMAIL_ADDRESS'));
         $gmailAppPassword = preg_replace('/\s+/', '', trim((string) getenv('ASDC_GMAIL_APP_PASSWORD')));
@@ -29,6 +29,11 @@ class Mailer
 
         $autoload = dirname(__DIR__, 2) . '/vendor/autoload.php';
         if (!is_file($autoload)) {
+            // PHPMailer is not installed (nobody ran "composer install" on this server).
+            // We can still send mail with the fallback below, but say so once per request
+            // so this does not go unnoticed forever.
+            error_log('[MAILER] vendor/autoload.php is missing. Run "composer install" so PHPMailer '
+                . 'is used. Falling back to a basic built-in SMTP sender for now.');
             return self::sendViaSmtp($gmailAddress, $gmailAppPassword, $fromName, $to, $subject, $body);
         }
         require_once $autoload;
@@ -50,6 +55,9 @@ class Mailer
             $mail->isHTML(false);
             $mail->Subject = $subject;
             $mail->Body    = $body;
+            $mail->addCustomHeader('Importance', 'High');
+            $mail->addCustomHeader('Priority', 'urgent');
+            $mail->addCustomHeader('X-Priority', '1 (Highest)');
             $mail->send();
             return ['ok' => true];
         } catch (\Throwable $e) {
@@ -69,15 +77,22 @@ class Mailer
             return ['ok' => false, 'error' => 'Recipient email address is invalid.'];
         }
 
-        $context = stream_context_create([
-            'ssl' => [
-                'verify_peer' => false,
-                'verify_peer_name' => false,
-                'allow_self_signed' => true,
-            ],
-        ]);
+        // Check the server's certificate properly. Turning this off would let anyone
+        // between us and Gmail read or change the email (including the password reset link).
+        $ssl = [
+            'verify_peer'       => true,
+            'verify_peer_name'  => true,
+            'peer_name'         => 'smtp.gmail.com',
+            'allow_self_signed' => false,
+        ];
+        /* PHP 8.3 rejects an empty cafile/capath value. When neither is
+           configured, OpenSSL uses its platform trust store instead. */
+        if (($cafile = trim((string) ini_get('openssl.cafile'))) !== '') $ssl['cafile'] = $cafile;
+        if (($capath = trim((string) ini_get('openssl.capath'))) !== '') $ssl['capath'] = $capath;
+        $context = stream_context_create(['ssl' => $ssl]);
         $socket = @stream_socket_client('tcp://smtp.gmail.com:587', $errno, $errstr, 15, STREAM_CLIENT_CONNECT, $context);
         if (!$socket) {
+            error_log('[MAILER] Gmail SMTP connection failed: ' . $errstr . ' (' . $errno . ')');
             return ['ok' => false, 'error' => 'Email delivery failed.'];
         }
 
@@ -87,8 +102,11 @@ class Mailer
             self::expect($socket, [220]);
             self::command($socket, 'EHLO aromin-sison.local', [250]);
             self::command($socket, 'STARTTLS', [220]);
-            if (!stream_socket_enable_crypto($socket, true, STREAM_CRYPTO_METHOD_TLS_CLIENT)) {
-                throw new \RuntimeException('TLS failed');
+            // If Gmail's certificate cannot be verified, this fails closed (throws) instead
+            // of quietly sending the email - and the password reset link inside it -
+            // over a connection that might be intercepted.
+            if (!@stream_socket_enable_crypto($socket, true, STREAM_CRYPTO_METHOD_TLS_CLIENT)) {
+                throw new \RuntimeException('TLS certificate verification failed');
             }
             self::command($socket, 'EHLO aromin-sison.local', [250]);
             self::command($socket, 'AUTH LOGIN', [334]);
@@ -104,6 +122,7 @@ class Mailer
             return ['ok' => true];
         } catch (\Throwable $e) {
             if (is_resource($socket)) fclose($socket);
+            error_log('[MAILER] Gmail SMTP fallback failed: ' . $e->getMessage());
             return ['ok' => false, 'error' => self::safeError($e->getMessage())];
         }
     }
@@ -158,6 +177,9 @@ class Mailer
             'From: ' . $encodedFrom,
             'To: <' . $to . '>',
             'Subject: ' . $encodedSubject,
+            'Importance: High',
+            'Priority: urgent',
+            'X-Priority: 1 (Highest)',
             'MIME-Version: 1.0',
             'Content-Type: text/plain; charset=UTF-8',
             'Content-Transfer-Encoding: 8bit',
@@ -166,19 +188,4 @@ class Mailer
         ]);
     }
 
-    private static function loadLocalEnv(): void
-    {
-        foreach ([dirname(__DIR__, 2) . '/.env.local', dirname(__DIR__, 2) . '/.env'] as $path) {
-            if (!is_file($path)) continue;
-            foreach (file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: [] as $line) {
-                $line = trim($line);
-                if ($line === '' || str_starts_with($line, '#') || !str_contains($line, '=')) continue;
-                [$key, $value] = array_map('trim', explode('=', $line, 2));
-                if ($key !== '' && getenv($key) === false) {
-                    putenv($key . '=' . $value);
-                    $_ENV[$key] = $value;
-                }
-            }
-        }
-    }
 }

@@ -1,6 +1,6 @@
 <?php
 /**
- * Braces treatment progress update endpoint (dentist-only, own patients).
+ * Braces treatment progress update endpoint for shared dentist/staff access.
  * Delegates to ASDC\ContractService::updateProgress.
  *
  * PATCH /backend/api/contracts/progress.php
@@ -38,7 +38,7 @@ $contract = \ASDC\ContractService::updateProgress($contractId, [
     'next_note'      => is_string($body['next_note'] ?? null) ? trim($body['next_note']) : '',
 ], \ASDC\DataScope::current());
 
-// Real notification to the patient — closes the loop from
+// Real notification to the patient - closes the loop from
 // "Dentist updates treatment progress" to the patient actually finding out.
 try {
     $stmt = \ASDC\Database::pdo()->prepare('SELECT patient_id FROM braces_contracts WHERE contract_id = ?');

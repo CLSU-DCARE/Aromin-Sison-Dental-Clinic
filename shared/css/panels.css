@@ -312,8 +312,6 @@
 }
 
 header,
-.topbar,
-.dashboard-header,
-.notification-wrapper {
+.topbar {
     overflow: visible !important;
 }

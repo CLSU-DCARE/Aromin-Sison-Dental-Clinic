@@ -1,12 +1,13 @@
 -- ============================================================
--- Aromin-Sison Dental Clinic — Starter Database Schema
+-- Aromin-Sison Dental Clinic - Starter Database Schema
 -- Engine: MySQL / MariaDB
 -- This is a STARTING POINT covering the modules in your scope.
 -- Expand fields as your admin/patient dashboards need them.
 -- ============================================================
 
-CREATE DATABASE IF NOT EXISTS aromin_sison_dental;
-USE aromin_sison_dental;
+-- Import this file INTO the database you already created (phpMyAdmin: select the
+-- database first, then Import). It does not create or pick a database itself, so it
+-- also works on hosts that give you a fixed database name.
 
 -- ---------- USERS & ROLES ----------
 -- Covers login for Admin System staff AND Patient Dashboard accounts
@@ -21,16 +22,17 @@ CREATE TABLE users (
     is_active BOOLEAN DEFAULT TRUE
 );
 
--- Seed active dentist accounts used by appointment assignment.
--- Password hashes are for unknown random passwords; set real dentist passwords through reset/bootstrap flow.
-INSERT INTO users (role, email, password_hash, full_name, is_active) VALUES
-('dentist', 'arsenia.aromin@arominsison.local', '$2y$10$XZufABQCw6oroU/Kfkcu2OjRDf/Sjxihczayedp7WOyAkwxYSlCma', 'Dr. Arsenia Aromin', 1),
-('dentist', 'kathrine.sison@arominsison.local', '$2y$10$XZufABQCw6oroU/Kfkcu2OjRDf/Sjxihczayedp7WOyAkwxYSlCma', 'Dr. Kathrine Sison', 1)
-ON DUPLICATE KEY UPDATE
-    role = VALUES(role),
-    password_hash = VALUES(password_hash),
-    full_name = VALUES(full_name),
-    is_active = VALUES(is_active);
+-- Provider identities are not login accounts. Staff use a single shared
+-- dentist account, provisioned securely with database/bootstrap_staff.php.
+CREATE TABLE dentists (
+    dentist_id INT AUTO_INCREMENT PRIMARY KEY,
+    full_name VARCHAR(150) NOT NULL UNIQUE,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+INSERT INTO dentists (full_name, is_active) VALUES
+('Dr. Arsenia Aromin', 1),
+('Dr. Kathrine Sison', 1);
 
 -- ---------- PASSWORD RESET TOKENS ----------
 -- Only a SHA-256 hash of the emailed token is stored.
@@ -88,7 +90,7 @@ CREATE TABLE patients (
 CREATE TABLE appointments (
     appointment_id INT AUTO_INCREMENT PRIMARY KEY,
     patient_id INT NOT NULL,
-    dentist_id INT NULL,                    -- FK to users where role = 'dentist'
+    dentist_id INT NULL,                    -- FK to dentists; provider identity, not login
     service_type VARCHAR(150) NOT NULL,     -- e.g. 'Cleaning', 'Braces Adjustment'
     scheduled_date DATE NOT NULL,
     scheduled_time TIME NOT NULL,
@@ -99,7 +101,7 @@ CREATE TABLE appointments (
     INDEX idx_appointment_dentist_slot (dentist_id, scheduled_date, scheduled_time, status),
     INDEX idx_appointment_patient_slot (patient_id, scheduled_date, scheduled_time, status),
     FOREIGN KEY (patient_id) REFERENCES patients(patient_id) ON DELETE CASCADE,
-    FOREIGN KEY (dentist_id) REFERENCES users(user_id) ON DELETE SET NULL
+    FOREIGN KEY (dentist_id) REFERENCES dentists(dentist_id) ON DELETE SET NULL
 );
 
 -- Public bookings are requests, not patient portal accounts. Staff approval
@@ -124,7 +126,7 @@ CREATE TABLE appointment_requests (
     INDEX idx_request_week (requested_date, requested_time, status),
     INDEX idx_request_dentist_slot (preferred_dentist_id, requested_date, requested_time, status),
     INDEX idx_request_contact (contact_number, requested_date, requested_time, status),
-    FOREIGN KEY (preferred_dentist_id) REFERENCES users(user_id) ON DELETE SET NULL,
+    FOREIGN KEY (preferred_dentist_id) REFERENCES dentists(dentist_id) ON DELETE SET NULL,
     FOREIGN KEY (appointment_id) REFERENCES appointments(appointment_id) ON DELETE SET NULL,
     FOREIGN KEY (reviewed_by) REFERENCES users(user_id) ON DELETE SET NULL
 );
@@ -141,7 +143,7 @@ CREATE TABLE treatment_records (
     date_recorded DATE NOT NULL,
     FOREIGN KEY (patient_id) REFERENCES patients(patient_id) ON DELETE CASCADE,
     FOREIGN KEY (appointment_id) REFERENCES appointments(appointment_id) ON DELETE SET NULL,
-    FOREIGN KEY (dentist_id) REFERENCES users(user_id) ON DELETE SET NULL
+    FOREIGN KEY (dentist_id) REFERENCES dentists(dentist_id) ON DELETE SET NULL
 );
 
 -- ---------- BRACES CONTRACTS ----------
@@ -162,7 +164,7 @@ CREATE TABLE braces_contracts (
     progress_note TEXT NULL,
     next_note VARCHAR(255) NULL,
     progress_updated_at TIMESTAMP NULL,
-    FOREIGN KEY (dentist_id) REFERENCES users(user_id) ON DELETE SET NULL,
+    FOREIGN KEY (dentist_id) REFERENCES dentists(dentist_id) ON DELETE SET NULL,
     FOREIGN KEY (patient_id) REFERENCES patients(patient_id) ON DELETE CASCADE
 );
 
@@ -264,7 +266,7 @@ CREATE TABLE inventory_items (
 --   Attendance % = completed / (completed + no_show + cancelled) * 100
 --   Active Braces Patients = COUNT(*) FROM braces_contracts WHERE status = 'active'
 --
--- No separate attendance table is strictly required — keeping status accurate
+-- No separate attendance table is strictly required - keeping status accurate
 -- on `appointments` is enough to generate all report views listed in your scope.
 
 -- ---------- NOTIFICATIONS ----------
@@ -286,24 +288,24 @@ CREATE TABLE notification_templates (
 -- Seed default templates for common clinic notifications.
 INSERT INTO notification_templates (template_key, name, channel, subject, body) VALUES
 ('appointment_reminder', 'Appointment Reminder', 'email',
- 'Appointment Reminder — Aromin-Sison Dental Clinic',
- 'Hi {patient_name}, this is a friendly reminder of your appointment on {date} at {time} for {service}. If you need to reschedule, please call us at least 24 hours in advance. — Aromin-Sison Dental Clinic'),
+ 'Appointment Reminder - Aromin-Sison Dental Clinic',
+ 'Hi {patient_name}, this is a friendly reminder of your appointment on {date} at {time} for {service}. If you need to reschedule, please call us at least 24 hours in advance. - Aromin-Sison Dental Clinic'),
 
 ('appointment_confirmation', 'Appointment Confirmation', 'email',
- 'Appointment Confirmed — Aromin-Sison Dental Clinic',
- 'Hi {patient_name}, your appointment has been confirmed for {date} at {time} ({service}) with {dentist}. We look forward to seeing you! — Aromin-Sison Dental Clinic'),
+ 'Appointment Confirmed - Aromin-Sison Dental Clinic',
+ 'Hi {patient_name}, your appointment has been confirmed for {date} at {time} ({service}) with {dentist}. We look forward to seeing you! - Aromin-Sison Dental Clinic'),
 
 ('appointment_cancellation', 'Appointment Cancellation', 'email',
- 'Appointment Cancelled — Aromin-Sison Dental Clinic',
- 'Hi {patient_name}, your appointment on {date} at {time} ({service}) has been cancelled. To rebook, please visit our website or call us. — Aromin-Sison Dental Clinic'),
+ 'Appointment Cancelled - Aromin-Sison Dental Clinic',
+ 'Hi {patient_name}, your appointment on {date} at {time} ({service}) has been cancelled. To rebook, please visit our website or call us. - Aromin-Sison Dental Clinic'),
 
 ('payment_due', 'Payment Due Reminder', 'email',
- 'Payment Reminder — Aromin-Sison Dental Clinic',
- 'Hi {patient_name}, this is a reminder that your next braces contract payment of {amount} is due. Your remaining balance is {balance}. Please visit the clinic or contact us for payment options. — Aromin-Sison Dental Clinic'),
+ 'Payment Reminder - Aromin-Sison Dental Clinic',
+ 'Hi {patient_name}, this is a reminder that your next braces contract payment of {amount} is due. Your remaining balance is {balance}. Please visit the clinic or contact us for payment options. - Aromin-Sison Dental Clinic'),
 
 ('payment_received', 'Payment Received Confirmation', 'email',
- 'Payment Received — Aromin-Sison Dental Clinic',
- 'Hi {patient_name}, we have received your payment of {amount}. Your remaining balance is {balance}. Thank you! — Aromin-Sison Dental Clinic'),
+ 'Payment Received - Aromin-Sison Dental Clinic',
+ 'Hi {patient_name}, we have received your payment of {amount}. Your remaining balance is {balance}. Thank you! - Aromin-Sison Dental Clinic'),
 
 ('payment_rejected', 'Payment Rejected', 'email',
  'Payment Update - Aromin-Sison Dental Clinic',

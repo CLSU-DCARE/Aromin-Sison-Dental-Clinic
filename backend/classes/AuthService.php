@@ -6,7 +6,7 @@
  * password forgot/reset, and current-user lookup.
  *
  * Usage:
- *   $result = AuthService::login($email, $password);
+ *   $result = AuthService::login($identifier, $password);
  *   $user   = AuthService::me();
  *   AuthService::logout();
  *   $result = AuthService::register($data);
@@ -25,10 +25,10 @@ class AuthService
     private const LOGIN_LOCKOUT_SECONDS = 30;
     private const RESET_MAX_ATTEMPTS = 3;
     private const RESET_WINDOW_SECONDS = 900;
-    private const ALLOWED_ROLES = ['dentist', 'receptionist', 'patient'];
+    public const ALLOWED_ROLES = ['dentist', 'receptionist', 'patient'];
 
     /**
-     * Authenticate a user by email + password.
+     * Authenticate a user by registered email address or mobile number + password.
      *
      * On success, sets session variables and regenerates the session ID.
      * On failure, tracks brute-force attempts.
@@ -36,21 +36,19 @@ class AuthService
      * @param bool $rememberMe If true, creates a remember token for persistent login
      * @return array{success: true, user: array}|array{success: false, error: string, code: int}
      */
-    public static function login(string $email, string $password, bool $rememberMe = false): array
+    public static function login(string $identifier, string $password, bool $rememberMe = false): array
     {
-        $email = strtolower(trim($email));
+        $loginIdentifier = self::normalizeLoginIdentifier($identifier);
 
-        if (!$email || !$password) {
-            return ['success' => false, 'error' => 'Email and password are required.', 'code' => 400];
+        if (!$loginIdentifier || !$password) {
+            return ['success' => false, 'error' => 'Email address or mobile number and password are required.', 'code' => 400];
         }
-        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            return ['success' => false, 'error' => 'A valid email address is required.', 'code' => 400];
-        }
+        $rateLimitKey = 'login:' . $loginIdentifier['type'] . ':' . $loginIdentifier['value'];
 
         AuthMiddleware::secureSessionStart();
 
-        // Brute-force check (email + IP)
-        $lockout = RateLimiter::lockoutRemaining("login:{$email}");
+        // Brute-force check (registered identifier + IP)
+        $lockout = RateLimiter::lockoutRemaining($rateLimitKey);
         $ipLockout = RateLimiter::lockoutRemaining('ip:' . AuthMiddleware::getClientIp());
         if ($lockout > 0 || $ipLockout > 0) {
             $wait = max($lockout, $ipLockout);
@@ -58,20 +56,18 @@ class AuthService
         }
 
         $pdo = Database::pdo();
-        $stmt = $pdo->prepare('SELECT user_id, role, email, password_hash, full_name, is_active FROM users WHERE email = ?');
-        $stmt->execute([$email]);
-        $user = $stmt->fetch();
+        $user = self::findUserForLogin($pdo, $loginIdentifier);
 
         if (!$user || !(bool) $user['is_active'] || !password_verify($password, $user['password_hash'])) {
-            RateLimiter::record("login:{$email}", self::LOGIN_MAX_ATTEMPTS, self::LOGIN_LOCKOUT_SECONDS);
+            RateLimiter::record($rateLimitKey, self::LOGIN_MAX_ATTEMPTS, self::LOGIN_LOCKOUT_SECONDS);
             RateLimiter::record('ip:' . AuthMiddleware::getClientIp(), self::LOGIN_MAX_ATTEMPTS, self::LOGIN_LOCKOUT_SECONDS);
-            $remaining = RateLimiter::lockoutRemaining("login:{$email}");
+            $remaining = RateLimiter::lockoutRemaining($rateLimitKey);
             $ipRemaining = RateLimiter::lockoutRemaining('ip:' . AuthMiddleware::getClientIp());
             $wait = max($remaining, $ipRemaining);
             if ($wait > 0) {
                 return ['success' => false, 'error' => 'Too many failed attempts. This account is locked for 30 seconds.', 'code' => 429];
             }
-            return ['success' => false, 'error' => 'Invalid email or password.', 'code' => 401];
+            return ['success' => false, 'error' => 'Invalid email address, mobile number, or password.', 'code' => 401];
         }
 
         if (!in_array($user['role'], self::ALLOWED_ROLES, true)) {
@@ -80,17 +76,22 @@ class AuthService
         }
 
         // Success
-        RateLimiter::reset("login:{$email}");
+        RateLimiter::reset($rateLimitKey);
         RateLimiter::reset('ip:' . AuthMiddleware::getClientIp());
 
-        // Only regenerate the session ID if there was a pre-existing session
-        // (e.g. from AuthPageGuard checking me.php on page load). Destroying
-        // a brand-new session with session_regenerate_id(true) can race against
-        // the browser storing the Set-Cookie header, causing the immediate
-        // follow-up me() call to land on an empty session.
-        if (!empty($_SESSION['user_id'])) {
-            session_regenerate_id(true);
+        // Always give the user a brand-new session ID at login. If we kept the ID
+        // the browser arrived with, anyone who planted that ID beforehand
+        // ("session fixation") would be logged in as this user.
+        // The old ID is deleted only when it belonged to a logged-in user; an empty
+        // pre-login session is left to expire on its own, so pages that were already
+        // in flight with the old cookie (like the login page's own /me check) do
+        // not break.
+        $wasLoggedIn = !empty($_SESSION['user_id']);
+        if ($wasLoggedIn) {
+            SessionManager::removeSession((int) $_SESSION['user_id'], session_id());
         }
+        session_regenerate_id($wasLoggedIn);
+        $_SESSION = []; // start clean; nothing from an earlier visit may carry over
         CsrfToken::regenerate();
 
         $_SESSION['user_id'] = $user['user_id'];
@@ -105,20 +106,96 @@ class AuthService
         $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? null;
         $ipAddress = AuthMiddleware::getClientIp();
         SessionManager::registerSession($user['user_id'], $sessionId, $userAgent, $ipAddress, $rememberMe);
+        $_SESSION['session_registered'] = true; // lets the server tell "revoked" apart from "old login without a row"
 
-        // Create remember token if requested
+        // A "remember me" cookie left by an earlier login in this browser must not
+        // outlive this login (it could silently sign the previous person back in).
+        // If the user asked to be remembered this time, a fresh one is issued below.
+        $oldRememberToken = RememberToken::getCookieToken();
+        if ($oldRememberToken) {
+            RememberToken::delete($oldRememberToken);
+            RememberToken::clearCookie();
+        }
         if ($rememberMe) {
             $token = RememberToken::generate($user['user_id'], $userAgent, $ipAddress);
             RememberToken::setCookie($token);
         }
 
-        unset($user['password_hash'], $user['is_active']);
+        unset($user['password_hash'], $user['is_active'], $user['user_contact_number'], $user['patient_contact_number']);
 
         // Audit log
         $sessionId = session_id();
         SessionAudit::logCreate($user['user_id'], $sessionId, $rememberMe);
 
         return ['success' => true, 'user' => $user];
+    }
+
+    /**
+     * Normalize a supported login identifier without changing stored account data.
+     * Philippine mobile formats such as +63 917 123 4567 and 0917-123-4567
+     * resolve to the same registered number; other 7-15 digit numbers are
+     * retained as entered after punctuation is removed.
+     *
+     * @return array{type: 'email'|'mobile', value: string}|null
+     */
+    private static function normalizeLoginIdentifier(string $identifier): ?array
+    {
+        $identifier = trim($identifier);
+        if ($identifier === '') {
+            return null;
+        }
+
+        $email = strtolower($identifier);
+        if (filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return ['type' => 'email', 'value' => $email];
+        }
+
+        $digits = preg_replace('/\D+/', '', $identifier);
+        if ($digits === null || strlen($digits) < 7 || strlen($digits) > 15) {
+            return null;
+        }
+        if (strlen($digits) === 12 && str_starts_with($digits, '63')) {
+            $digits = '0' . substr($digits, 2);
+        } elseif (strlen($digits) === 10 && str_starts_with($digits, '9')) {
+            $digits = '0' . $digits;
+        }
+
+        return ['type' => 'mobile', 'value' => $digits];
+    }
+
+    /**
+     * Find one user for the supplied identifier. A mobile number may be stored
+     * on either the account or its patient profile. Ambiguous registrations are
+     * deliberately treated as a failed login instead of choosing an account.
+     */
+    private static function findUserForLogin(PDO $pdo, array $identifier): ?array
+    {
+        if ($identifier['type'] === 'email') {
+            $stmt = $pdo->prepare('SELECT user_id, role, email, password_hash, full_name, is_active FROM users WHERE email = ?');
+            $stmt->execute([$identifier['value']]);
+            return $stmt->fetch() ?: null;
+        }
+
+        $stmt = $pdo->query(
+            'SELECT u.user_id, u.role, u.email, u.password_hash, u.full_name, u.is_active, '
+            . 'u.contact_number AS user_contact_number, p.contact_number AS patient_contact_number '
+            . 'FROM users u LEFT JOIN patients p ON p.user_id = u.user_id '
+            . 'WHERE u.contact_number IS NOT NULL OR p.contact_number IS NOT NULL'
+        );
+        $matches = [];
+        foreach ($stmt->fetchAll() as $candidate) {
+            foreach (['user_contact_number', 'patient_contact_number'] as $field) {
+                if (!empty($candidate[$field])) {
+                    $number = self::normalizeLoginIdentifier((string) $candidate[$field]);
+                    if ($number && $number['type'] === 'mobile' && $number['value'] === $identifier['value']) {
+                        $matches[(int) $candidate['user_id']] = $candidate;
+                        break;
+                    }
+                }
+            }
+        }
+
+        return count($matches) === 1 ? reset($matches) : null;
     }
 
     /**
@@ -147,7 +224,9 @@ class AuthService
             return null;
         }
 
-        $user['profile_image_url'] = $user['profile_image_path'] ? '../backend/' . $user['profile_image_path'] : null;
+        // Keep uploaded profile images behind the authenticated API rather
+        // than exposing their storage path as a public URL.
+        $user['profile_image_url'] = $user['profile_image_path'] ? '../backend/api/auth/profile-image.php' : null;
 
         return ['user' => $user];
     }
@@ -159,32 +238,25 @@ class AuthService
     {
         AuthMiddleware::secureSessionStart();
 
-        // Remove active session record
         $sessionId = session_id();
         $userId = !empty($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
-        
+
+        // Remove this device's active-session record and write one audit entry.
         if ($sessionId && $userId) {
-            SessionManager::revokeSession($userId, $sessionId);
-            // Audit log
+            SessionManager::removeSession($userId, $sessionId);
             SessionAudit::logDestroy($userId, $sessionId, 'user_logout');
         }
 
-        // Delete remember token if present
+        // Always forget this browser's "remember me" token, even when the
+        // session had already expired. Otherwise the next page load would sign
+        // the person straight back in.
         $token = RememberToken::getCookieToken();
         if ($token) {
             RememberToken::delete($token);
             RememberToken::clearCookie();
         }
 
-        $_SESSION = [];
-
-        if (ini_get('session.use_cookies')) {
-            $params = session_get_cookie_params();
-            setcookie(session_name(), '', time() - 42000,
-                $params['path'], $params['domain'], $params['secure'], $params['httponly']);
-        }
-
-        session_destroy();
+        AuthMiddleware::destroySession(true);
     }
 
     /**
@@ -287,6 +359,15 @@ class AuthService
         $user = $stmt->fetch();
 
         if ($user) {
+            // Build the link from OUR configured address, never from the request.
+            // (The "Host" header is sent by the visitor, so an attacker could fake it and
+            // get the victim to receive a link that points to the attacker's website.)
+            $baseUrl = self::resetBaseUrl();
+            if ($baseUrl === null) {
+                error_log('[PASSWORD RESET] ASDC_APP_URL is not set, so no reset email was sent. Set it in .env.');
+                return ['success' => true, 'message' => 'If an active account matches that email, a password reset link has been sent.'];
+            }
+
             $token = TokenService::generate();
             $tokenHash = TokenService::hash($token);
 
@@ -301,11 +382,7 @@ class AuthService
                 return ['success' => false, 'error' => 'Unable to process the request right now.', 'code' => 500];
             }
 
-            $scriptPath = str_replace('\\', '/', $_SERVER['SCRIPT_NAME'] ?? '');
-            $appBase = preg_replace('#/backend/api/auth/forgot-password\.php$#', '', $scriptPath);
-            $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
-            $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
-            $resetUrl = $scheme . '://' . $host . $appBase . '/auth/reset-password.html?token=' . rawurlencode($token);
+            $resetUrl = $baseUrl . '/auth/reset-password.html?token=' . rawurlencode($token);
             $body = "Hello {$user['full_name']},\n\nUse this link to reset your password:\n\n{$resetUrl}\n\nThe link expires in one hour and can only be used once. If you did not request this, ignore this email.";
 
             $mailResult = Mailer::sendEmail($user['email'], 'Reset your Aromin-Sison Dental Clinic password', $body);
@@ -315,6 +392,36 @@ class AuthService
         }
 
         return ['success' => true, 'message' => 'If an active account matches that email, a password reset link has been sent.'];
+    }
+
+    /**
+     * The public address of the site, used inside password reset emails.
+     * Set ASDC_APP_URL in .env, for example https://clinic.example.com
+     * (or http://localhost/Aromin-Sison-Dental-Clinic while developing).
+     *
+     * If it is not set, we only trust the request's host on a local computer
+     * (localhost, 127.0.0.1, *.test). On a real server we send nothing instead.
+     */
+    public static function resetBaseUrl(): ?string
+    {
+        $configured = rtrim(trim((string) Env::get('ASDC_APP_URL', '')), '/');
+        if ($configured !== '') {
+            $parts = parse_url($configured);
+            $okScheme = isset($parts['scheme']) && in_array(strtolower($parts['scheme']), ['http', 'https'], true);
+            return ($okScheme && !empty($parts['host'])) ? $configured : null;
+        }
+
+        $host = strtolower((string) ($_SERVER['HTTP_HOST'] ?? ''));
+        $hostName = preg_replace('/:\d+$/', '', $host);
+        $isLocal = $hostName === 'localhost' || $hostName === '127.0.0.1' || str_ends_with($hostName, '.test');
+        if (!$isLocal || !preg_match('/^[a-z0-9.\-]+(:\d+)?$/', $host)) {
+            return null;
+        }
+
+        $scriptPath = str_replace('\\', '/', $_SERVER['SCRIPT_NAME'] ?? '');
+        $appBase = preg_replace('#/backend/api/auth/forgot-password\.php$#', '', $scriptPath);
+        $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+        return $scheme . '://' . $host . $appBase;
     }
 
     /**
@@ -354,6 +461,16 @@ class AuthService
 
             TokenService::markUsed($pdo, $reset['user_id']);
             $pdo->commit();
+
+            // The password changed, so every existing login (any device, any
+            // "remember me") must stop working. This is what protects the
+            // account if someone else knew the old password.
+            try {
+                SessionManager::revokeAllSessions((int) $reset['user_id']);
+                RememberToken::deleteAllForUser((int) $reset['user_id']);
+            } catch (\Throwable $e) {
+                error_log('Could not revoke sessions after password reset: ' . $e->getMessage());
+            }
         } catch (\Throwable $e) {
             if ($pdo->inTransaction()) $pdo->rollBack();
             error_log('Password reset failed: ' . $e->getMessage());

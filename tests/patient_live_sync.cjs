@@ -24,7 +24,7 @@ const sync = new ctx.PatientLiveSync({
 (async () => {
   sync.start(); await sync.pending;
   assert.equal(calls, 1); assert.equal(applied.length, 1); assert.equal(applied[0].changed, false);
-  assert.equal([...timers.values()][0].delay, 3000);
+  assert.equal([...timers.values()][0].delay, 10000);
   await sync.refresh(); assert.equal(applied.length, 1, 'Unchanged data must not redraw the page.');
   response = { ...response, submissions: [{ id: 2, status: 'approved' }] };
   await sync.refresh(); assert.equal(applied.length, 2); assert.equal(applied[1].changed, true);
@@ -32,7 +32,7 @@ const sync = new ctx.PatientLiveSync({
   response = new Error('offline'); await sync.refresh();
   assert.equal(applied.length, 2, 'Connection errors must preserve the last good display.');
   assert.equal(statuses.at(-1), 'reconnecting');
-  assert.equal([...timers.values()][0].delay, 6000);
+  assert.equal([...timers.values()][0].delay, 20000);
   response = good; events.online(); await sync.pending;
   assert.equal(statuses.at(-1), 'live'); assert.equal(applied.length, 2);
   ctx.document.hidden = true; events.visibilitychange();

@@ -111,8 +111,9 @@ class PatientService
     }
 
     /**
-     * List all patients (admin dashboard).
-     * Dentists see only patients who have appointments with them.
+     * List all active patients for the staff dashboard.
+     * Receptionists and dentists both have clinic-wide access; only a patient
+     * portal session is restricted to its linked profile.
      *
      * @return array<int, array{patient_id: int, first_name: string, last_name: string, contact_number: ?string, email: ?string, registered_at: string}>
      */
@@ -168,9 +169,9 @@ class PatientService
         if (!$row) ApiResponse::error(404, 'not_found', 'Archived patient not found.');
 
         $queries = [
-            'appointments' => "SELECT a.*, d.full_name AS dentist_name FROM appointments a LEFT JOIN users d ON d.user_id=a.dentist_id WHERE a.patient_id=? ORDER BY a.scheduled_date DESC,a.scheduled_time DESC",
-            'records' => "SELECT r.*, d.full_name AS dentist_name FROM treatment_records r LEFT JOIN users d ON d.user_id=r.dentist_id WHERE r.patient_id=? ORDER BY r.date_recorded DESC,r.record_id DESC",
-            'contracts' => "SELECT c.*, d.full_name AS dentist_name FROM braces_contracts c LEFT JOIN users d ON d.user_id=c.dentist_id WHERE c.patient_id=? ORDER BY c.contract_id DESC",
+            'appointments' => "SELECT a.*, d.full_name AS dentist_name FROM appointments a LEFT JOIN dentists d ON d.dentist_id=a.dentist_id WHERE a.patient_id=? ORDER BY a.scheduled_date DESC,a.scheduled_time DESC",
+            'records' => "SELECT r.*, d.full_name AS dentist_name FROM treatment_records r LEFT JOIN dentists d ON d.dentist_id=r.dentist_id WHERE r.patient_id=? ORDER BY r.date_recorded DESC,r.record_id DESC",
+            'contracts' => "SELECT c.*, d.full_name AS dentist_name FROM braces_contracts c LEFT JOIN dentists d ON d.dentist_id=c.dentist_id WHERE c.patient_id=? ORDER BY c.contract_id DESC",
             'payments' => "SELECT cp.* FROM contract_payments cp JOIN braces_contracts c ON c.contract_id=cp.contract_id WHERE c.patient_id=? ORDER BY cp.created_at DESC,cp.payment_id DESC",
             'notifications' => "SELECT notification_id,title,message,type,created_at,read_at FROM user_notifications WHERE patient_id=? ORDER BY notification_id DESC",
         ];
@@ -184,20 +185,15 @@ class PatientService
     }
 
     /**
-     * Archived-patient scope. Receptionists may inspect all archived records;
-     * dentists only see archived patients with their appointments or contracts.
+     * Archived-patient scope. Both staff roles may inspect all archived records;
+     * patient portal sessions never receive archived data.
      *
      * @return array{0: string, 1: array<int, mixed>}
      */
     private static function archivedPatientFilter(DataScope $scope): array
     {
         if ($scope->isDentist()) {
-            $userId = $scope->getUserId();
-            if (!$userId) return ['1=0', []];
-            return [
-                'p.archived_at IS NOT NULL AND (p.patient_id IN (SELECT patient_id FROM appointments WHERE dentist_id = ?) OR p.patient_id IN (SELECT patient_id FROM braces_contracts WHERE dentist_id = ?))',
-                [$userId, $userId],
-            ];
+            return ['p.archived_at IS NOT NULL', []];
         }
 
         if ($scope->hasFullAccess()) {
@@ -225,6 +221,50 @@ class PatientService
             PortalEvent::patient($patientId, 'Patient record restored', 'This patient record was reactivated.', 'info');
             $pdo->commit();
             return ['patient_id' => $patientId, 'status' => 'active'];
+        } catch (\Throwable $e) {
+            if ($pdo->inTransaction()) $pdo->rollBack();
+            throw $e;
+        }
+    }
+
+    /**
+     * Permanently remove an archived patient and every record whose foreign
+     * key is configured to cascade from the patient profile.
+     *
+     * This is intentionally limited to archived profiles so active patient
+     * data cannot be removed through the archive UI.
+     *
+     * @return array{patient_id: int, user_deleted: bool}
+     */
+    public static function purgeArchived(int $patientId): array
+    {
+        $pdo = Database::pdo();
+        $pdo->beginTransaction();
+        try {
+            $stmt = $pdo->prepare('SELECT user_id, archived_at FROM patients WHERE patient_id=? FOR UPDATE');
+            $stmt->execute([$patientId]);
+            $patient = $stmt->fetch();
+            if (!$patient) {
+                $pdo->rollBack();
+                ApiResponse::error(404, 'not_found', 'Archived patient not found.');
+            }
+            if (!$patient['archived_at']) {
+                $pdo->rollBack();
+                ApiResponse::error(409, 'not_archived', 'Only archived patients can be permanently deleted.');
+            }
+
+            $userId = $patient['user_id'] ? (int) $patient['user_id'] : null;
+            $pdo->prepare('DELETE FROM patients WHERE patient_id=?')->execute([$patientId]);
+
+            $userDeleted = false;
+            if ($userId) {
+                $deleteUser = $pdo->prepare("DELETE FROM users WHERE user_id=? AND role='patient'");
+                $deleteUser->execute([$userId]);
+                $userDeleted = $deleteUser->rowCount() === 1;
+            }
+
+            $pdo->commit();
+            return ['patient_id' => $patientId, 'user_deleted' => $userDeleted];
         } catch (\Throwable $e) {
             if ($pdo->inTransaction()) $pdo->rollBack();
             throw $e;

@@ -57,7 +57,7 @@ class StaffDashboardService
                        COALESCE(d.full_name, 'Unassigned') AS dentist_name
                 FROM appointments a
                 JOIN patients p ON p.patient_id = a.patient_id
-                LEFT JOIN users d ON d.user_id = a.dentist_id
+                LEFT JOIN dentists d ON d.dentist_id = a.dentist_id
                 WHERE a.scheduled_date BETWEEN ? AND ?
                   AND a.status NOT IN ('cancelled','rejected')
                   AND $where

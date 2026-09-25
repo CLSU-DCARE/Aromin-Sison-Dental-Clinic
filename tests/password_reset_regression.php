@@ -2,6 +2,8 @@
 // Isolated reset-request regression tests: no database connection or email delivery.
 namespace ASDC;
 
+if (PHP_SAPI !== 'cli') { http_response_code(404); exit; } // Test script: never run it from a web browser.
+
 class AuthMiddleware
 {
     public static function secureSessionStart(): void {}
@@ -60,6 +62,7 @@ class Mailer
         return ['ok' => true];
     }
 }
+require_once __DIR__ . '/../backend/classes/Env.php';
 require_once __DIR__ . '/../backend/classes/AuthService.php';
 
 function check(bool $condition, string $message): void
@@ -83,4 +86,22 @@ RateLimiter::$lockouts = [];
 Database::$accountExists = false;
 $result = AuthService::forgotPassword('unknown@example.invalid');
 check($result['success'] === true && Mailer::$calls === 1, 'Unknown accounts must keep the generic response without sending.');
+// The reset link must come from our own setting, never from the visitor's Host header.
+$calls = Mailer::$calls;
+$_SERVER['HTTP_HOST'] = 'evil.example.com';
+Database::$accountExists = true;
+RateLimiter::$lockouts = [];
+$result = AuthService::forgotPassword('patient@example.invalid');
+check(Mailer::$calls === $calls, 'A fake Host on a real server must NOT send a reset email.');
+
+putenv('ASDC_APP_URL=https://clinic.example.org/app/');
+check(AuthService::resetBaseUrl() === 'https://clinic.example.org/app', 'The configured address must be used, without a trailing slash.');
+putenv('ASDC_APP_URL=javascript:alert(1)');
+check(AuthService::resetBaseUrl() === null, 'Only http(s) addresses are accepted.');
+putenv('ASDC_APP_URL=https://clinic.example.org');
+$_SERVER['HTTP_HOST'] = 'evil.example.com';
+check(AuthService::resetBaseUrl() === 'https://clinic.example.org', 'A fake Host must be ignored when the address is configured.');
+putenv('ASDC_APP_URL');
+echo "PASS: the reset link ignores a fake Host header.\n";
+
 echo "PASS: first reset request, token creation, mail invocation, account/IP lockouts, and unknown-account response. No email was sent.\n";

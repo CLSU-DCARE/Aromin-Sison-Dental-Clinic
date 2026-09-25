@@ -7,13 +7,15 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <title>My Dashboard | Aromin-Sison Dental Clinic</title>
+<link rel="icon" type="image/png" href="../shared/images/favicon/asdc-wordmark-favicon.png">
+<link rel="apple-touch-icon" href="../shared/images/favicon/asdc-wordmark-favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;1,9..144,400&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../shared/css/variables.css?v=4">
 <link rel="stylesheet" href="../shared/css/buttons.css?v=5">
 <link rel="stylesheet" href="../shared/css/panels.css?v=4">
 <link rel="stylesheet" href="assets/css/patient.css?v=20260919-page-head-style">
-<link rel="stylesheet" href="../shared/css/dashboard-system.css?v=20260921-avatar-fallback">
+<link rel="stylesheet" href="../shared/css/dashboard-system.css?v=20260924-unified-dashboard-shell">
 </head>
 <body>
 
@@ -74,7 +76,7 @@
       </button>
     </nav>
     <div class="side-foot">
-      <div class="avatar-sm" id="sideFootAvatar">—</div>
+      <div class="avatar-sm" id="sideFootAvatar">-</div>
       <div>
         <div class="name" id="sideFootName">Loading…</div>
         <div class="role" id="sideFootRole">Patient</div>
@@ -116,7 +118,7 @@
           <span class="btn-text">Book Appointment</span>
         </button>
         <button type="button" class="user-chip" title="Loading…: Patient" aria-haspopup="menu" aria-expanded="false" id="userChip" aria-label="Account menu">
-          <div class="avatar-sm" id="chipAvatar">—</div>
+          <div class="avatar-sm" id="chipAvatar">-</div>
         </button>
       </div>
     </div>
@@ -162,7 +164,7 @@
         </div>
         <div class="profile-grid">
           <div class="profile-card">
-            <div class="profile-avatar" id="profileAvatar">—</div>
+            <div class="profile-avatar" id="profileAvatar">-</div>
             <h3 id="profileName">Loading…</h3>
             <div class="pid" id="profilePid">Patient</div>
             <div style="text-align:left;">
@@ -408,7 +410,7 @@
 <!-- ===== ACCOUNT MENU POPOVER ===== -->
 <div class="popover user-menu" id="userMenu" role="menu" aria-label="Account menu">
   <div class="user-menu-head">
-    <div class="avatar-sm" id="menuAvatar">—</div>
+    <div class="avatar-sm" id="menuAvatar">-</div>
     <div>
       <div class="name" id="menuName">Loading…</div>
       <div class="role" id="menuRole">Patient</div>
@@ -548,17 +550,17 @@
 <script src="../shared/js/core/SidebarController.js?v=20260916-integration" defer></script>
 <script src="../shared/js/core/HtmlHelpers.js?v=20260921-avatar-fallback" defer></script>
 <script src="../shared/js/core/ScheduleView.js?v=20260916-integration" defer></script>
-<script src="../shared/js/core/api.js?v=20260916-integration" defer></script>
+<script src="../shared/js/core/api.js?v=20260921-sessionfix" defer></script>
 <script src="../shared/js/core/ViewRouter.js?v=20260916-integration" defer></script>
 <script src="../shared/js/core/FilterChipGroup.js?v=20260916-integration" defer></script>
-<script src="../shared/js/core/SessionGuard.js?v=20260921-session-once" defer></script>
+<script src="../shared/js/core/SessionGuard.js?v=20260921-sessionfix" defer></script>
 <script src="../shared/js/core/NotificationPanel.js?v=20260916-integration" defer></script>
-<script src="../shared/js/core/LogoutManager.js?v=20260916-integration" defer></script>
+<script src="../shared/js/core/LogoutManager.js?v=20260921-sessionfix" defer></script>
 <script src="../shared/js/core/FullscreenToggle.js?v=20260916-integration" defer></script>
 <script src="../shared/js/core/ReportExporter.js?v=20260916-integration" defer></script>
 <script src="../shared/js/core/routing.js?v=20260921-session-content-fix" defer></script>
-<script src="../shared/js/core/SessionRefreshManager.js?v=20260919-session" defer></script>
-<script src="../shared/js/dashboard-core.js?v=20260916-integration" defer></script>
+<script src="../shared/js/core/SessionRefreshManager.js?v=20260921-sessionfix" defer></script>
+<script src="../shared/js/dashboard-core.js?v=20260921-sessionfix" defer></script>
 <script src="../shared/js/state/patient.js?v=20260916-integration" defer></script>
 <script src="../shared/js/core/ContractFormat.js?v=20260916-integration" defer></script>
 <script src="../shared/js/core/PortalForms.js?v=20260916-appointment-dialogs" defer></script>
@@ -569,7 +571,7 @@
 <script src="assets/js/PatientProfileEditor.js?v=20260921-avatar-fallback" defer></script>
 <script src="assets/js/PatientPaymentSubmission.js?v=20260919-gcash-cash" defer></script>
 <script src="assets/js/PatientLiveSync.js?v=20260916-integration" defer></script>
-<script src="assets/js/patient.js?v=20260921-session-message" defer></script>
+<script src="assets/js/patient.js?v=20260921-sessionfix" defer></script>
 
 </body>
 </html>

@@ -13,10 +13,10 @@
 // =====================================================================
 
 // =====================================================================
-// Helpers & shared cell builders — now provided by ASDC.HtmlHelpers
+// Helpers & shared cell builders - now provided by ASDC.HtmlHelpers
 // (escapeHtml, nameCell, statusTag, statCard, eyeIcon, pencilIcon,
 // trashIcon are global via dashboard-core.js).
-// PDF export — now provided by ASDC.ReportExporter
+// PDF export - now provided by ASDC.ReportExporter
 // (exportTablePDF, getLogoDataUrl are global via dashboard-core.js).
 // =====================================================================
 
@@ -145,6 +145,7 @@ function renderArchivedPatients(){
       <td>${escapeHtml(patient.archived_by_name || 'System')}</td>
       <td><div class="row-actions">
         <button class="btn btn-outline btn-sm" data-archive-view="${Number(patient.patient_id)}">View</button>
+        <button class="btn btn-danger btn-sm" data-archive-delete="${Number(patient.patient_id)}">Delete</button>
         <button class="btn btn-gold btn-sm" data-archive-restore="${Number(patient.patient_id)}">Restore</button>
       </div></td>
     </tr>`;
@@ -156,11 +157,13 @@ function renderArchivedDetails(data){
   const title = document.getElementById('archivedDetailTitle');
   const body = document.getElementById('archivedDetailBody');
   const restore = document.getElementById('archivedRestoreBtn');
+  const remove = document.getElementById('archivedDeleteBtn');
   if (!panel || !title || !body || !data.patient) return;
   archivedCurrent = data.patient;
   const name = archivedName(data.patient);
   title.textContent = name + ' · #P-' + data.patient.patient_id;
   if (restore) restore.dataset.patientId = data.patient.patient_id;
+  if (remove) remove.dataset.patientId = data.patient.patient_id;
   const groups = [
     ['Appointments', data.appointments, item => `${item.scheduled_date} ${String(item.scheduled_time).slice(0,5)} · ${item.service_type} · ${item.status}`],
     ['Treatment Records', data.records, item => `${item.date_recorded} · ${item.treatment_given || item.treatment_protocol || item.diagnosis || 'Clinical record'}`],
@@ -178,6 +181,12 @@ function renderArchivedDetails(data){
       (rows.length ? `<ul class="archive-detail-list">${rows.map(row => `<li>${escapeHtml(format(row))}</li>`).join('')}</ul>` : '<p class="empty-cell">None retained in this category.</p>');
   }).join('');
   panel.hidden = false;
+}
+
+function closeArchivedDetails(){
+  const panel = document.getElementById('archivedDetailPanel');
+  if (panel) panel.hidden = true;
+  archivedCurrent = null;
 }
 
 async function openArchivedDetails(patientId){
@@ -204,11 +213,35 @@ async function restoreArchivedPatient(patientId){
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'restore', patient_id: Number(patientId) })
     });
-    document.getElementById('archivedDetailPanel').hidden = true;
-    archivedCurrent = null;
+    closeArchivedDetails();
     await loadArchivedPatients();
     if (window.staffLiveSync) await window.staffLiveSync.refetch();
     showToast('Patient restored.');
+  } catch (error) {
+    showToast(error.message, 'error');
+  }
+}
+
+async function permanentlyDeleteArchivedPatient(patientId){
+  const patient = archivedPatients.find(p => Number(p.patient_id) === Number(patientId)) || archivedCurrent;
+  const name = archivedName(patient || { patient_id: patientId });
+  const confirmed = await ASDC.confirmAction({
+    title: 'Delete archived patient permanently?',
+    message: 'Delete ' + name + ' and all linked appointments, treatment records, contracts, payments, and patient notifications. This cannot be undone.',
+    confirmLabel: 'Delete permanently',
+    tone: 'danger'
+  });
+  if (!confirmed) return;
+  try {
+    await apiFetch('../backend/api/patients/archived.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'purge', patient_id: Number(patientId) })
+    });
+    closeArchivedDetails();
+    await loadArchivedPatients();
+    if (window.staffLiveSync) await window.staffLiveSync.refetch();
+    showToast('Archived patient permanently deleted.');
   } catch (error) {
     showToast(error.message, 'error');
   }
@@ -218,12 +251,22 @@ document.getElementById('refreshArchivedBtn')?.addEventListener('click', loadArc
 document.getElementById('archivedPatientsBody')?.addEventListener('click', event => {
   const view = event.target.closest('[data-archive-view]');
   const restore = event.target.closest('[data-archive-restore]');
+  const remove = event.target.closest('[data-archive-delete]');
   if (view) openArchivedDetails(view.dataset.archiveView);
   if (restore) restoreArchivedPatient(restore.dataset.archiveRestore);
+  if (remove) permanentlyDeleteArchivedPatient(remove.dataset.archiveDelete);
 });
+document.getElementById('archivedCloseBtn')?.addEventListener('click', closeArchivedDetails);
 document.getElementById('archivedRestoreBtn')?.addEventListener('click', event => {
   const patientId = event.currentTarget.dataset.patientId;
   if (patientId) restoreArchivedPatient(patientId);
+});
+document.getElementById('archivedDeleteBtn')?.addEventListener('click', event => {
+  const patientId = event.currentTarget.dataset.patientId;
+  if (patientId) permanentlyDeleteArchivedPatient(patientId);
+});
+document.addEventListener('keydown', event => {
+  if (event.key === 'Escape' && !document.getElementById('archivedDetailPanel')?.hidden) closeArchivedDetails();
 });
 
 // =====================================================================
@@ -351,13 +394,6 @@ const contractFormModal = new Modal('contractFormModal');
 let editingContract = null;
 let bracesRaw = []; // Last loaded contracts, used by the edit form.
 const peso = n => '₱' + Number(n).toLocaleString('en-US');
-// small helpers used by the contract form (same rules PatientTableManager uses)
-const initialsOf = name => name.trim().split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase();
-const tagFor = status => {
-  if (status === 'Current') return 'amber';
-  if (status === 'Overdue') return 'red';
-  return 'green';
-};
 
 if (contractFormModal.modal){
   contractFormModal.registerClose(document.getElementById('contractFormClose'));
@@ -384,8 +420,8 @@ if (contractFormModal.modal){
       const data = await apiFetch('../backend/api/contracts/dentists.php');
       if (!Array.isArray(data.dentists) || !data.dentists.length) throw new Error('empty');
       // Real mode needs the numeric user_id (what the backend expects for
-      // dentist_id) — the display name alone isn't enough to save it.
-      cfDentist.innerHTML = data.dentists.map(d => `<option value="${d.user_id}">${escapeHtml(d.full_name)}</option>`).join('');
+      // dentist_id) - the display name alone isn't enough to save it.
+      cfDentist.innerHTML = data.dentists.map(d => `<option value="${d.dentist_id}">${escapeHtml(d.full_name)}</option>`).join('');
     } catch (e) { cfDentist.innerHTML = ''; showToast('Unable to load dentists.', 'error'); }
   };
 
@@ -399,7 +435,7 @@ if (contractFormModal.modal){
     await Promise.all([fillPatients(), fillDentists()]);
     editingContract = contract || null;
     document.getElementById('contractFormTitle').textContent = contract
-      ? 'Edit Contract — ' + contract.name
+      ? 'Edit Contract - ' + contract.name
       : 'New Braces Contract';
     contractSaveBtn.querySelector('.btn-label').textContent = contract ? 'Save Changes' : 'Create Contract';
     // Editing doesn't reassign which patient the contract belongs to, so
@@ -910,10 +946,6 @@ function renderReports(reports){
   ).join('');
 }
 
-function renderInventory(items){
-  inventoryMgr.apply();
-}
-
 function renderPayments(){
   paymentMgr.render();
 }
@@ -933,7 +965,7 @@ const notificationManager = new ASDC.NotificationManager();
 renderUser(AdminState.user);
 renderDashboardStats(AdminState.dashboard.stats);
 renderWeekGrid('dashWeekGrid', AdminState.dashboard.week);
-// NOTE: the appointments page's own week grid loads itself — see
+// NOTE: the appointments page's own week grid loads itself - see
 // appointmentScheduler.init() a few lines above, which already calls
 // loadWeek(). The old loadAppointmentWeek() global function was removed
 // when this was refactored into the AppointmentScheduler class, but this

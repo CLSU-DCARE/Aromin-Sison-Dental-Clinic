@@ -44,7 +44,7 @@ class AppointmentService
                     a.status, a.notes
              FROM appointments a
              JOIN patients p ON p.patient_id=a.patient_id
-             LEFT JOIN users d ON d.user_id=a.dentist_id
+             LEFT JOIN dentists d ON d.dentist_id=a.dentist_id
              WHERE a.scheduled_date BETWEEN ? AND ?
                AND {$apptWhere}
              ORDER BY a.scheduled_date, a.scheduled_time"
@@ -60,7 +60,7 @@ class AppointmentService
                     r.service_type, r.requested_date scheduled_date,
                     r.requested_time scheduled_time, r.status, r.notes
              FROM appointment_requests r
-             LEFT JOIN users d ON d.user_id=r.preferred_dentist_id
+             LEFT JOIN dentists d ON d.dentist_id=r.preferred_dentist_id
              WHERE r.requested_date BETWEEN ? AND ?
                AND r.status IN ('pending','rescheduled')
                AND {$reqWhere}
@@ -85,17 +85,7 @@ class AppointmentService
         $scope = DataScope::current();
         $table = $type === 'request' ? 'appointment_requests' : 'appointments';
         $key   = $type === 'request' ? 'request_id' : 'appointment_id';
-        $ownerCol = $type === 'request' ? 'preferred_dentist_id' : 'dentist_id';
 
-        // Ownership check for dentists
-        if ($scope->isDentist()) {
-            $check = $pdo->prepare("SELECT {$ownerCol} FROM {$table} WHERE {$key}=?");
-            $check->execute([$id]);
-            $row = $check->fetch();
-            if (!$row || (int) $row[$ownerCol] !== $scope->getUserId()) {
-                ApiResponse::error(403, 'forbidden', 'You do not have permission to cancel this appointment.');
-            }
-        }
         if ($type === 'appointment') {
             $check = $pdo->prepare(
                 'SELECT 1 FROM appointments a
@@ -104,8 +94,7 @@ class AppointmentService
             );
             $check->execute([$id]);
             if (!$check->fetchColumn()) ApiResponse::error(409, 'archived_patient', 'Archived patient appointments are retained for history only.');
-        }
-
+                }
         if (!in_array($status, ['cancelled', 'rejected', 'completed', 'no_show'], true)
             || ($type === 'request' && !in_array($status, ['cancelled', 'rejected'], true))) ApiResponse::error(422, 'validation_failed', 'Invalid status.');
         $extra = $type === 'request' ? ', reviewed_by=?, reviewed_at=NOW()' : '';
@@ -151,10 +140,6 @@ class AppointmentService
                     $pdo->rollBack();
                     ApiResponse::error(404, 'not_found', 'Active appointment request not found.');
                 }
-                if ($scope->isDentist() && (int) $reqRow['preferred_dentist_id'] !== $scope->getUserId()) {
-                    $pdo->rollBack();
-                    ApiResponse::error(403, 'forbidden', 'You do not have permission to reschedule this request.');
-                }
                 if (AppointmentSlotManager::isTaken($pdo, $date, $time, null, $id)) {
                     $pdo->rollBack();
                     ApiResponse::error(409, 'slot_unavailable', 'That appointment slot is no longer available.');
@@ -177,10 +162,6 @@ class AppointmentService
                 if (!$apptRow) {
                     $pdo->rollBack();
                     ApiResponse::error(404, 'not_found', 'Active appointment not found.');
-                }
-                if ($scope->isDentist() && (int) $apptRow['dentist_id'] !== $scope->getUserId()) {
-                    $pdo->rollBack();
-                    ApiResponse::error(403, 'forbidden', 'You do not have permission to reschedule this appointment.');
                 }
                 if (AppointmentSlotManager::isTaken($pdo, $date, $time, $id, null)) {
                     $pdo->rollBack();
@@ -205,7 +186,6 @@ class AppointmentService
         } finally {
             AppointmentSlotManager::unlock($pdo, $lock);
         }
-
         ApiResponse::ok(['id' => $id, 'scheduled_date' => $date, 'scheduled_time' => $time], 'Appointment rescheduled.');
     }
 
@@ -249,9 +229,6 @@ class AppointmentService
             ApiResponse::error(404, 'not_found', 'Pending appointment not found.');
         }
 
-        if ($scope->isDentist() && (int) $row['dentist_id'] !== $scope->getUserId()) {
-            ApiResponse::error(403, 'forbidden', 'You do not have permission to approve this appointment.');
-        }
 
         $lock = AppointmentSlotManager::lock($pdo, $row['scheduled_date'], $row['scheduled_time']);
         try {
@@ -315,9 +292,6 @@ class AppointmentService
             ApiResponse::error(404, 'not_found', 'Pending appointment request not found.');
         }
 
-        if ($scope->isDentist() && (int) $request['preferred_dentist_id'] !== $scope->getUserId()) {
-            ApiResponse::error(403, 'forbidden', 'You do not have permission to approve this request.');
-        }
 
         $initialRequest = $request;
         $lock = AppointmentSlotManager::lock($pdo, $request['requested_date'], $request['requested_time']);
@@ -386,7 +360,7 @@ class AppointmentService
 
     private static function isActiveDentist(PDO $pdo, int $dentistId): bool
     {
-        $stmt = $pdo->prepare("SELECT 1 FROM users WHERE user_id=? AND role='dentist' AND is_active=1");
+        $stmt = $pdo->prepare('SELECT 1 FROM dentists WHERE dentist_id=? AND is_active=1');
         $stmt->execute([$dentistId]);
         return (bool) $stmt->fetchColumn();
     }
@@ -404,7 +378,17 @@ class AppointmentService
             $stmt = $pdo->prepare('SELECT patient_id FROM patients WHERE contact_number=? AND archived_at IS NULL ORDER BY user_id IS NOT NULL DESC LIMIT 1');
             $stmt->execute([$request['contact_number']]);
             $patient = $stmt->fetchColumn();
-            if ($patient) return (int) $patient;
+            if ($patient) {
+                /* A public booking can supply contact details that were absent
+                   from a receptionist-created patient record. Preserve an
+                   existing email, but fill an empty one before notifications
+                   are generated for the new appointment. */
+                if ($request['email']) {
+                    $pdo->prepare("UPDATE patients SET email=? WHERE patient_id=? AND (email IS NULL OR TRIM(email)='')")
+                        ->execute([$request['email'], (int) $patient]);
+                }
+                return (int) $patient;
+            }
         }
 
         $stmt = $pdo->prepare('INSERT INTO patients(first_name,last_name,contact_number,email) VALUES(?,?,?,?)');

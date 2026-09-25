@@ -109,15 +109,7 @@ section[id]{scroll-margin-top:110px;}
   align-items:center;
   gap:10px;
 }
-.eyebrow::before{
-  content:'';
-  width:22px;height:1px;
-  background:var(--gold);
-  display:inline-block;
-  flex-shrink:0;
-}
 .serif{font-family:'Fraunces',serif;}
-.serif-italic{font-family:'Fraunces',serif;font-style:italic;font-weight:400;}
 
 /* ===== WIDTH SYSTEM: maximize use of screen real estate ===== */
 .wrap{max-width:1760px;margin:0 auto;padding:0 64px;}
@@ -284,7 +276,7 @@ header.scrolled .nav-drop-trigger{color:var(--ink);}
   background:rgba(17,17,16,0.4);
   backdrop-filter:blur(6px);
   color:var(--ivory);
-  transition:all .25s var(--ease);
+  transition:background .25s var(--ease), border-color .25s var(--ease), color .25s var(--ease), transform .25s var(--ease);
   flex-shrink:0;
 }
 .nav-icon-btn svg{width:19px;height:19px;}
@@ -312,7 +304,7 @@ header.scrolled .nav-icon-btn:hover{border-color:var(--gold);color:var(--gold);b
   color:var(--ivory);
   appearance:none;-webkit-appearance:none;
   flex-shrink:0;
-  transition:all .25s var(--ease);
+  transition:background .25s var(--ease), border-color .25s var(--ease), color .25s var(--ease), transform .25s var(--ease);
 }
 .nav-toggle svg{width:20px;height:20px;display:block;}
 .nav-toggle:hover{border-color:var(--gold-soft);background:rgba(17,17,16,0.7);}
@@ -432,7 +424,7 @@ header.scrolled .nav-toggle:hover{border-color:var(--gold);background:var(--ivor
   overflow:hidden;
   background:
     linear-gradient(90deg, rgba(17,17,16,0.94) 0%, rgba(17,17,16,0.55) 45%, rgba(17,17,16,0.25) 100%),
-    url('../../../shared/images/hero welcome.JPG') center 30% / cover no-repeat;
+    url('../../../shared/images/hero welcome.jpg') center 30% / cover no-repeat;
 }
 .hero-texture{
   position:absolute;inset:0;
@@ -453,31 +445,39 @@ header.scrolled .nav-toggle:hover{border-color:var(--gold);background:var(--ivor
   width:55vw;height:55vw;max-width:700px;max-height:700px;
   border-color:rgba(216,189,145,0.12);
 }
-.hero-inner{position:relative;z-index:2;padding-bottom:44px;padding-top:210px;}
-.hero-copy{width:100%;}
+.hero-inner{
+  position:relative;
+  z-index:2;
+  width:min(1240px, 100%);
+  min-height:100vh;
+  min-height:100svh;
+  padding:clamp(96px, 12vh, 128px) 40px;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:flex-start;
+}
+.hero-copy{
+  width:min(760px, 68vw);
+  text-align:left;
+}
 .hero-greeting{
   font-family:'Fraunces',serif;
   font-weight:300;
   color:var(--ivory);
-  font-size:clamp(40px, 11vw, 104px);
-  line-height:0.98;
-  letter-spacing:-0.01em;
+  margin-top:14px;
+  font-size:clamp(52px, 5.4vw, 88px);
+  line-height:0.94;
+  letter-spacing:-0.025em;
 }
 .hero-greeting em{
   font-style:italic;
   color:var(--gold-soft);
   font-weight:400;
 }
-.hero-sub{
-  margin-top:26px;
-  max-width:1240px;
-  color:rgba(247,243,236,0.78);
-  font-size:18.5px;
-  line-height:1.65;
-}
 .hero-verse{
-  margin-top:18px;
-  max-width:1240px;
+  margin-top:24px;
+  max-width:620px;
   font-family:'Fraunces',serif;
   font-style:italic;
   font-weight:400;
@@ -486,13 +486,17 @@ header.scrolled .nav-toggle:hover{border-color:var(--gold);background:var(--ivor
   opacity:0.85;
 }
 .hero-cta-row{
-  margin-top:44px;
+  margin-top:34px;
   display:flex;
+  justify-content:flex-start;
   gap:16px;
   flex-wrap:wrap;
 }
 .hero-meta{
-  margin-top:96px;
+  position:absolute;
+  left:40px;
+  right:40px;
+  bottom:38px;
   display:flex;
   justify-content:space-between;
   align-items:flex-end;
@@ -505,6 +509,7 @@ header.scrolled .nav-toggle:hover{border-color:var(--gold);background:var(--ivor
   color:rgba(247,243,236,0.65);
   flex-wrap:wrap;
   gap:16px;
+  text-align:left;
 }
 
 /* ===== SMILE DIVIDER (signature element) ===== */
@@ -692,22 +697,6 @@ header.scrolled .nav-toggle:hover{border-color:var(--gold);background:var(--ivor
   border-radius:50%;
   background:var(--gold);
 }
-.doc-tag{
-  margin-top:26px;
-  margin-left:auto;
-  width:max-content;
-  background:var(--gold);
-  color:var(--dark-deep);
-  padding:15px 19px;
-  max-width:100%;
-  font-family:var(--font-ui);
-  font-size:11.5px;
-  letter-spacing:0.03em;
-  position:relative;
-  z-index:3;
-  border-radius:var(--r-sm);
-}
-
 /* ===== BANNER ===== */
 .banner{
   position:relative;
@@ -762,14 +751,6 @@ header.scrolled .nav-toggle:hover{border-color:var(--gold);background:var(--ivor
   transition:transform .7s var(--ease);
 }
 .banner-visual:hover img{transform:scale(1.045);}
-.banner-visual .placeholder-label{
-  font-family:var(--font-ui);
-  font-size:11px;
-  letter-spacing:0.08em;
-  text-transform:uppercase;
-  color:rgba(247,243,236,0.45);
-  text-align:center;
-}
 
 /* ===== GALLERY / SERVICES ===== */
 .gallery-section{padding:140px 0 110px;}
@@ -828,14 +809,6 @@ header.scrolled .nav-toggle:hover{border-color:var(--gold);background:var(--ivor
   position:absolute;inset:10px;
   background:
     repeating-linear-gradient(45deg, rgba(15,43,38,0.03) 0 2px, transparent 2px 14px);
-}
-.gimg .placeholder-label{
-  font-family:var(--font-ui);
-  font-size:10.5px;
-  letter-spacing:0.06em;
-  text-transform:uppercase;
-  color:rgba(15,43,38,0.6);
-  position:relative;z-index:2;
 }
 .gcaption{padding:24px 24px 28px;}
 .gcaption .num{
@@ -909,13 +882,15 @@ header.scrolled .nav-toggle:hover{border-color:var(--gold);background:var(--ivor
 
 /* ===== CTA ===== */
 .cta{
-  padding:150px 0;
+  padding:clamp(96px,8vw,122px) 0;
   background:var(--ivory);
 }
 .cta-grid{
   display:grid;
-  grid-template-columns:1.1fr 0.9fr;
-  gap:96px;
+  max-width:1480px;
+  margin:0 auto;
+  grid-template-columns:minmax(0,.88fr) minmax(0,1.12fr);
+  gap:clamp(48px,4.2vw,72px);
   align-items:center;
 }
 .cta-copy h2{
@@ -928,10 +903,62 @@ header.scrolled .nav-toggle:hover{border-color:var(--gold);background:var(--ivor
 }
 .cta-copy h2 em{color:var(--gold);font-style:italic;}
 .cta-copy p{
-  max-width:460px;
+  max-width:500px;
   color:rgba(18,32,28,0.65);
   font-size:16.5px;
 }
+.presentation-booking-copy,
+.cta-account-card{display:none;}
+.presentation-account-booking .legacy-booking-copy,
+.presentation-account-booking .cta-form-card--legacy{display:none;}
+.presentation-account-booking .presentation-booking-copy,
+.presentation-account-booking .cta-account-card{display:block;}
+.cta-account-card{
+  width:100%;
+  background:var(--ivory-2);
+  border:1px solid var(--line);
+  border-radius:var(--r-lg);
+  padding:34px 38px 30px;
+  box-shadow:var(--shadow-sm);
+}
+.cta-account-card-top{display:flex;align-items:center;gap:16px;}
+.cta-account-mark{
+  width:48px;height:48px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  color:var(--gold);background:rgba(199,184,118,0.14);
+  flex:0 0 auto;
+}
+.cta-account-mark svg{width:24px;height:24px;}
+.cta-account-kicker{
+  display:block;
+  font-family:var(--font-ui);
+  font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;
+  color:rgba(18,32,28,.55);margin-bottom:4px;
+}
+.cta-account-card h3{
+  font-family:'Fraunces',serif;
+  font-size:clamp(25px,2.5vw,32px);
+  font-weight:500;line-height:1.15;color:var(--dark);
+}
+.cta-account-intro{margin:20px 0 14px;color:rgba(18,32,28,.65);font-size:15px;line-height:1.65;}
+.cta-account-steps{list-style:none;margin:0;padding:0;border-top:1px solid var(--line);}
+.cta-account-steps li{
+  display:flex;align-items:flex-start;gap:13px;
+  padding:13px 0;border-bottom:1px solid var(--line);
+}
+.cta-account-steps span{
+  width:24px;height:24px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  flex:0 0 auto;margin-top:1px;
+  font-family:var(--font-ui);font-size:10px;font-weight:700;
+  color:var(--ivory);background:var(--dark);
+}
+.cta-account-steps strong{display:block;font-family:var(--font-ui);font-size:13px;color:var(--dark);}
+.cta-account-steps small{display:block;margin-top:3px;color:rgba(18,32,28,.6);font-size:12.5px;line-height:1.45;}
+.cta-account-card .btn{margin-top:20px;}
+.cta-account-signin{margin:13px 0 0;text-align:center;color:rgba(18,32,28,.62);font-size:13px;}
+.cta-account-signin a{color:var(--dark);font-weight:700;text-decoration-color:var(--gold);text-underline-offset:3px;}
+.cta-account-signin a:hover{color:var(--gold);}
 .cta-form-card{
   background:var(--ivory-2);
   border:1px solid var(--line);
@@ -1003,6 +1030,14 @@ header.scrolled .nav-toggle:hover{border-color:var(--gold);background:var(--ivor
   overflow:hidden;
   transition:border-color .25s ease, box-shadow .25s ease;
 }
+/* Recent Chromium versions animate <details> open/close natively through the
+   ::details-content pseudo-element (it ships with its own "transition: all"
+   by default). Our JS below already animates .faq-answer's height directly,
+   so the two transitions were running at once, and fighting for the same
+   open/close was the actual cause of the stutter/flicker/jump. Turning the
+   native one off leaves a single, smooth, JS-driven animation. Browsers that
+   don't support ::details-content simply ignore this rule. */
+.faq-item::details-content{transition:none;}
 .faq-item:hover{border-color:rgba(199,184,118,0.45);}
 .faq-item[open]{border-color:var(--gold-soft);box-shadow:0 8px 24px rgba(17,17,16,0.3);}
 .faq-item summary{
@@ -1158,7 +1193,7 @@ header.scrolled .nav-toggle:hover{border-color:var(--gold);background:var(--ivor
   width:74%;
 }
 /* Solo mode (a filtered category with only one photo) makes the featured
-   card wider, so it needs its own, shorter box to match — this ratio is
+   card wider, so it needs its own, shorter box to match; this ratio is
    independent of screen width since it's a straight proportion. */
 .carousel-stage.is-solo{
   aspect-ratio:1.95/1;
@@ -1622,7 +1657,6 @@ header.scrolled .nav-toggle:hover{border-color:var(--gold);background:var(--ivor
   overflow:hidden;
 }
 .about-hero .eyebrow{color:var(--gold-soft);}
-.about-hero .eyebrow::before{background:var(--gold-soft);}
 /* Gallery page: the filter bar follows the hero, so the hero can be tighter. */
 .gallery-hero{padding-bottom:120px;}
 .about-hero h1{
@@ -1665,7 +1699,6 @@ header.scrolled .nav-toggle:hover{border-color:var(--gold);background:var(--ivor
   letter-spacing:-0.02em;
 }
 .dentist-hero .eyebrow{color:var(--gold-soft);}
-.dentist-hero .eyebrow::before{background:var(--gold-soft);}
 .dentist-hero h1{
   font-family:'Fraunces',serif;
   font-weight:300;
@@ -1695,13 +1728,6 @@ header.scrolled .nav-toggle:hover{border-color:var(--gold);background:var(--ivor
 .about-section.alt{background:var(--ivory-2);}
 .about-grid{display:grid;grid-template-columns:0.9fr 1.1fr;gap:90px;align-items:start;}
 .about-grid .body p{color:rgba(18,32,28,0.68);font-size:16px;margin-bottom:18px;max-width:560px;}
-.about-history-photo{
-  width:100%;
-  aspect-ratio:16/11;
-  object-fit:cover;
-  border-radius:var(--r-lg);
-  margin-top:34px;
-}
 .about-collage{
   display:grid;
   grid-template-columns:1fr 1fr;
@@ -1788,10 +1814,6 @@ header.scrolled .nav-toggle:hover{border-color:var(--gold);background:var(--ivor
   align-items:center;
   justify-content:center;
   position:relative;
-}
-.team-photo .placeholder-label{
-  font-family:var(--font-ui);font-size:11px;letter-spacing:0.08em;text-transform:uppercase;
-  color:rgba(247,243,236,0.4);text-align:center;padding:0 30px;
 }
 .team-mono{
   font-family:'Fraunces',serif;
@@ -1946,7 +1968,7 @@ header.scrolled .nav-toggle:hover{border-color:var(--gold);background:var(--ivor
   transition:transform 0.8s cubic-bezier(0.25,0.46,0.45,0.94);
   /* Forces its own GPU compositing layer. Without this, this image
      sometimes loads and positions correctly (confirmed via computed
-     styles) but never actually gets painted on screen — a known
+     styles) but never actually gets painted on screen; a known
      Chromium quirk with absolutely-positioned cover images inside an
      aspect-ratio + overflow:hidden + border-radius parent. A transform
      nudges the compositor into repainting it properly every time. */
@@ -1955,10 +1977,6 @@ header.scrolled .nav-toggle:hover{border-color:var(--gold);background:var(--ivor
 }
 .dentist-photo:hover img{
   transform:translateZ(0) scale(1.03);
-}
-.dentist-photo .placeholder-label{
-  font-family:var(--font-ui);font-size:11px;letter-spacing:0.08em;text-transform:uppercase;
-  color:rgba(247,243,236,0.4);text-align:center;padding:0 30px;
 }
 .dentist-name{
   font-family:'Fraunces',serif;
@@ -2025,7 +2043,7 @@ header.scrolled .nav-toggle:hover{border-color:var(--gold);background:var(--ivor
   font-size:13px;
   color:var(--dark);
   font-weight:500;
-  transition:all 0.3s ease;
+  transition:background .3s ease, border-color .3s ease, color .3s ease, transform .3s ease;
 }
 .expertise-tag:hover{
   background:var(--gold);
@@ -2119,7 +2137,7 @@ footer{
   border-radius:50%;
   display:flex;align-items:center;justify-content:center;
   color:var(--ivory);
-  transition:all .25s ease;
+  transition:background .25s ease, border-color .25s ease, color .25s ease, transform .25s ease, box-shadow .25s ease;
 }
 .social-btn svg{width:18px;height:18px;}
 .social-btn:hover{background:var(--gold);border-color:var(--gold);color:var(--dark-deep);transform:translateY(-2px);box-shadow:var(--shadow-gold);}
@@ -2148,13 +2166,25 @@ footer{
   .logo img{height:42px;}
   header.scrolled .logo img{height:38px;}
   /* Compact the hero so the CTA sits above the fold on short phones. */
-  .hero-inner{padding-top:120px;padding-bottom:28px;}
-  .hero-meta{margin-top:48px;}
-  .hero-sub{font-size:16.5px;}
+  .hero-inner{
+    width:100%;
+    min-height:100svh;
+    padding:96px 22px 36px;
+    justify-content:center;
+  }
+  .hero-copy{width:100%;}
+  .hero-greeting{font-size:clamp(46px,14vw,68px);}
+  .hero-meta{
+    position:static;
+    width:100%;
+    margin-top:42px;
+    padding-top:18px;
+    text-align:left;
+  }
 }
 @media (max-width:1150px){
-  .cta-grid{grid-template-columns:1fr;gap:56px;}
-  .cta-form-card{width:100%;max-width:760px;justify-self:center;}
+  .cta-grid{grid-template-columns:1fr;gap:42px;}
+  .cta-form-card,.cta-account-card{width:100%;max-width:760px;justify-self:center;}
   .banner-grid{grid-template-columns:1fr;gap:56px;}
   .banner-visual{aspect-ratio:16/9;max-width:560px;}
   .visit-grid{grid-template-columns:1fr;}
@@ -2244,7 +2274,7 @@ footer{
   .gallery-grid,.mvv-grid,.values-list,.team-grid{grid-template-columns:1fr;}
   .team-grid.recep-grid{grid-template-columns:1fr;}
   .tooth-item{width:190px;}
-  .cta-form-card{padding:30px 24px;}
+  .cta-form-card,.cta-account-card{padding:30px 24px;}
   .cta-form-fields{grid-template-columns:1fr;column-gap:0;}
   .cta-form-fields .field-full{grid-column:auto;}
 

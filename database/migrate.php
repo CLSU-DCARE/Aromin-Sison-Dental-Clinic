@@ -76,21 +76,6 @@ function template_bodies_exclude_contact_details(PDO $pdo, array $keys): bool
     return (int) $stmt->fetchColumn() === 0;
 }
 
-function seed_dentist_passwords_are_current(PDO $pdo): bool
-{
-    $stmt = $pdo->prepare(
-        'SELECT COUNT(*) FROM users WHERE '
-        . '(email = ? AND password_hash = ?) OR (email = ? AND password_hash = ?)'
-    );
-    $stmt->execute([
-        'arsenia.aromin@arominsison.local',
-        '$2y$10$XZufABQCw6oroU/Kfkcu2OjRDf/Sjxihczayedp7WOyAkwxYSlCma',
-        'kathrine.sison@arominsison.local',
-        '$2y$10$XZufABQCw6oroU/Kfkcu2OjRDf/Sjxihczayedp7WOyAkwxYSlCma',
-    ]);
-    return (int) $stmt->fetchColumn() === 2;
-}
-
 const APPOINTMENT_TEMPLATE_KEYS = [
     'appointment_request_submitted_patient', 'appointment_request_submitted_staff',
     'appointment_confirmed_patient', 'appointment_confirmed_staff',
@@ -124,7 +109,6 @@ function migration_already_present(PDO $pdo, string $name): bool
         '009_promotion_images_dates.sql' => has_columns($pdo, 'promotions', ['image_path', 'start_date', 'end_date']),
         '010_patient_archival.sql' => has_columns($pdo, 'patients', ['archived_at', 'archived_by', 'retention_note']),
         '011_remove_sms_notifications.sql' => column_type($pdo, 'notification_templates', 'channel') === "enum('email')",
-        '012_rotate_seed_dentist_passwords.sql' => seed_dentist_passwords_are_current($pdo),
         '013_appointment_audience_templates.sql' => template_keys_exist($pdo, APPOINTMENT_TEMPLATE_KEYS),
         '014_billing_audience_templates.sql' => template_keys_exist($pdo, BILLING_TEMPLATE_KEYS),
         '015_deactivate_redundant_email_templates.sql' => template_keys_are_inactive($pdo, LEGACY_TEMPLATE_KEYS),
@@ -132,6 +116,9 @@ function migration_already_present(PDO $pdo, string $name): bool
         '017_user_profile_pictures.sql' => has_columns($pdo, 'users', ['profile_image_path']),
         '019_general_treatment_billing.sql' => table_exists($pdo, 'treatment_bills') && table_exists($pdo, 'treatment_payments'),
         '023_add_appointment_id_to_notification_logs.sql' => has_columns($pdo, 'notification_logs', ['appointment_id']),
+        '025_shared_staff_accounts_and_dentists.sql' => table_exists($pdo, 'dentists')
+            && (int) $pdo->query("SELECT COUNT(*) FROM users WHERE is_active=1 AND ((role='dentist' AND email<>'dentist@arominsison.com') OR (role='receptionist' AND email<>'receptionist@arominsison.com'))")->fetchColumn() === 0
+            && (int) $pdo->query("SELECT COUNT(*) FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME IN ('appointments','appointment_requests','treatment_records','braces_contracts') AND REFERENCED_TABLE_NAME='dentists'")->fetchColumn() >= 4,
         default => false,
     };
 }
@@ -156,6 +143,20 @@ foreach ($files as $path) {
     }
 
     try {
+        if ($name === '025_shared_staff_accounts_and_dentists.sql') {
+            $foreignKeys = $pdo->query(
+                "SELECT TABLE_NAME, CONSTRAINT_NAME FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE
+                 WHERE TABLE_SCHEMA=DATABASE()
+                   AND TABLE_NAME IN ('appointments','appointment_requests','treatment_records','braces_contracts')
+                   AND REFERENCED_TABLE_NAME='users'
+                   AND COLUMN_NAME IN ('dentist_id','preferred_dentist_id')"
+            )->fetchAll();
+            foreach ($foreignKeys as $foreignKey) {
+                $table = preg_replace('/[^a-zA-Z0-9_]/', '', $foreignKey['TABLE_NAME']);
+                $constraint = preg_replace('/[^a-zA-Z0-9_]/', '', $foreignKey['CONSTRAINT_NAME']);
+                $pdo->exec("ALTER TABLE `{$table}` DROP FOREIGN KEY `{$constraint}`");
+            }
+        }
         $pdo->exec($sql);
         $stmt = $pdo->prepare('INSERT INTO schema_migrations (migration) VALUES (?)');
         $stmt->execute([$name]);

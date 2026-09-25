@@ -48,35 +48,42 @@ class RateLimiter
     {
         try {
             $pdo = Database::pdo();
-            
-            // Atomic upsert: increment attempts, set lockout if threshold reached
+
+            // Atomic upsert. Three cases for an existing row:
+            //  1. Still locked out            -> leave attempts and the lockout alone.
+            //  2. Window has expired          -> this is a fresh start: attempts = 1, no lockout.
+            //  3. Still inside a live window  -> one more attempt; lock out once maxAttempts is hit.
+            // (Case 2 is the fix: before, once a key had ever been locked out, a single
+            //  attempt any time later would immediately lock it out again, forever.)
             $stmt = $pdo->prepare(
                 'INSERT INTO rate_limits (identifier, attempts, lockout_until, window_started_at)
                  VALUES (?, 1, NULL, NOW())
                  ON DUPLICATE KEY UPDATE
-                     attempts = IF(
-                         lockout_until IS NOT NULL AND lockout_until > NOW(),
-                         attempts,
-                         CASE
-                             WHEN attempts + 1 >= ? THEN attempts + 1
-                             ELSE attempts + 1
-                         END
-                     ),
-                     lockout_until = IF(
-                         lockout_until IS NOT NULL AND lockout_until > NOW(),
-                         lockout_until,
-                         CASE
-                             WHEN attempts + 1 >= ? THEN DATE_ADD(NOW(), INTERVAL ? SECOND)
-                             ELSE NULL
-                         END
-                     ),
-                     window_started_at = IF(
-                         window_started_at < DATE_SUB(NOW(), INTERVAL ? SECOND),
-                         NOW(),
-                         window_started_at
-                     )'
+                     attempts = CASE
+                         WHEN lockout_until IS NOT NULL AND lockout_until > NOW()
+                             THEN attempts
+                         WHEN window_started_at IS NULL OR window_started_at <= DATE_SUB(NOW(), INTERVAL ? SECOND)
+                             THEN 1
+                         ELSE attempts + 1
+                     END,
+                     lockout_until = CASE
+                         WHEN lockout_until IS NOT NULL AND lockout_until > NOW()
+                             THEN lockout_until
+                         WHEN window_started_at IS NULL OR window_started_at <= DATE_SUB(NOW(), INTERVAL ? SECOND)
+                             THEN NULL
+                         WHEN attempts + 1 >= ?
+                             THEN DATE_ADD(NOW(), INTERVAL ? SECOND)
+                         ELSE NULL
+                     END,
+                     window_started_at = CASE
+                         WHEN lockout_until IS NOT NULL AND lockout_until > NOW()
+                             THEN window_started_at
+                         WHEN window_started_at IS NULL OR window_started_at <= DATE_SUB(NOW(), INTERVAL ? SECOND)
+                             THEN NOW()
+                         ELSE window_started_at
+                     END'
             );
-            $stmt->execute([$key, $maxAttempts, $maxAttempts, $windowSeconds, $windowSeconds]);
+            $stmt->execute([$key, $windowSeconds, $windowSeconds, $maxAttempts, $windowSeconds, $windowSeconds]);
         } catch (\Throwable $e) {
             // Fallback to session-only on DB error
             self::sessionRecord($key, $maxAttempts, $windowSeconds);

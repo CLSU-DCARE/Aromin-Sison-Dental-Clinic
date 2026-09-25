@@ -10,9 +10,6 @@ const FORCE_STATE = new URLSearchParams(location.search).get('state');
 function eyeIcon() {
   return '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>';
 }
-function eyeOffIcon() {
-  return '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a21.6 21.6 0 0 1 5.06-6.06M9.9 4.24A10.4 10.4 0 0 1 12 4c7 0 11 8 11 8a21.7 21.7 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
-}
 
 function initPasswordToggles() { ASDC.PasswordToggle.init(); }
 function showAlert(message) { ASDC.AlertManager.show(message); }
@@ -24,11 +21,9 @@ function validateField(input) { return ASDC.FormValidator.validateField(input); 
 function validateForm(form) { return ASDC.FormValidator.validateForm(form); }
 function initLiveValidation() { ASDC.FormValidator.initLiveValidation(); }
 
-function readJsonResponse(response) { return ASDC.AuthApiClient.readJson(response); }
 function fetchWithTimeout(url, options, timeoutMs) { return ASDC.AuthApiClient.fetchWithTimeout(url, options, timeoutMs); }
 function loginErrorMessage(response, payload) { return ASDC.AuthApiClient.loginError(response, payload); }
 
-const AUTH_ENDPOINTS = ASDC.AuthApiClient.endpoints;
 const ROLE_DESTINATIONS = ASDC.AuthApiClient.roleDestinations;
 
 function clearExpiredSessionNotice() {
@@ -63,12 +58,14 @@ function initLoginForm(form) {
     setLoading(btn, true);
 
     const data = new FormData(form);
-    const email = String(data.get('email') || '').trim();
+    const identifier = String(data.get('identifier') || '').trim();
     const password = String(data.get('password') || '');
 
     try {
       clearExpiredSessionNotice();
-      const { response: loginResponse, payload: loginPayload } = await ASDC.AuthApiClient.login(email, password);
+      // "Remember me" checkbox (only on the login form)
+      const rememberMe = data.get('remember') !== null;
+      const { response: loginResponse, payload: loginPayload } = await ASDC.AuthApiClient.login(identifier, password, rememberMe);
       if (!loginResponse.ok) {
         try {
           sessionStorage.removeItem('asdc:login-submitting');
@@ -98,6 +95,8 @@ function initLoginForm(form) {
         return;
       }
 
+      // Tell other open tabs that someone just signed in
+      ASDC.AuthApiClient.announceLogin();
       window.location.replace(destination);
     } catch (error) {
       try {
@@ -111,7 +110,7 @@ function initLoginForm(form) {
 }
 
 // =====================================================================
-// REUSABLE MODAL — ASDC.Modal (from shared core)
+// REUSABLE MODAL - ASDC.Modal (from shared core)
 // =====================================================================
 function setupModal(modalId, triggerIds = [], closeIds = []) {
   const modal = new ASDC.Modal(modalId);
@@ -186,7 +185,7 @@ function wireResetPasswordForm(form) {
 }
 
 // =====================================================================
-// AUTHENTICATED-USER GUARD — ASDC.AuthPageGuard
+// AUTHENTICATED-USER GUARD - ASDC.AuthPageGuard
 // =====================================================================
 function guardAuthPages() { ASDC.AuthPageGuard.init(); }
 

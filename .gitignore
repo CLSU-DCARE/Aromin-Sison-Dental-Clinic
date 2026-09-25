@@ -19,3 +19,9 @@ backend/uploads/receipts/*
 # uploaded profile pictures
 backend/uploads/profiles/*
 !backend/uploads/profiles/.gitignore
+
+# uploaded promotion images
+backend/uploads/promotions/*
+!backend/uploads/promotions/.gitignore
+
+.vercel

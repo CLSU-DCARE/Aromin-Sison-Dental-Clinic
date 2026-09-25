@@ -3,19 +3,23 @@
 
 <html lang="en">
 <head>
+  <base href="/public-website/">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Aromin-Sison Dental Clinic | Where Beautiful Smiles Are Made</title>
+<link rel="icon" type="image/png" href="../shared/images/favicon/asdc-wordmark-favicon.png">
+<link rel="apple-touch-icon" href="../shared/images/favicon/asdc-wordmark-favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;1,9..144,400&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-<link rel="preload" as="image" href="../shared/images/hero welcome.JPG">
+<link rel="preload" as="image" href="../shared/images/hero welcome.jpg">
 <link rel="stylesheet" href="../shared/css/variables.css?v=4">
 <link rel="stylesheet" href="../shared/css/buttons.css?v=5">
-<link rel="stylesheet" href="assets/css/main.css?v=41">
+<link rel="stylesheet" href="assets/css/main.css?v=42">
 <link rel="stylesheet" href="../shared/css/performance.css?v=2">
 </head>
-<body>
+<!-- Presentation-only switch: remove presentation-account-booking to restore the public form. -->
+<body class="presentation-account-booking">
 
 <!-- Entrance cover: a dark panel with the gold smile band at its top
      edge covers the screen on load, then rises away to reveal the hero.
@@ -48,19 +52,19 @@
 
 <header id="siteHeader">
   <nav class="wrap">
-    <a href="index.html" class="logo"><img src="../shared/images/asdc logo.png" alt="Aromin-Sison Dental Clinic"></a>
+    <a href="/" class="logo"><img src="../shared/images/asdc logo.png" alt="Aromin-Sison Dental Clinic"></a>
     <ul class="nav-links">
-      <li><a href="index.html" aria-current="page">Home</a></li>
+      <li><a href="/" aria-current="page">Home</a></li>
       <li class="nav-drop">
         <button class="nav-drop-trigger" aria-expanded="false" aria-haspopup="true">Our Story <i class="bi bi-arrow-down-right chevron"></i></button>
         <div class="nav-drop-panel">
-          <a href="about.html">About the Clinic</a>
-          <a href="about.html#mission">Mission &amp; Vision</a>
+          <a href="/about">About the Clinic</a>
+          <a href="/about#mission">Mission &amp; Vision</a>
         </div>
       </li>
-      <li><a href="dentist.html">Dentists</a></li>
-      <li><a href="services.html">Services</a></li>
-      <li><a href="gallery.html">Gallery</a></li>
+      <li><a href="/dentists">Dentists</a></li>
+      <li><a href="/services">Services</a></li>
+      <li><a href="/gallery">Gallery</a></li>
       <li><a href="#visit">Visit Us</a></li>
       <li><a href="#faq">FAQ</a></li>
     </ul>
@@ -81,17 +85,17 @@
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
   </button>
   <div class="mobile-menu-links">
-    <a href="index.html">Home</a>
+    <a href="/">Home</a>
     <details class="mobile-nav-group">
       <summary>Our Story <i class="bi bi-arrow-down-right chevron"></i></summary>
       <div class="mobile-nav-sub">
-        <a href="about.html">About the Clinic</a>
-        <a href="about.html#mission">Mission &amp; Vision</a>
+        <a href="/about">About the Clinic</a>
+        <a href="/about#mission">Mission &amp; Vision</a>
       </div>
     </details>
-    <a href="dentist.html">Dentists</a>
-    <a href="services.html">Services</a>
-    <a href="gallery.html">Gallery</a>
+    <a href="/dentists">Dentists</a>
+    <a href="/services">Services</a>
+    <a href="/gallery">Gallery</a>
     <a href="#visit">Visit Us</a>
     <a href="#faq">FAQ</a>
   </div>
@@ -113,8 +117,7 @@
     <div class="hero-copy">
       <div class="eyebrow" style="color:var(--gold-soft)">Aromin-Sison Dental Clinic</div>
       <h1 class="hero-greeting">Kumusta,<br>ngiti <em>ka</em> na.</h1>
-      <p class="hero-sub">General &amp; cosmetic dentistry in the heart of Muñoz, Nueva Ecija — where world-class science meets family warmth. Every treatment starts with a conversation, so you leave understanding your smile better.</p>
-      <p class="hero-verse">"The Lord is righteous in all his ways and faithful in all he does." — Psalm 145:17</p>
+      <p class="hero-verse">"The Lord is righteous in all his ways and faithful in all he does." Psalm 145:17</p>
       <div class="hero-cta-row">
         <a href="#book" class="btn btn-gold">Book Appointment</a>
         <a href="#story" class="btn btn-outline-light">Our Story ↓</a>
@@ -175,8 +178,8 @@
       <div class="spotlight-divider"></div>
       <p class="spotlight-quote">"We don't think of a smile as a procedure. It's a quiet, everyday kind of confidence, and building it is the closest thing we know to craftsmanship."</p>
       <div class="spotlight-btns">
-        <a href="dentist.html" class="btn btn-gold">Meet the Dentists</a>
-        <a href="about.html" class="btn btn-outline-light">Read Our Story</a>
+        <a href="/dentists" class="btn btn-gold">Meet the Dentists</a>
+        <a href="/about" class="btn btn-outline-light">Read Our Story</a>
       </div>
       <div class="spotlight-meta">
         <span class="meta-item">Est. 1985</span>
@@ -200,7 +203,7 @@
       <a href="#visit" class="btn btn-gold">Plan Your Visit</a>
     </div>
     <div class="banner-visual">
-      <img src="../shared/images/first class.JPG" alt="Inside the Aromin-Sison Dental Clinic" loading="lazy">
+      <img src="../shared/images/first class.jpg" alt="Inside the Aromin-Sison Dental Clinic" loading="lazy">
     </div>
   </div>
 </section>
@@ -214,7 +217,7 @@
   <div class="wrap">
     <div class="gallery-grid">
       <div class="gcard">
-        <div class="gimg" style="background-image:url('../shared/images/the welcome.JPG');background-size:cover;background-position:center;"></div>
+        <div class="gimg" style="background-image:url('../shared/images/the welcome.jpg');background-size:cover;background-position:center;"></div>
         <div class="gcaption">
           <div class="num">01: Hospitality</div>
           <h3>The Welcome</h3>
@@ -222,7 +225,7 @@
         </div>
       </div>
       <div class="gcard">
-        <div class="gimg" style="background-image:url('../shared/images/the studio.JPG');background-size:cover;background-position:center;"></div>
+        <div class="gimg" style="background-image:url('../shared/images/the studio.jpg');background-size:cover;background-position:center;"></div>
         <div class="gcaption">
           <div class="num">02: Craft</div>
           <h3>The Studio</h3>
@@ -230,7 +233,7 @@
         </div>
       </div>
       <div class="gcard">
-        <div class="gimg" style="background-image:url('../shared/images/the technology.JPG');background-size:cover;background-position:center;"></div>
+        <div class="gimg" style="background-image:url('../shared/images/the technology.jpg');background-size:cover;background-position:center;"></div>
         <div class="gcaption">
           <div class="num">03: Precision</div>
           <h3>The Technology</h3>
@@ -239,7 +242,7 @@
       </div>
     </div>
     <div style="text-align:center;margin-top:40px;">
-      <a href="services.html" class="btn btn-outline-dark">See All Services</a>
+      <a href="/services" class="btn btn-outline-dark">See All Services</a>
     </div>
   </div>
 </section>
@@ -295,17 +298,37 @@
     <div class="cta-copy">
       <div class="eyebrow">Chapter Five: Begin</div>
       <h2>The next chapter<br>is <em>yours.</em></h2>
-      <p>Book a consultation at the clinic. Our team will confirm within the hour.</p>
+      <p class="legacy-booking-copy">Book a consultation at the clinic. Our team will confirm within the hour.</p>
+      <p class="presentation-booking-copy">Create your patient account, request the time that works for you, and let our receptionist confirm the details.</p>
     </div>
-    <form class="cta-form-card" id="ctaForm">
+    <div class="cta-account-card" aria-labelledby="accountBookingTitle">
+      <div class="cta-account-card-top">
+        <span class="cta-account-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/><path d="M19 8v6M16 11h6"/></svg>
+        </span>
+        <div>
+          <span class="cta-account-kicker">Patient Portal</span>
+          <h3 id="accountBookingTitle">Ready to book your visit?</h3>
+        </div>
+      </div>
+      <p class="cta-account-intro">An account keeps your appointment request, clinic updates, and visit details in one secure place.</p>
+      <ol class="cta-account-steps">
+        <li><span>1</span><div><strong>Create your account</strong><small>Register your patient details in a few minutes.</small></div></li>
+        <li><span>2</span><div><strong>Request an appointment</strong><small>Choose your service, preferred dentist, date, and time.</small></div></li>
+        <li><span>3</span><div><strong>Receive confirmation</strong><small>Our receptionist reviews and approves your request.</small></div></li>
+      </ol>
+      <a href="../auth/patient-signup.html" class="btn btn-gold btn-lg btn-block">Create an Account / Book an Appointment <span aria-hidden="true">→</span></a>
+      <p class="cta-account-signin">Already have an account? <a href="../auth/login.html">Sign in</a></p>
+    </div>
+    <form class="cta-form-card cta-form-card--legacy" id="ctaForm">
       <div class="cta-form-fields">
-        <div class="field"><label for="ctaFirstName">First Name</label><input type="text" id="ctaFirstName" maxlength="100" required></div>
-        <div class="field"><label for="ctaLastName">Last Name</label><input type="text" id="ctaLastName" maxlength="100" required></div>
-        <div class="field"><label for="ctaEmail">Email (optional)</label><input type="email" id="ctaEmail" maxlength="150"></div>
-        <div class="field"><label for="ctaContact">Contact Number</label><input type="tel" id="ctaContact" maxlength="20" required></div>
+        <div class="field"><label for="ctaFirstName">First Name</label><input type="text" id="ctaFirstName" name="first_name" maxlength="100" autocomplete="given-name" required></div>
+        <div class="field"><label for="ctaLastName">Last Name</label><input type="text" id="ctaLastName" name="last_name" maxlength="100" autocomplete="family-name" required></div>
+        <div class="field"><label for="ctaEmail">Email (optional)</label><input type="email" id="ctaEmail" name="email" maxlength="150" autocomplete="email" spellcheck="false"></div>
+        <div class="field"><label for="ctaContact">Contact Number</label><input type="tel" id="ctaContact" name="contact_number" maxlength="20" autocomplete="tel" inputmode="tel" required></div>
         <div class="field field-full">
           <label for="ctaService">Service</label>
-          <select id="ctaService">
+          <select id="ctaService" name="service_type" required>
             <option>Consultation</option>
             <option>Cleaning &amp; Check-up</option>
             <option>Braces Adjustment</option>
@@ -314,9 +337,9 @@
         </div>
         <div class="field">
           <label for="ctaDate">Preferred Date</label>
-          <input type="date" id="ctaDate">
+          <input type="date" id="ctaDate" name="requested_date" required>
         </div>
-        <div class="field"><label for="ctaTime">Preferred Time</label><input type="time" id="ctaTime" required></div>
+        <div class="field"><label for="ctaTime">Preferred Time</label><input type="time" id="ctaTime" name="requested_time" required></div>
       </div>
       <button type="submit" id="ctaSubmit" class="btn btn-gold btn-lg btn-block">
         <span class="btn-label">Book Appointment →</span>
@@ -394,7 +417,10 @@
             <svg class="icon-minus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>
           </span>
         </summary>
-        <div class="faq-answer">Use the booking form above, or log in to your patient account to choose a service, dentist, and time slot. If your preferred slot isn't available, you'll be guided to pick another date and time.</div>
+        <div class="faq-answer">
+          <span class="legacy-booking-copy">Use the booking form above, or log in to your patient account to choose a service, dentist, and time slot. If your preferred slot isn't available, you'll be guided to pick another date and time.</span>
+          <span class="presentation-booking-copy">Create a patient account first, then sign in to request your preferred service, dentist, date, and time. Our receptionist will review your request and send confirmation once it is approved.</span>
+        </div>
       </details>
       <details class="faq-item">
         <summary>
@@ -462,20 +488,18 @@
         <img src="../shared/images/asdc logo.png" alt="Aromin-Sison Dental Clinic" style="max-width:100%;width:min(100%,260px);height:auto;margin-bottom:14px;filter:brightness(0) invert(1);">
         <p class="foot-tag">Where beautiful smiles are made, one honest conversation at a time.</p>
         <div class="foot-socials">
-          <a href="#" class="social-btn" title="Instagram"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg></a>
           <a href="https://www.facebook.com/profile.php?id=100054534306794" class="social-btn" title="Facebook" target="_blank"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg></a>
-          <a href="#" class="social-btn" title="YouTube"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z"/><polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"/></svg></a>
         </div>
       </div>
       <div class="foot-col">
         <h4>Explore</h4>
         <a href="#story">Our Story</a>
-        <a href="services.html">Services</a>
+        <a href="/services">Services</a>
         <a href="#visit">Visit Us</a>
       </div>
       <div class="foot-col">
         <h4>Support</h4>
-        <a href="about.html">About</a>
+        <a href="/about">About</a>
         <a href="#visit">Contact</a>
         <a href="#faq">FAQs</a>
       </div>

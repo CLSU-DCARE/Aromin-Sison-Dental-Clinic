@@ -204,13 +204,11 @@ button:active{transform:scale(.97);}
   letter-spacing:-0.015em;line-height:1.15;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
-.topbar-desc{display:none;}
 .topbar-right{display:flex;align-items:center;gap:14px;}
 .icon-btn{width:42px;height:42px;border-radius:50%;border:1px solid var(--glass-border);background:rgba(255,255,255,0.55);-webkit-backdrop-filter:var(--glass-blur);backdrop-filter:var(--glass-blur);display:flex;align-items:center;justify-content:center;color:var(--dark);position:relative;transition:background .2s ease, border-color .2s ease, color .2s ease;flex-shrink:0;}
 .icon-btn:hover{background:rgba(255,255,255,0.92);border-color:rgba(156,139,62,0.45);color:var(--gold);}
 .icon-btn:active{transform:scale(.94);}
 .icon-btn svg{width:18px;height:18px;}
-.badge-dot{position:absolute;top:8px;right:9px;width:7px;height:7px;border-radius:50%;background:var(--red);border:1.5px solid var(--white);}
 /* Minimal profile button: a small circular avatar with the user's
    initials only; opens the account menu popover. */
 .user-chip{
@@ -237,7 +235,6 @@ button:active{transform:scale(.97);}
 .panel-gap{margin-bottom:20px;}
 .panel-pad{padding:22px;}
 .field-val{border:none;padding:2px 0;}
-.field-row{display:flex;justify-content:space-between;margin-top:8px;font-size:12px;color:rgba(27,27,25,0.55);}
 
 .eyebrow{font-family:var(--font-ui);font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--gold-text);display:flex;align-items:center;gap:8px;margin-bottom:8px;}
 .page-head{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:32px;flex-wrap:wrap;gap:16px;}
@@ -490,48 +487,6 @@ tbody tr:hover{background:rgba(241,237,227,0.5);}
   border-bottom:none;
 }
 .timeline-item:last-child{padding-bottom:0;}
-.treatment-card{align-items:flex-start;}
-.tl-dot{
-  width:24px;
-  height:24px;
-  border-radius:50%;
-  background:var(--gold);
-  border:7px solid rgba(241,237,227,0.95);
-  box-shadow:0 0 0 1px rgba(156,139,62,0.18);
-  margin-top:2px;
-  flex-shrink:0;
-  position:relative;
-  z-index:1;
-}
-.tl-dot.muted{background:rgba(27,27,25,0.24);box-shadow:0 0 0 1px rgba(27,27,25,0.1);}
-.treatment-copy{min-width:0;flex:1;}
-.tl-title{
-  font-weight:700;
-  font-size:15.5px;
-  line-height:1.3;
-  color:var(--ink);
-}
-.tl-meta{
-  font-size:13px;
-  color:rgba(27,27,25,0.62);
-  margin-top:5px;
-}
-.treatment-notes{
-  margin-top:14px;
-  padding:14px 16px;
-  border:1px solid rgba(27,27,25,0.09);
-  border-left:3px solid rgba(156,139,62,0.42);
-  border-radius:var(--r-sm);
-  background:linear-gradient(135deg,rgba(250,248,242,0.88),rgba(255,255,255,0.78));
-}
-.treatment-notes p{
-  margin:0;
-  font-size:13px;
-  line-height:1.55;
-  color:rgba(27,27,25,0.72);
-  overflow-wrap:anywhere;
-}
-.treatment-notes p + p{margin-top:6px;}
 
 /* ===== BRACES CONTRACT ===== */
 .braces-overview{
@@ -633,9 +588,6 @@ tbody tr:hover{background:rgba(241,237,227,0.5);}
 
 /* ===== PAYMENTS (Make a Payment + Submissions) ===== */
 .billing-grid{display:grid;grid-template-columns:minmax(280px, 0.9fr) minmax(340px, 1.1fr);gap:20px;align-items:start;}
-.pay-layout{display:grid;grid-template-columns:300px 1fr;gap:26px;padding:24px;}
-.pay-qr{display:flex;flex-direction:column;gap:18px;}
-.pay-qr img{width:100%;max-width:260px;border:1px solid var(--line);border-radius:var(--r-md);padding:12px;background:#fff;align-self:center;}
 .billing-details{
   margin:24px;
   padding:22px;
@@ -666,10 +618,6 @@ tbody tr:hover{background:rgba(241,237,227,0.5);}
 .billing-row span{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:rgba(27,27,25,0.58);}
 .billing-row strong{font-size:17px;font-weight:700;color:var(--ink);text-align:right;letter-spacing:.01em;}
 .billing-note{font-size:13px;color:rgba(27,27,25,0.66);line-height:1.6;margin-top:18px;}
-.pay-bank{display:flex;flex-direction:column;gap:9px;}
-.bank-row{display:flex;justify-content:space-between;gap:12px;font-size:12.5px;border-bottom:1px dashed var(--line);padding-bottom:8px;}
-.bank-row span{color:rgba(27,27,25,0.65);}
-.bank-row b{font-weight:600;text-align:right;}
 .pay-form{display:flex;flex-direction:column;}
 .pay-form textarea{
   width:100%;min-height:58px;padding:11px 14px;border:1px solid var(--line);border-radius:var(--r-md);
@@ -693,7 +641,6 @@ tbody tr:hover{background:rgba(241,237,227,0.5);}
 .receipt-thumb span{padding:5px;font-size:9px;line-height:1.15;text-align:center;color:rgba(27,27,25,0.5);}
 .receipt-preview-meta{display:flex;align-items:center;justify-content:space-between;gap:12px;flex:1;min-width:0;}
 .receipt-preview-meta span{font-size:13px;color:rgba(27,27,25,0.72);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.upload-preview .rec-name{flex:1;font-size:13px;color:rgba(27,27,25,0.7);word-break:break-all;}
 .pay-hint{font-size:12px;color:rgba(27,27,25,0.65);margin-top:12px;text-align:center;line-height:1.5;}
 .pay-hint b{color:var(--amber-text);}
 .pay-subs{display:flex;flex-direction:column;}
@@ -708,8 +655,6 @@ tbody tr:hover{background:rgba(241,237,227,0.5);}
 
 @media (max-width:760px){
   .billing-grid{grid-template-columns:1fr;}
-  .pay-layout{grid-template-columns:1fr;padding:20px;}
-  .pay-qr img{max-width:200px;}
   .billing-row{align-items:flex-start;flex-direction:column;gap:6px;}
   .billing-row strong{text-align:left;}
 }
@@ -862,12 +807,10 @@ body.sidebar-open{overflow:hidden;}
   }
   .topbar-left{flex:1 1 auto;min-width:0;gap:10px;}
   .topbar h1{font-size:16.5px;}
-  .topbar-desc{display:none;}
   .crumb{display:none;}
   #timelineList{padding:18px 16px 20px;}
   #timelineList::before{left:27px;}
   .timeline-item{gap:14px;}
-  .tl-dot{width:22px;height:22px;border-width:6px;}
   .progress-hero{padding:24px;gap:22px;}
   .contract-progress{margin:0 24px 24px;}
   .contract-progress-meta{flex-direction:column;gap:4px;}
@@ -876,7 +819,7 @@ body.sidebar-open{overflow:hidden;}
   .sidebar-toggle{width:38px;height:38px;flex-shrink:0;}
   .sidebar-toggle svg{width:18px;height:18px;}
   /* Every action stays a compact, equally-sized icon on one row instead
-     of wrapping onto its own line — a full-width text button ("Book
+     of wrapping onto its own line - a full-width text button ("Book
      Appointment") used to force a whole extra row by itself here. */
   .topbar-right{width:auto;order:0;gap:6px;flex-wrap:nowrap;flex-shrink:0;}
   .icon-btn{width:38px;height:38px;flex-shrink:0;}

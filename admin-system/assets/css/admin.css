@@ -67,6 +67,9 @@ button:active{transform:scale(.97);}
   transition:width .3s var(--ease), transform .3s var(--ease);
   box-shadow:var(--shadow-lg), inset 0 1px 0 rgba(250,250,247,0.06);
 }
+/* Keep the Receptionist rail aligned with the compact Patient/Dentist
+   brand block: the logo header and first navigation item share one rhythm. */
+.sidebar{padding:18px 0;}
 /* Solid fallbacks where backdrop-filter isn't supported */
 @supports not ((backdrop-filter:blur(4px)) or (-webkit-backdrop-filter:blur(4px))){
   .sidebar{background:var(--dark-deep);}
@@ -77,8 +80,8 @@ button:active{transform:scale(.97);}
 }
 
 /* ---- Brand ---- */
-.side-brand{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid rgba(250,250,247,0.08);}
-.side-brand img{height:58px;width:auto;display:block;object-fit:contain;filter:brightness(0) invert(1);}
+.side-brand{display:flex;align-items:center;justify-content:space-between;min-height:72px;padding:12px 20px;border-bottom:1px solid rgba(250,250,247,0.08);}
+.side-brand img{height:42px;width:auto;display:block;object-fit:contain;filter:brightness(0) invert(1);}
 .side-brand-text{
   display:flex;flex-direction:column;min-width:0;
   transition:opacity .3s cubic-bezier(.4,0,.2,1);
@@ -316,7 +319,6 @@ text-transform:uppercase;color:rgba(27,27,25,0.65);
   outline:3px solid rgba(180,84,63,0.24);
   outline-offset:2px;
 }
-.badge-dot{position:absolute;top:8px;right:9px;width:7px;height:7px;border-radius:50%;background:var(--red);border:1.5px solid var(--white);}
 /* Minimal profile button: a small circular avatar with the user's
    initials only; opens the account menu popover. */
 .user-chip{
@@ -422,35 +424,30 @@ text-transform:uppercase;color:rgba(27,27,25,0.65);
 .panel{background:var(--glass-solid);border:1px solid var(--glass-border);border-radius:var(--r-md);overflow:hidden;box-shadow:var(--glass-shadow);}
 .panel-head{display:flex;justify-content:space-between;align-items:center;padding:22px 24px;border-bottom:1px solid var(--line);}
 .panel-head h3{font-family:'Fraunces',serif;font-size:18px;font-weight:600;letter-spacing:-0.01em;}
-body.dentist-dashboard .panel-head-actions{display:flex;align-items:center;justify-content:flex-end;gap:12px;flex-wrap:wrap;}
-body.dentist-dashboard .date-control{
-  display:inline-flex;align-items:center;gap:10px;
-  min-height:40px;
-  padding:4px 4px 4px 13px;
-  border:1px solid var(--line);
-  border-radius:var(--r-pill);
-  background:rgba(255,255,255,0.62);
-  box-shadow:var(--shadow-xs);
-  color:rgba(27,27,25,0.62);
-  font-family:var(--font-ui);
-  font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;
-  white-space:nowrap;
-  transition:border-color .2s ease, background .2s ease, box-shadow .2s ease;
-}
-body.dentist-dashboard .date-control:focus-within{border-color:rgba(156,139,62,0.55);background:var(--white);box-shadow:var(--ring-soft);}
-body.dentist-dashboard .date-control input[type="date"]{
-  width:142px;height:32px;
-  border:0;border-radius:var(--r-pill);
-  background:var(--ivory-2);
-  color:var(--ink);
-  font-family:inherit;font-size:13px;font-weight:600;
-  padding:0 10px;
-  appearance:none;-webkit-appearance:none;
-}
-body.dentist-dashboard .date-control input[type="date"]:focus{outline:none;background:var(--white);}
-body.dentist-dashboard .date-control input[type="date"]::-webkit-calendar-picker-indicator{cursor:pointer;opacity:.62;}
-body.dentist-dashboard .date-control input[type="date"]::-webkit-calendar-picker-indicator:hover{opacity:.9;}
 
+/* Archived records are intentionally contained in a compact audit view: the
+   summary establishes context before the retained clinical history. */
+#archivedDetailPanel{margin-top:22px;}
+#archivedDetailPanel .panel-head{gap:16px;}
+#archivedDetailBody{padding:24px;}
+#archivedDetailBody h4{margin:26px 0 9px;font-family:var(--font-ui);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-muted,#6b6b65);}
+#archivedDetailBody h4:first-of-type{margin-top:24px;}
+.detail-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px 18px;padding:16px 18px;border:1px solid var(--line);border-radius:var(--r-md);background:rgba(250,248,242,.72);}
+.detail-grid .row{display:flex;flex-direction:column;gap:4px;min-width:0;}
+.detail-grid .row span:first-child{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-muted,#6b6b65);}
+.detail-grid .row span:last-child{font-size:13px;line-height:1.45;overflow-wrap:anywhere;}
+.archive-detail-list{margin:0;padding:0;list-style:none;border:1px solid var(--line);border-radius:var(--r-md);overflow:hidden;background:rgba(255,255,255,.62);}
+.archive-detail-list li{padding:12px 15px;border-bottom:1px solid var(--line);font-size:13px;line-height:1.5;}
+.archive-detail-list li:last-child{border-bottom:0;}
+#archivedDetailBody .empty-cell{margin:0;padding:18px;border:1px dashed var(--line);border-radius:var(--r-sm);background:rgba(250,248,242,.45);}
+
+@media (max-width:720px){
+  #archivedDetailPanel .panel-head{align-items:flex-start;flex-direction:column;}
+  #archivedDetailPanel .row-actions{width:100%;}
+  #archivedDetailPanel .row-actions .btn{flex:1;}
+  #archivedDetailBody{padding:18px;}
+  .detail-grid{grid-template-columns:1fr;}
+}
 .grid-2{display:grid;grid-template-columns:1.6fr 1fr;gap:22px;}
 
 /* Lets a wide table scroll sideways inside its card instead of being
@@ -458,7 +455,7 @@ body.dentist-dashboard .date-control input[type="date"]::-webkit-calendar-picker
    Payment" were invisible on phones with no way to reach them. */
 .table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;position:relative;}
 /* Subtle edge fade + hint so a scrollable table doesn't look like it just
-   ends mid-column — nudges people to swipe for the rest on narrow screens,
+   ends mid-column - nudges people to swipe for the rest on narrow screens,
    without changing the table itself. Fades out once nothing scrollable is
    left offscreen would require JS to detect precisely; this stays simple
    and only shows where the layout is actually prone to overflowing. */
@@ -707,8 +704,6 @@ background:var(--ivory-2);color:rgba(27,27,25,0.65);padding:13px 10px;min-height
 .promo-card-btn{display:block;width:100%;text-align:left;color:inherit;cursor:pointer;}
 .promo-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-hover);border-color:rgba(27,27,25,0.14);}
 .promo-card:focus-visible{outline:3px solid rgba(174,153,67,0.36);outline-offset:3px;}
-.promo-img{height:126px;background:linear-gradient(135deg,#2A2A27,#1C1C1A);position:relative;display:flex;align-items:center;justify-content:center;}
-.promo-img span{font-family:var(--font-ui);font-size:10.5px;letter-spacing:0.06em;text-transform:uppercase;color:rgba(250,250,247,0.55);}
 .promo-img-real{width:100%;height:190px;object-fit:cover;display:block;background:var(--ivory-2);}
 .promo-body{padding:18px 20px;}
 .promo-body h4{font-family:'Fraunces',serif;font-size:16.5px;margin-bottom:5px;}
@@ -742,28 +737,12 @@ background:var(--ivory-2);color:rgba(27,27,25,0.65);padding:13px 10px;min-height
 .promo-viewer-media[hidden]{display:none;}
 
 /* inventory */
-.stock-bar{width:74px;height:7px;border-radius:var(--r-pill);background:var(--ivory-2);overflow:hidden;display:inline-block;vertical-align:middle;margin-left:9px;}
-.stock-fill{height:100%;border-radius:var(--r-pill);}
 .inventory-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
 .inventory-stock-icon{background:rgba(177,158,69,0.12);color:var(--gold-dark);}
 .inventory-stock-icon svg{width:18px;height:18px;}
 
 /* ---- Table empty state (no search/filter matches) ---- */
 .empty-cell{padding:36px 24px;text-align:center;color:rgba(27,27,25,0.65);font-size:14px;}
-.feature-unavailable-note{
-  display:inline-flex;
-  align-items:center;
-  min-height:36px;
-  padding:8px 14px;
-  border:1px solid var(--line);
-  border-radius:var(--r-pill);
-  background:rgba(255,255,255,0.58);
-  color:rgba(27,27,25,0.58);
-  font-size:12.5px;
-  font-weight:600;
-  line-height:1.3;
-  white-space:nowrap;
-}
 
 /* ---- Modal form fields (Add/Edit patient) ---- */
 .form-group{margin-bottom:16px;}
@@ -866,9 +845,6 @@ body.modal-open{overflow:hidden;}
   .receipt-grid{grid-template-columns:1fr;}
   .pay-actions{justify-content:flex-start;}
   body.dentist-dashboard #view-appointments .panel-head{align-items:flex-start;flex-direction:column;gap:14px;}
-  body.dentist-dashboard .panel-head-actions{justify-content:flex-start;width:100%;}
-  body.dentist-dashboard .date-control{width:100%;justify-content:space-between;}
-  body.dentist-dashboard .date-control input[type="date"]{width:150px;}
 }
 
 @media (max-width:1250px){
@@ -951,7 +927,7 @@ body.sidebar-open{overflow:hidden;}
   .sidebar-toggle{width:38px;height:38px;flex-shrink:0;}
   .sidebar-toggle svg{width:18px;height:18px;}
   /* Every action stays a compact, equally-sized icon on one row instead
-     of wrapping onto its own line — a full-width text button ("View
+     of wrapping onto its own line - a full-width text button ("View
      Public Site") used to force a whole extra row by itself here. */
   .topbar-right{width:auto;order:0;gap:6px;flex-wrap:nowrap;flex-shrink:0;}
   .icon-btn{width:38px;height:38px;flex-shrink:0;}
@@ -986,7 +962,7 @@ body.sidebar-open{overflow:hidden;}
 @media (max-width:380px){
   .topbar h1{font-size:15px;}
   /* At the very narrowest phone widths, the avatar is the one control
-     that can safely step aside — everything else is already a minimal
+     that can safely step aside - everything else is already a minimal
      icon, and the account menu is still reachable from the sidebar. */
   .topbar-right{gap:4px;}
 }

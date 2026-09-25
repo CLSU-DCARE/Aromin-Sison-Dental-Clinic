@@ -11,7 +11,11 @@ namespace ASDC;
 class SessionManager
 {
     private const MAX_CONCURRENT_SESSIONS = 3;
-    private const SESSION_TIMEOUT_SECONDS = 1800; // 30 minutes
+    // The idle timeout lives in AuthMiddleware so PHP and the database always agree.
+    private static function timeout(): int
+    {
+        return AuthMiddleware::getSessionTimeout();
+    }
 
     /**
      * Register a new active session for a user.
@@ -31,18 +35,24 @@ class SessionManager
         bool $rememberTokenUsed = false
     ): void {
         $pdo = Database::pdo();
-        
+
         // Clean up old/expired sessions for this user first
         self::cleanupExpiredSessions($userId);
-        
-        // Count current active sessions
-        $count = self::getActiveSessionCount($userId);
-        
-        // If at limit, remove oldest non-current session
-        if ($count >= self::MAX_CONCURRENT_SESSIONS) {
-            self::revokeOldestSession($userId);
+
+        // Make room: if the user already has the maximum number of OTHER live
+        // sessions, sign out the least recently used ones (the new one wins).
+        $stmt = $pdo->prepare(
+            'SELECT session_id FROM active_sessions
+             WHERE user_id = ? AND session_id != ?
+             ORDER BY last_activity ASC'
+        );
+        $stmt->execute([$userId, $sessionId]);
+        $others = $stmt->fetchAll(\PDO::FETCH_COLUMN);
+        $excess = count($others) - (self::MAX_CONCURRENT_SESSIONS - 1);
+        for ($i = 0; $i < $excess; $i++) {
+            self::revokeSession($userId, $others[$i], 'session_limit');
         }
-        
+
         // Insert new session
         $stmt = $pdo->prepare(
             'INSERT INTO active_sessions (session_id, user_id, user_agent, ip_address, remember_token_used, is_current) 
@@ -99,18 +109,52 @@ class SessionManager
      */
     public static function revokeSession(int $userId, string $sessionId, string $reason = 'user_revoke'): bool
     {
-        $pdo = Database::pdo();
-        $stmt = $pdo->prepare(
-            'DELETE FROM active_sessions WHERE user_id = ? AND session_id = ?'
-        );
-        $stmt->execute([$userId, $sessionId]);
-        $revoked = $stmt->rowCount() > 0;
-        
+        $revoked = self::removeSession($userId, $sessionId);
+
         if ($revoked) {
             SessionAudit::logRevoke($userId, $sessionId, $reason);
         }
-        
+
         return $revoked;
+    }
+
+    /**
+     * Delete a session row without writing an audit entry.
+     * Callers (logout, expiry) write their own, more specific audit entry.
+     */
+    public static function removeSession(int $userId, string $sessionId): bool
+    {
+        $stmt = Database::pdo()->prepare(
+            'DELETE FROM active_sessions WHERE user_id = ? AND session_id = ?'
+        );
+        $stmt->execute([$userId, $sessionId]);
+        return $stmt->rowCount() > 0;
+    }
+
+    /**
+     * A safe, one-way label for a session. The real PHP session ID is the
+     * login secret, so it is never sent to the browser; this label is.
+     */
+    public static function sessionRef(string $sessionId): string
+    {
+        return hash('sha256', $sessionId);
+    }
+
+    /**
+     * Revoke one of the user's sessions using its safe label (see sessionRef).
+     */
+    public static function revokeByRef(int $userId, string $ref, ?string $exceptSessionId = null, string $reason = 'user_revoke'): ?bool
+    {
+        foreach (self::getActiveSessions($userId) as $row) {
+            if (!hash_equals(self::sessionRef($row['session_id']), $ref)) {
+                continue;
+            }
+            if ($exceptSessionId !== null && $row['session_id'] === $exceptSessionId) {
+                return null; // that is the current session
+            }
+            return self::revokeSession($userId, $row['session_id'], $reason);
+        }
+        return false;
     }
 
     /**
@@ -185,9 +229,10 @@ class SessionManager
             'SELECT session_id, user_agent, ip_address, created_at, last_activity, is_current, remember_token_used 
              FROM active_sessions 
              WHERE user_id = ? 
+             AND last_activity > DATE_SUB(NOW(), INTERVAL ? SECOND)
              ORDER BY last_activity DESC'
         );
-        $stmt->execute([$userId]);
+        $stmt->execute([$userId, self::timeout()]);
         return $stmt->fetchAll() ?: [];
     }
 
@@ -206,7 +251,7 @@ class SessionManager
              WHERE user_id = ? AND session_id = ? 
              AND last_activity > DATE_SUB(NOW(), INTERVAL ? SECOND)'
         );
-        $stmt->execute([$userId, $sessionId, self::SESSION_TIMEOUT_SECONDS]);
+        $stmt->execute([$userId, $sessionId, self::timeout()]);
         return (bool) $stmt->fetchColumn();
     }
 
@@ -224,7 +269,7 @@ class SessionManager
              WHERE user_id = ? 
              AND last_activity > DATE_SUB(NOW(), INTERVAL ? SECOND)'
         );
-        $stmt->execute([$userId, self::SESSION_TIMEOUT_SECONDS]);
+        $stmt->execute([$userId, self::timeout()]);
         return (int) $stmt->fetchColumn();
     }
 
@@ -242,27 +287,8 @@ class SessionManager
              WHERE user_id = ? 
              AND last_activity <= DATE_SUB(NOW(), INTERVAL ? SECOND)'
         );
-        $stmt->execute([$userId, self::SESSION_TIMEOUT_SECONDS]);
+        $stmt->execute([$userId, self::timeout()]);
         return $stmt->rowCount();
-    }
-
-    /**
-     * Revoke the oldest non-current session for a user.
-     *
-     * @param int $userId
-     * @return bool True if a session was revoked
-     */
-    private static function revokeOldestSession(int $userId): bool
-    {
-        $pdo = Database::pdo();
-        $stmt = $pdo->prepare(
-            'DELETE FROM active_sessions 
-             WHERE user_id = ? AND is_current = FALSE
-             ORDER BY last_activity ASC
-             LIMIT 1'
-        );
-        $stmt->execute([$userId]);
-        return $stmt->rowCount() > 0;
     }
 
     /**
@@ -277,7 +303,7 @@ class SessionManager
             'DELETE FROM active_sessions 
              WHERE last_activity <= DATE_SUB(NOW(), INTERVAL ? SECOND)'
         );
-        $stmt->execute([self::SESSION_TIMEOUT_SECONDS]);
+        $stmt->execute([self::timeout()]);
         return $stmt->rowCount();
     }
 

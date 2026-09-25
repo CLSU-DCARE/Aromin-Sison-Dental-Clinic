@@ -24,11 +24,13 @@
       const api = window.ASDC.AuthApiClient;
       const routing = window.ASDC.Routing;
 
+      // Signed in already (or restorable from "remember me")? Then there is
+      // nothing to do on a login page: go to the right dashboard.
       api
-        .me()
-        .then(({ response, payload }) => {
-          if (payload.user && routing && routing.getDestinationForRole) {
-            const destination = routing.getDestinationForRole(payload.user.role);
+        .restoreSession()
+        .then((user) => {
+          if (user && routing && routing.getDestinationForRole) {
+            const destination = routing.getDestinationForRole(user.role);
             if (destination && destination !== routing.getLoginUrl()) {
               if (authShell) authShell.style.visibility = 'hidden';
               window.location.replace(destination);
@@ -55,6 +57,21 @@
 
       document.addEventListener('visibilitychange', () => {
         if (!document.hidden) AuthPageGuard._checkAndRedirect();
+      });
+
+      // Someone signed in from another tab: this login page is no longer needed.
+      if (window.BroadcastChannel) {
+        try {
+          const channel = new BroadcastChannel('asdc-auth');
+          channel.onmessage = (event) => {
+            if (event.data && event.data.type === 'login') AuthPageGuard._checkAndRedirect();
+          };
+        } catch (e) {
+          // not supported
+        }
+      }
+      window.addEventListener('storage', (e) => {
+        if (e.key === 'asdc:auth:event' && e.newValue) AuthPageGuard._checkAndRedirect();
       });
     }
   }

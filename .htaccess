@@ -1,7 +1,39 @@
+# ---------------------------------------------------------------
+# 1) Files and folders that must NEVER be downloaded from the web.
+#    The patterns match anywhere in the URL, so they also work when the
+#    site lives in a sub-folder (for example /Aromin-Sison-Dental-Clinic/).
+# ---------------------------------------------------------------
+<IfModule mod_alias.c>
+  # Hidden files and folders: .env, .env.local, .git, .htaccess ...
+  RedirectMatch 403 (^|/)\.(?!well-known/)
+  # Folders that hold setup scripts, tests, docs and installed packages.
+  RedirectMatch 403 (^|/)(database|tests|docs|vendor)(/|$)
+  # Internal PHP code. Only the files inside backend/api/ are meant to be called.
+  RedirectMatch 403 (^|/)backend/(classes|config)(/|$)
+  RedirectMatch 403 (^|/)backend/autoload\.php$
+  # Project files that only developers need.
+  RedirectMatch 403 (^|/)(composer\.(json|lock)|package(-lock)?\.json|README\.md)$
+  RedirectMatch 403 \.(sql|log|md|bak|env)$
+</IfModule>
+
+# ---------------------------------------------------------------
+# 2) Cache rules (unchanged): pages, styles and scripts are never cached.
+# ---------------------------------------------------------------
 <IfModule mod_headers.c>
   <FilesMatch "\.(html|css|js)$">
     Header set Cache-Control "no-cache, no-store, must-revalidate, max-age=0"
     Header set Pragma "no-cache"
     Header set Expires "0"
   </FilesMatch>
+
+  # ---------------------------------------------------------------
+  # 3) Basic safety headers for every page.
+  #    "setifempty" keeps the stricter values the API already sends.
+  # ---------------------------------------------------------------
+  Header setifempty X-Content-Type-Options "nosniff"
+  Header setifempty X-Frame-Options "SAMEORIGIN"
+  Header setifempty Referrer-Policy "strict-origin-when-cross-origin"
+  # Browsers accept HSTS only over HTTPS. TLS-terminating proxies should set
+  # this header themselves because Apache sees their upstream HTTP connection.
+  Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains" "expr=%{HTTPS} == 'on'"
 </IfModule>
