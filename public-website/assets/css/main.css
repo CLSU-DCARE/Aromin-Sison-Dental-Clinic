@@ -882,13 +882,15 @@ header.scrolled .nav-toggle:hover{border-color:var(--gold);background:var(--ivor
 
 /* ===== CTA ===== */
 .cta{
-  padding:150px 0;
+  padding:clamp(96px,8vw,122px) 0;
   background:var(--ivory);
 }
 .cta-grid{
   display:grid;
-  grid-template-columns:1.1fr 0.9fr;
-  gap:96px;
+  max-width:1480px;
+  margin:0 auto;
+  grid-template-columns:minmax(0,.88fr) minmax(0,1.12fr);
+  gap:clamp(48px,4.2vw,72px);
   align-items:center;
 }
 .cta-copy h2{
@@ -901,7 +903,7 @@ header.scrolled .nav-toggle:hover{border-color:var(--gold);background:var(--ivor
 }
 .cta-copy h2 em{color:var(--gold);font-style:italic;}
 .cta-copy p{
-  max-width:460px;
+  max-width:500px;
   color:rgba(18,32,28,0.65);
   font-size:16.5px;
 }
@@ -916,7 +918,7 @@ header.scrolled .nav-toggle:hover{border-color:var(--gold);background:var(--ivor
   background:var(--ivory-2);
   border:1px solid var(--line);
   border-radius:var(--r-lg);
-  padding:38px 42px 34px;
+  padding:34px 38px 30px;
   box-shadow:var(--shadow-sm);
 }
 .cta-account-card-top{display:flex;align-items:center;gap:16px;}
@@ -938,11 +940,11 @@ header.scrolled .nav-toggle:hover{border-color:var(--gold);background:var(--ivor
   font-size:clamp(25px,2.5vw,32px);
   font-weight:500;line-height:1.15;color:var(--dark);
 }
-.cta-account-intro{margin:24px 0 18px;color:rgba(18,32,28,.65);font-size:15px;line-height:1.65;}
+.cta-account-intro{margin:20px 0 14px;color:rgba(18,32,28,.65);font-size:15px;line-height:1.65;}
 .cta-account-steps{list-style:none;margin:0;padding:0;border-top:1px solid var(--line);}
 .cta-account-steps li{
   display:flex;align-items:flex-start;gap:13px;
-  padding:15px 0;border-bottom:1px solid var(--line);
+  padding:13px 0;border-bottom:1px solid var(--line);
 }
 .cta-account-steps span{
   width:24px;height:24px;border-radius:50%;
@@ -953,8 +955,8 @@ header.scrolled .nav-toggle:hover{border-color:var(--gold);background:var(--ivor
 }
 .cta-account-steps strong{display:block;font-family:var(--font-ui);font-size:13px;color:var(--dark);}
 .cta-account-steps small{display:block;margin-top:3px;color:rgba(18,32,28,.6);font-size:12.5px;line-height:1.45;}
-.cta-account-card .btn{margin-top:25px;}
-.cta-account-signin{margin:16px 0 0;text-align:center;color:rgba(18,32,28,.62);font-size:13px;}
+.cta-account-card .btn{margin-top:20px;}
+.cta-account-signin{margin:13px 0 0;text-align:center;color:rgba(18,32,28,.62);font-size:13px;}
 .cta-account-signin a{color:var(--dark);font-weight:700;text-decoration-color:var(--gold);text-underline-offset:3px;}
 .cta-account-signin a:hover{color:var(--gold);}
 .cta-form-card{
@@ -2181,7 +2183,7 @@ footer{
   }
 }
 @media (max-width:1150px){
-  .cta-grid{grid-template-columns:1fr;gap:56px;}
+  .cta-grid{grid-template-columns:1fr;gap:42px;}
   .cta-form-card,.cta-account-card{width:100%;max-width:760px;justify-self:center;}
   .banner-grid{grid-template-columns:1fr;gap:56px;}
   .banner-visual{aspect-ratio:16/9;max-width:560px;}
