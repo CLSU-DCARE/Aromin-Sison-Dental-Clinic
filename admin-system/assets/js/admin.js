@@ -23,7 +23,7 @@
 const views = {
   dashboard: { title: 'Dashboard', crumb: 'Overview' },
   patients: { title: 'Patient Management', crumb: 'Patients' },
-  records: { title: 'Records & Protocols', crumb: 'Patients' },
+  records: { title: 'Treatment Records', crumb: 'Patients' },
   archived: { title: 'Archived Patients', crumb: 'Patients' },
   appointments: { title: 'Appointment Scheduling', crumb: 'Scheduling' },
   braces: { title: 'Braces Contracts', crumb: 'Scheduling' },

@@ -48,7 +48,7 @@
       </button>
       <button class="nav-item" data-view="records" data-tooltip="Records">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>
-        <span class="nav-label">Records &amp; Protocols</span>
+        <span class="nav-label">Treatment Records</span>
       </button>
       <button class="nav-item" data-view="archived" data-tooltip="Archived">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="4" rx="1"/><path d="M5 7v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7"/><path d="M10 12h4"/></svg>
@@ -269,7 +269,7 @@
         </div>
       </section>
 
-      <!-- ===== RECORDS & PROTOCOLS ===== -->
+      <!-- ===== TREATMENT RECORDS ===== -->
       <section class="view" id="view-records">
         <div class="page-head">
           <div>
@@ -283,9 +283,7 @@
             <div class="toolbar-left" role="group" aria-label="Filter records">
               <button class="filter-chip active" aria-pressed="true">All</button>
               <button class="filter-chip" aria-pressed="false">Treatments</button>
-              <button class="filter-chip" aria-pressed="false">Protocols</button>
               <button class="filter-chip" aria-pressed="false">Progress</button>
-              <button class="filter-chip" aria-pressed="false">Lab work</button>
             </div>
             <button class="btn btn-gold btn-sm" id="addRecordBtn">+ New Record</button>
           </div>
@@ -776,7 +774,7 @@
     </div>
     <div class="form-group">
       <label for="rfCategory">Category</label>
-      <select id="rfCategory"><option>Treatment</option><option>Protocol</option><option>Lab work</option></select>
+      <select id="rfCategory"><option>Treatment</option></select>
     </div>
     <div class="form-group">
       <label for="rfStatus">Status</label>
@@ -1067,12 +1065,12 @@
 <script src="assets/js/AppointmentActions.js?v=20260916-appointment-dialogs" defer></script>
 <script src="assets/js/PaymentApprovalManager.js?v=20260919-due-date" defer></script>
 <script src="assets/js/PatientTableManager.js?v=20260916-patient-delete" defer></script>
-<script src="assets/js/RecordTableManager.js?v=20260919-record-ui" defer></script>
+<script src="assets/js/RecordTableManager.js?v=20260925-treatment-records-only" defer></script>
 <script src="assets/js/InventoryTableManager.js?v=20260924-inventory-usage" defer></script>
 <script src="../patient-dashboard/assets/js/PatientLiveSync.js?v=20260916-integration" defer></script>
 <script src="../shared/js/core/PortalSync.js?v=20260921-sessionfix" defer></script>
 <script src="../shared/js/core/PortalForms.js?v=20260919-treatment-dropdown" defer></script>
-<script src="assets/js/admin.js?v=20260921-avatar-fallback" defer></script>
+<script src="assets/js/admin.js?v=20260925-treatment-records-only" defer></script>
 
 </body>
 </html>

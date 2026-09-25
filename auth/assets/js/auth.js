@@ -58,8 +58,13 @@ function initLoginForm(form) {
     setLoading(btn, true);
 
     const data = new FormData(form);
-    const identifier = String(data.get('identifier') || '').trim();
-    const password = String(data.get('password') || '');
+    const identifier = String(data.get('identifier') || data.get('email') || '').trim();
+    const password = String(data.get('password') || '').trim();
+    if (!identifier) {
+      showAlert('Please enter your email address or mobile number.');
+      setLoading(btn, false);
+      return;
+    }
 
     try {
       clearExpiredSessionNotice();

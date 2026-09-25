@@ -565,8 +565,8 @@ function renderDashboardStats(stats) {
   const upcomingCount =
     PatientState.dashboard.upcoming
       .filter(item => {
-        return item.status !==
-          'Completed';
+        return String(item.status || '').toLowerCase() ===
+          'confirmed';
       })
       .length;
 
@@ -1185,9 +1185,15 @@ function applyPatientSnapshot(data, changed) {
   };
   renderProfile(PatientState.profile);
   document.getElementById('profilePid').textContent = PatientState.user.pid;
-  const first = appointments.schedule[0];
+  const confirmedAppointments = (appointments.schedule || [])
+    .filter(item => String(item.status_code || item.status || '').toLowerCase() === 'confirmed');
+  const pendingAppointments = (appointments.schedule || [])
+    .filter(item => String(item.status_code || item.status || '').toLowerCase() === 'pending');
+  const first = confirmedAppointments[0];
   document.getElementById('welcomeText').textContent = first
     ? 'Your next visit is on ' + first.date + ' at ' + first.time + ' for ' + first.svc + '.'
+    : pendingAppointments.length
+      ? 'Your appointment request is waiting for clinic approval.'
     : 'You have no upcoming appointments.';
   applyPatientFeatureVisibility();
   renderDashboardStats(PatientState.dashboard.stats);

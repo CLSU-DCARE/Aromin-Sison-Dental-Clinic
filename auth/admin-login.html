@@ -52,7 +52,7 @@
       <form class="auth-panel" id="panel-login" data-panel="login" novalidate>
         <div class="form-group">
           <label for="loginEmail">Email Address</label>
-          <input type="email" id="loginEmail" name="email" required placeholder="staff@email.com" autocomplete="email">
+          <input type="email" id="loginEmail" name="identifier" required placeholder="staff@email.com" autocomplete="email">
           <div class="field-error"></div>
         </div>
         <div class="form-group">
@@ -96,7 +96,7 @@
 <script src="assets/js/AuthApiClient.js?v=2" defer></script>
 <script src="assets/js/AuthPageGuard.js?v=1" defer></script>
 <script src="../shared/js/core/routing.js?v=20260921-session-once" defer></script>
-<script src="assets/js/auth.js?v=20260921-login-direct" defer></script>
+<script src="assets/js/auth.js?v=20260925-login-trim-fix" defer></script>
 <script>
   document.addEventListener('DOMContentLoaded', () => {
     initLoginForm(document.getElementById('panel-login'));

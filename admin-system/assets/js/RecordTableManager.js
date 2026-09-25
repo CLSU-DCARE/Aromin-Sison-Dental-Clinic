@@ -92,7 +92,7 @@ window.RecordTableManager = class RecordTableManager {
   _bindFilterChips () {
     const group = document.querySelector('[aria-label="Filter records"]');
     wireChips(group, label => {
-      this.filter = label === 'All' ? null : (label === 'Treatments' ? 'Treatment' : (label === 'Protocols' ? 'Protocol' : label));
+      this.filter = label === 'All' ? null : (label === 'Treatments' ? 'Treatment' : label);
       this.apply();
     });
   }
