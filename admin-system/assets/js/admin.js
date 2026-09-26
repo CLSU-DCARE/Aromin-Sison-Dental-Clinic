@@ -620,10 +620,23 @@ if (promoDeleteModal.modal){
   });
 }
 
+function formatPromoDate(value){
+  if (!value) return '';
+  const date = new Date(String(value) + 'T00:00:00');
+  if (Number.isNaN(date.getTime())) return String(value);
+  return date.toLocaleDateString('en-US', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric'
+  });
+}
+
 function formatPromoRange(promo){
-  if (promo.start_date && promo.end_date) return promo.start_date + ' to ' + promo.end_date;
-  if (promo.start_date) return 'Starts ' + promo.start_date;
-  if (promo.end_date) return 'Until ' + promo.end_date;
+  const start = formatPromoDate(promo.start_date);
+  const end = formatPromoDate(promo.end_date);
+  if (start && end) return start + ' - ' + end;
+  if (start) return 'Starts ' + start;
+  if (end) return 'Until ' + end;
   return 'No date range set';
 }
 
@@ -848,11 +861,9 @@ function renderPromotions(promotions){
       <div class="promo-body">
         <h4>${escapeHtml(p.title)}</h4>
         <p>${escapeHtml(p.desc)}</p>
+        <div class="promo-date">${escapeHtml(formatPromoRange(p))}</div>
         <div class="promo-foot">
           <span class="tag tag-${p.tag}">${p.status}</span>
-          <div class="promo-actions">
-            <span>${escapeHtml(p.start_date || '')} – ${escapeHtml(p.end_date || '')}</span>
-          </div>
         </div>
         <span class="promo-view">View details</span>
         <button type="button" class="promo-delete-btn" data-action="delete-promo" data-promo-id="${Number(p.id)}">Delete</button>
