@@ -152,3 +152,26 @@ Use a PowerShell here-string or a short temporary validation file when a PHP com
 
 ### Metadata
 - Reproducible: yes
+
+## [ERR-20260926-001] Password-reset lockout test used a stale mail-call count
+
+**Priority**: low
+**Status**: resolved
+**Area**: tests
+
+### Summary
+Adding a failed-delivery regression scenario introduced a second mocked mail
+attempt, while later lockout assertions still expected the original absolute
+call count.
+
+### Error information
+```
+RuntimeException: Account lockout must block sending.
+```
+
+### Recommended resolution
+Capture the mail-call count immediately before lockout assertions and verify it
+does not change, rather than relying on a fixed count from earlier scenarios.
+
+### Metadata
+- Reproducible: yes

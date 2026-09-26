@@ -110,6 +110,24 @@ After deployment, test through the Vercel URL only:
 5. Test password-reset email delivery from the Vercel URL and a database backup
    restore in a non-production environment.
 
+## Password-reset delivery recovery
+
+The reset endpoint always returns a generic success response so it cannot reveal
+whether an email address belongs to an account. If users see that confirmation
+but no message arrives, inspect the Railway application logs rather than relying
+on the browser response. The relevant entries are:
+
+- `ASDC_APP_URL is not set`: set `ASDC_APP_URL` to the exact Vercel HTTPS domain.
+- `PASSWORD RESET MAIL FAILED`: correct the Gmail address or app password, or
+  investigate the reported SMTP connection/TLS category.
+- `PASSWORD RESET TOKEN CLEANUP FAILED`: investigate Railway database access;
+  this is logged only when a failed email's reset token could not be removed.
+
+After updating a Railway variable, redeploy the application and send one reset
+request to a controlled active mailbox through the Vercel URL. Confirm that the
+email uses the Vercel domain, can reset the password once, and that the updated
+password can sign in.
+
 Run a scheduled Railway job (or another trusted scheduler) daily for:
 
 ```sh
