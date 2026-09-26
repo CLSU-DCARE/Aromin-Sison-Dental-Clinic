@@ -96,10 +96,32 @@
         pdf.setFont('helvetica', 'normal');
         pdf.setFontSize(8);
         pdf.setTextColor(35, 35, 32);
+        const drawPdfValue = (value, valueX, valueY) => {
+          const parts = String(value).split('₱');
+          if (parts.length === 1) {
+            pdf.text(String(value), valueX, valueY);
+            return;
+          }
+
+          let cursorX = valueX;
+          parts.forEach((part, index) => {
+            if (index > 0) {
+              // Standard jsPDF fonts do not reliably contain the peso glyph.
+              pdf.text('P', cursorX, valueY);
+              pdf.line(cursorX - 0.1, valueY - 2.1, cursorX + 2.3, valueY - 2.1);
+              pdf.line(cursorX - 0.1, valueY - 1.1, cursorX + 2.3, valueY - 1.1);
+              cursorX += 2.8;
+            }
+            if (part) {
+              pdf.text(part, cursorX, valueY);
+              cursorX += pdf.getTextWidth(part);
+            }
+          });
+        };
         rows.forEach(row => {
           const values = columns.map(c => String(c.value(row) ?? ''));
           x = left;
-          values.forEach((value, index) => { pdf.text(value.slice(0, 34), x + 2, y); x += widths[index] || 40; });
+          values.forEach((value, index) => { drawPdfValue(value.slice(0, 34), x + 2, y); x += widths[index] || 40; });
           pdf.setDrawColor(225, 225, 220);
           pdf.line(left, y + 4, right, y + 4);
           y += 9;
