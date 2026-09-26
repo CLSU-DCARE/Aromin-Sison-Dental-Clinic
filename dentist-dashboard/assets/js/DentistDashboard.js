@@ -280,17 +280,11 @@ if (inboxEmpty) inboxEmpty.textContent = 'Loading notifications...';
     var empty = document.getElementById('dentistPaymentsEmpty');
     if (!tbody) return;
     var self = this;
-    var category = this.paymentCategory || 'All';
     var status = this.paymentStatus || 'All';
     var statusGroup = document.querySelector('#view-payments [aria-label="Filter payment status"]');
     if (statusGroup && !statusGroup.dataset.wired) {
       statusGroup.dataset.wired = '1';
       new ASDC.FilterChipGroup(statusGroup, function(label){ self.paymentStatus = label; self._loadPayments(); });
-    }
-    var categoryGroup = document.querySelector('#view-payments [aria-label="Filter payment category"]');
-    if (categoryGroup && !categoryGroup.dataset.wired) {
-      categoryGroup.dataset.wired = '1';
-      new ASDC.FilterChipGroup(categoryGroup, function(label){ self.paymentCategory = label; self._loadPayments(); });
     }
     tbody.innerHTML = '<tr><td colspan="6" class="empty-cell">Loading payment records...</td></tr>';
     apiFetch('../backend/api/payments/payments.php', { cache: 'no-store' })
@@ -300,7 +294,7 @@ if (inboxEmpty) inboxEmpty.textContent = 'Loading notifications...';
             (status === 'Completed' && payment.status === 'approved') ||
             (status === 'Overdue' && payment.dueStatus === 'overdue') ||
             (status !== 'Completed' && status !== 'Overdue' && status !== 'All' && payment.status === status.toLowerCase());
-          return statusMatch && (category === 'All' || payment.category === category);
+          return statusMatch;
         });
         if (!payments.length) {
           tbody.innerHTML = '';

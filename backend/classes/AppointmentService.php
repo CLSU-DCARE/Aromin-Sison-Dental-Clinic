@@ -97,6 +97,17 @@ class AppointmentService
                 }
         if (!in_array($status, ['cancelled', 'rejected', 'completed', 'no_show'], true)
             || ($type === 'request' && !in_array($status, ['cancelled', 'rejected'], true))) ApiResponse::error(422, 'validation_failed', 'Invalid status.');
+        if ($type === 'appointment' && in_array($status, ['completed', 'no_show'], true)) {
+            $scheduled = $pdo->prepare('SELECT scheduled_date, scheduled_time FROM appointments WHERE appointment_id=?');
+            $scheduled->execute([$id]);
+            $slot = $scheduled->fetch();
+            if ($slot) {
+                $scheduledAt = new \DateTimeImmutable($slot['scheduled_date'] . ' ' . $slot['scheduled_time']);
+                if ($scheduledAt > new \DateTimeImmutable('now')) {
+                    ApiResponse::error(409, 'appointment_not_started', 'This appointment cannot be marked complete or no-show until its scheduled date and time.');
+                }
+            }
+        }
         $extra = $type === 'request' ? ', reviewed_by=?, reviewed_at=NOW()' : '';
         $params = $type === 'request' ? [$status, (int) $_SESSION['user_id'], $id] : [$status, $id];
         $allowed = $type === 'request' ? "('pending','rescheduled')" : ($status === 'rejected' ? "('pending')" : (in_array($status, ['completed','no_show'], true) ? "('confirmed')" : "('pending','confirmed')"));

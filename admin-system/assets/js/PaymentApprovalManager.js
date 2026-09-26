@@ -11,7 +11,6 @@
 window.PaymentApprovalManager = class PaymentApprovalManager {
   constructor () {
     this._filter   = 'All';
-    this._category = 'All';
     this._receiptModal = new Modal('receiptModal');
     this._receiptCurrent = null;
     this._items = []; // Last server response, used by _findById.
@@ -59,7 +58,6 @@ window.PaymentApprovalManager = class PaymentApprovalManager {
         if (this._filter === 'Completed') return s.status === 'approved';
         return s.status === this._filter.toLowerCase();
       })
-      .filter(s => this._category === 'All' || s.category === this._category)
       .slice().reverse();
 
 
@@ -179,10 +177,5 @@ window.PaymentApprovalManager = class PaymentApprovalManager {
     if (!group) return;
     wireChips(group, label => { this._filter = label; this.render(); });
     setChipGroup(group, 'All');
-    const categoryGroup = document.querySelectorAll('#view-payments .toolbar-left')[1];
-    if (categoryGroup) {
-      wireChips(categoryGroup, label => { this._category = label; this.render(); });
-      setChipGroup(categoryGroup, 'All');
-    }
   }
 };

@@ -135,6 +135,13 @@ window.AppointmentActions = class AppointmentActions {
       complete: 'Complete',
       no_show: 'Mark No-show'
     }[action] || action.charAt(0).toUpperCase() + action.slice(1).replace('_', ' ');
+    if (['complete', 'no_show'].includes(action)) {
+      const scheduledAt = new Date(`${appointment.scheduled_date}T${String(appointment.scheduled_time).slice(0, 5)}`);
+      if (!Number.isNaN(scheduledAt.getTime()) && scheduledAt > new Date()) {
+        showToast('This appointment cannot be marked complete or no-show until its scheduled date and time.', 'error');
+        return;
+      }
+    }
     const confirmed = await ASDC.confirmAction({
       title: `${actionLabel} Appointment`,
       message: `${actionLabel} the appointment for ${appointment.patient_name}?`,
