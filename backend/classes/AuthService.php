@@ -387,7 +387,22 @@ class AuthService
 
             $mailResult = Mailer::sendEmail($user['email'], 'Reset your Aromin-Sison Dental Clinic password', $body);
             if (empty($mailResult['ok'])) {
-                error_log('[PASSWORD RESET MAIL FAILED] User ID ' . $user['user_id'] . ': ' . ($mailResult['error'] ?? 'Email delivery failed.'));
+                // Do not leave a usable link behind when no email was delivered.
+                // Matching both values means a concurrent, newer reset request is
+                // never deleted by this older request's cleanup.
+                try {
+                    $cleanup = $pdo->prepare(
+                        'DELETE FROM password_reset_tokens WHERE user_id = ? AND token_hash = ? AND used_at IS NULL'
+                    );
+                    $cleanup->execute([$user['user_id'], $tokenHash]);
+                } catch (\Throwable $e) {
+                    error_log('[PASSWORD RESET TOKEN CLEANUP FAILED] User ID ' . $user['user_id']);
+                }
+
+                // Keep the browser response generic, but leave operators a
+                // searchable, secret-free reason in the server logs.
+                $deliveryError = (string) ($mailResult['error'] ?? 'Email delivery failed.');
+                error_log('[PASSWORD RESET MAIL FAILED] User ID ' . $user['user_id'] . ': ' . $deliveryError);
             }
         }
 

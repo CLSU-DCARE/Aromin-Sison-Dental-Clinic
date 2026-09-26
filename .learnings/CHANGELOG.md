@@ -10,4 +10,5 @@
 {"ts":"2026-09-24T16:10:00+08:00","action":"add","type":"error","id":"ERR-20260924-006","summary":"Railway IaC CLI compatibility check fails on Windows"}
 {"ts":"2026-09-24T16:25:00+08:00","action":"add","type":"error","id":"ERR-20260924-007","summary":"Railway runtime enables a conflicting Apache MPM"}
 {"ts":"2026-09-25T00:00:00+08:00","action":"add","type":"error","id":"ERR-20260925-001","summary":"Inline PHP validation command was misquoted in PowerShell"}
+{"ts":"2026-09-26T00:00:00+08:00","action":"add","type":"error","id":"ERR-20260926-001","summary":"Password-reset lockout test used a stale mail-call count"}
 ```
