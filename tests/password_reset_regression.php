@@ -55,10 +55,11 @@ class TokenService
 class Mailer
 {
     public static int $calls = 0;
-    public static function sendEmail(string $to, string $subject, string $body): array
+    public static function sendEmail(string $to, string $subject, string $body, bool $isHtml = false): array
     {
         self::$calls++;
         if (!str_contains($body, '/auth/reset-password.html?token=')) throw new \RuntimeException('Reset link missing.');
+        if ($isHtml && !str_contains($body, '<!DOCTYPE html>')) throw new \RuntimeException('HTML reset email template missing.');
         return ['ok' => true];
     }
 }
@@ -74,6 +75,7 @@ $_SERVER['HTTP_HOST'] = 'localhost';
 $result = AuthService::forgotPassword('patient@example.invalid');
 check($result['success'] === true && Mailer::$calls === 1 && TokenService::$stored === 1, 'First request must create a token and reach the mailer.');
 check(count(RateLimiter::$recorded) === 2, 'Account and IP attempts must be tracked.');
+check($result['success'] === true, 'The reset request must still succeed while sending a branded HTML email.');
 
 RateLimiter::$lockouts['password_reset:patient@example.invalid'] = 120;
 $result = AuthService::forgotPassword('patient@example.invalid');

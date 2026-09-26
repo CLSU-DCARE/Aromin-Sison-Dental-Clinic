@@ -63,7 +63,7 @@ window.PatientContractView = class PatientContractView {
     const all = existing;
 
     tbody.innerHTML = all.map(p =>
-      `<tr><td>${escapeHtml(p.date)}</td><td>${escapeHtml(p.amount)}</td><td>${escapeHtml(p.method)}</td><td>${escapeHtml(p.or)}</td></tr>`
+      `<tr><td>${escapeHtml(window.formatDate ? window.formatDate(p.date) : p.date)}</td><td>${escapeHtml(p.amount)}</td><td>${escapeHtml(p.method)}</td><td>${escapeHtml(p.or)}</td></tr>`
     ).join('');
   }
 
@@ -89,7 +89,7 @@ window.PatientContractView = class PatientContractView {
 
     const progress = contract.progress || {};
     const payments = (contract.payments || []).map(p =>
-      `<tr><td>${escapeHtml(p.date)}</td><td>${escapeHtml(p.amount)}</td><td>${escapeHtml(p.method)}</td><td>${escapeHtml(p.or)}</td></tr>`
+      `<tr><td>${escapeHtml(window.formatDate ? window.formatDate(p.date) : p.date)}</td><td>${escapeHtml(p.amount)}</td><td>${escapeHtml(p.method)}</td><td>${escapeHtml(p.or)}</td></tr>`
     ).join('');
 
     printWindow.document.write(

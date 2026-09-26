@@ -313,7 +313,11 @@ INSERT INTO notification_templates (template_key, name, channel, subject, body) 
 
 ('braces_progress_updated', 'Braces Progress Updated', 'email',
  'Braces Progress Update - Aromin-Sison Dental Clinic',
- 'Hi {patient_name}, your braces progress has been updated. Current stage: {stage}. Progress: {progress}%. Next: {next}. - Aromin-Sison Dental Clinic');
+ 'Hi {patient_name}, your treatment progress has been updated. Current stage: {stage}. Progress: {progress}%. Next step: {next}. Dentist notes: {notes}. - Aromin-Sison Dental Clinic'),
+
+('treatment_record_updated_patient', 'Treatment Record Updated', 'email',
+ 'Treatment Record Updated - Aromin-Sison Dental Clinic',
+ 'Hi {patient_name}, your treatment record has been updated. Service: {service_treatment}. Date: {date}. Dentist: {dentist}. Notes: {notes}. - Aromin-Sison Dental Clinic');
 
 -- Logs every email notification. The enum retains sms for legacy audit rows.
 CREATE TABLE notification_logs (

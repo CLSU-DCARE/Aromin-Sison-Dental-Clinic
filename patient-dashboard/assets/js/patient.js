@@ -279,7 +279,7 @@ function appointmentSources() {
       row => ({
         src: 'schedule',
         title:
-          row.date +
+          formatPatientDate(row.date) +
           ' · ' +
           row.time,
         sub:
@@ -294,7 +294,7 @@ function appointmentSources() {
     ...PatientState.history.map(
       row => ({
         src: 'history',
-        title: row.date,
+        title: formatPatientDate(row.date),
         sub:
           row.svc +
           ' · ' +
@@ -812,7 +812,7 @@ function renderSchedule(rows) {
     rows.map((row, index) => {
       return (
         `<tr>` +
-        `<td>${row.date}</td>` +
+        `<td>${escapeHtml(formatPatientDate(row.date))}</td>` +
         `<td>${row.time}</td>` +
         `<td>${escapeHtml(row.svc)}</td>` +
         `<td>${escapeHtml(row.dentist)}</td>` +
@@ -855,6 +855,17 @@ document.getElementById('scheduleBody')?.addEventListener('click', async event =
   finally { button.disabled = false; }
 });
 
+function formatPatientDate(value) {
+  const raw = String(value || '').trim();
+  if (!raw || raw === '-') return raw || '-';
+  const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const date = match
+    ? new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]))
+    : new Date(raw.replace(' ', 'T'));
+  if (Number.isNaN(date.getTime())) return raw;
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
 function renderHistory(rows) {
   const tableBody =
     document.getElementById(
@@ -880,7 +891,7 @@ function renderHistory(rows) {
     rows.map(row => {
       return (
         `<tr>` +
-        `<td>${row.date}</td>` +
+        `<td>${escapeHtml(formatPatientDate(row.date))}</td>` +
         `<td>${escapeHtml(row.svc)}</td>` +
         `<td>${escapeHtml(row.dentist)}</td>` +
         `<td>${statusTag(row)}</td>` +
@@ -908,19 +919,19 @@ function renderTreatments(rows) {
 
   list.innerHTML =
     rows.map(treatment => {
-      const detail = [treatment.diagnosis, treatment.notes]
-        .filter(Boolean);
+      const diagnosis = String(treatment.diagnosis || '').trim();
+      const notes = String(treatment.notes || '').trim();
       const meta = String(treatment.meta || '').split(/\s+·\s+/);
-      const date = meta[0] || '-';
+      const date = formatPatientDate(meta[0] || '-');
       const dentist = meta.slice(1).join(' · ') || '-';
       return `<tr>
         <td>${escapeHtml(date)}</td>
         <td>
           <div class="treatment-table-title">${escapeHtml(treatment.title)}</div>
-          ${detail.length ? `<div class="treatment-table-notes">${detail.map(text => `<p>${escapeHtml(text)}</p>`).join('')}</div>` : ''}
+          ${diagnosis ? `<div class="treatment-table-notes"><p>${escapeHtml(diagnosis)}</p></div>` : ''}
         </td>
         <td>${escapeHtml(dentist)}</td>
-        <td>${detail.length ? escapeHtml(detail[detail.length - 1]) : '-'}</td>
+        <td>${notes ? `<div class="treatment-table-notes"><p>${escapeHtml(notes)}</p></div>` : '-'}</td>
       </tr>`;
     }).join('');
 }
@@ -965,10 +976,7 @@ function renderPromoCards(cards) {
         `<div class="promo-body">` +
         `<h4>${escapeHtml(card.title)}</h4>` +
         `<p>${escapeHtml(card.desc)}</p>` +
-        `<div class="promo-foot">` +
-        `<span class="tag tag-green">${escapeHtml(card.status || 'Live')}</span>` +
-        `<div class="promo-actions"><span>${escapeHtml(card.start_date || '')} - ${escapeHtml(card.end_date || '')}</span></div>` +
-        `</div>` +
+        `<div class="promo-date">${escapeHtml(formatPromoRange(card))}</div>` +
         `<span class="promo-view">View details</span>` +
         `</div>` +
         `</div>`
@@ -977,9 +985,9 @@ function renderPromoCards(cards) {
 }
 
 function formatPromoRange(card) {
-  if (card.start_date && card.end_date) return card.start_date + ' to ' + card.end_date;
-  if (card.start_date) return 'Starts ' + card.start_date;
-  if (card.end_date) return 'Until ' + card.end_date;
+  if (card.start_date && card.end_date) return formatPatientDate(card.start_date) + ' to ' + formatPatientDate(card.end_date);
+  if (card.start_date) return 'Starts ' + formatPatientDate(card.start_date);
+  if (card.end_date) return 'Until ' + formatPatientDate(card.end_date);
   return 'Clinic promotion';
 }
 
@@ -1161,15 +1169,7 @@ function applyPatientSnapshot(data, changed) {
   PatientState.user.profile_image_url = window.ASDCAuthUser?.profile_image_url || PatientState.user.profile_image_url || null;
   renderUser(PatientState.user);
   inbox.setItems(data.notifications || []);
-  const dentistSelect = document.getElementById('bookDentist');
-  const dentistVersion = JSON.stringify(data.dentists || []);
-  if (dentistSelect && dentistSelect.dataset.version !== dentistVersion) {
-    const selected = dentistSelect.value;
-    dentistSelect.innerHTML = '<option>No preference</option>' + (data.dentists || []).map(d => `<option>${escapeHtml(d.full_name)}</option>`).join('');
-    if ([...dentistSelect.options].some(o => o.value === selected)) dentistSelect.value = selected;
-    dentistSelect.dataset.version = dentistVersion;
-  }
-  PatientState.promoCards = (data.announcements || []).map(a => ({ ...a, title: a.title, tag: 'green', status: a.status === 'scheduled' ? 'Scheduled' : 'Live', eyebrow: 'Clinic announcement', meta: a.start_date || '' }));
+  PatientState.promoCards = (data.announcements || []).map(a => ({ ...a, title: a.title, tag: 'green', status: a.status === 'scheduled' ? 'Scheduled' : 'Live', eyebrow: 'Clinic announcement', meta: a.start_date ? formatPatientDate(a.start_date) : '' }));
   PatientState.dashboard.announcements = PatientState.promoCards.map(a => ({ ...a, sub: a.desc }));
   renderPromoCards(PatientState.promoCards); renderAnnouncementMinis(PatientState.dashboard.announcements);
   const dentist = (braces.contract.summary || []).find(item => item.l === 'Treating Dentist');
@@ -1191,7 +1191,7 @@ function applyPatientSnapshot(data, changed) {
     .filter(item => String(item.status_code || item.status || '').toLowerCase() === 'pending');
   const first = confirmedAppointments[0];
   document.getElementById('welcomeText').textContent = first
-    ? 'Your next visit is on ' + first.date + ' at ' + first.time + ' for ' + first.svc + '.'
+    ? 'Your next visit is on ' + formatPatientDate(first.date) + ' at ' + first.time + ' for ' + first.svc + '.'
     : pendingAppointments.length
       ? 'Your appointment request is waiting for clinic approval.'
     : 'You have no upcoming appointments.';

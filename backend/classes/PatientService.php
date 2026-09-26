@@ -119,12 +119,16 @@ class PatientService
      */
     public static function listAll(): array
     {
+        PaymentApprovalService::ensureGeneralTreatmentBillingTables();
         $scope = DataScope::current();
         [$where, $params] = $scope->patientFilter();
         $stmt = Database::pdo()->prepare(
-            "SELECT patient_id, first_name, last_name, contact_number, email, registered_at,
-                    (SELECT MAX(a.scheduled_date) FROM appointments a WHERE a.patient_id=p.patient_id AND a.status='completed') AS last_visit
+            "SELECT p.patient_id, p.first_name, p.last_name, p.contact_number, p.email, p.registered_at,
+                    COALESCE(u.is_active, 1) AS is_active,
+                    (SELECT MAX(a.scheduled_date) FROM appointments a WHERE a.patient_id=p.patient_id AND a.status='completed') AS last_visit,
+                    (SELECT tb.balance_amount FROM treatment_bills tb WHERE tb.patient_id=p.patient_id AND tb.status='active' ORDER BY tb.bill_id DESC LIMIT 1) AS treatment_balance
              FROM patients p
+             LEFT JOIN users u ON u.user_id=p.user_id
              WHERE {$where}
              ORDER BY registered_at DESC"
         );

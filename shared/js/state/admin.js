@@ -18,7 +18,7 @@ const AdminState = {
         "trend": "",
         "trendClass": "",
         "num": "-",
-        "label": "Active Appointments This Month"
+        "label": "Active Appointments This Day"
       },
       {
         "iconBg": "rgba(199,145,62,0.14)",
@@ -27,7 +27,7 @@ const AdminState = {
         "trend": "",
         "trendClass": "",
         "num": "-",
-        "label": "Active braces patients"
+        "label": "Active braces contract"
       },
       {
         "iconBg": "rgba(156,139,62,0.14)",
@@ -45,7 +45,7 @@ const AdminState = {
         "trend": "",
         "trendClass": "",
         "num": "-",
-        "label": "Overdue braces contracts"
+        "label": "Overdue braces contract"
       }
     ],
     "weekLabel": "This week",

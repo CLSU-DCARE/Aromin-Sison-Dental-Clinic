@@ -1,6 +1,6 @@
 /**
  * ReportExporter: Aromin-Sison Dental Clinic System.
- * Client-side PDF export via browser print dialog.
+ * Client-side A4 PDF download for clinic reports.
  * Loads the clinic logo once and caches it as a data URL.
  */
 (function () {
@@ -43,16 +43,6 @@
         return;
       }
 
-      const win = window.open('', '_blank');
-      if (!win) {
-        if (toast)
-          toast.show(
-            'Pop-up blocked: allow pop-ups to export the report.',
-            'error'
-          );
-        return;
-      }
-
       const esc = escHtml;
       const thead = columns.map((c) => `<th>${esc(c.label)}</th>`).join('');
       const tbody = rows
@@ -72,7 +62,59 @@
         ? `<img class="report-logo" src="${logo}" alt="Aromin-Sison Dental Clinic">`
         : '';
 
-      win.document.write(
+      const jsPDF = window.jspdf && window.jspdf.jsPDF;
+      if (jsPDF) {
+        const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const left = 14;
+        const right = pageWidth - 14;
+        const generated = new Date().toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
+        pdf.setTextColor(27, 27, 25);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(15);
+        pdf.text(String(title), 58, 25);
+        if (logo) pdf.addImage(logo, 'PNG', left, 13, 39, 18);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(8);
+        pdf.setTextColor(100, 100, 95);
+        pdf.text('AROMIN-SISON DENTAL CLINIC', right, 20, { align: 'right' });
+        pdf.text(generated.toUpperCase(), right, 26, { align: 'right' });
+        pdf.setDrawColor(90, 90, 86);
+        pdf.setLineWidth(0.35);
+        pdf.line(left, 38, right, 38);
+        const widths = [62, 54, 48, 30];
+        const headers = columns.map(c => String(c.label).toUpperCase());
+        let y = 48;
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(7);
+        pdf.setTextColor(65, 65, 60);
+        let x = left;
+        headers.forEach((header, index) => { pdf.text(header, x + 2, y); x += widths[index] || 40; });
+        pdf.setDrawColor(205, 205, 200);
+        pdf.line(left, y + 4, right, y + 4);
+        y += 11;
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(8);
+        pdf.setTextColor(35, 35, 32);
+        rows.forEach(row => {
+          const values = columns.map(c => String(c.value(row) ?? ''));
+          x = left;
+          values.forEach((value, index) => { pdf.text(value.slice(0, 34), x + 2, y); x += widths[index] || 40; });
+          pdf.setDrawColor(225, 225, 220);
+          pdf.line(left, y + 4, right, y + 4);
+          y += 9;
+        });
+        pdf.setFontSize(7);
+        pdf.setTextColor(90, 90, 86);
+        pdf.text('Aromin-Sison Dental Clinic', left, 285);
+        pdf.text('1 / 1', right, 285, { align: 'right' });
+        const filename = String(title || 'clinic-report').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'clinic-report';
+        pdf.save(`${filename}.pdf`);
+        if (toast) toast.show('PDF downloaded.');
+        return;
+      }
+
+      const documentHtml =
         `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>${esc(
           title
         )}</title>` +
@@ -87,7 +129,8 @@
         th,td{padding:8px 10px;text-align:left;border-bottom:1px solid #e5e5e0;}
         th{font-weight:600;background:#f8f7f2;color:#4a4a42;font-size:11px;text-transform:uppercase;letter-spacing:.04em;}
         tr:nth-child(even){background:#fafaf6;}
-        @media print{body{padding:0;}@page{margin:1.5cm;}}
+        @page{size:A4 portrait;margin:1.5cm;}
+        @media print{body{padding:0;}}
         </style></head><body>` +
           `<div class="report-head">${logoHtml}<div><h1>${esc(
             title
@@ -95,10 +138,18 @@
             date
           )}</div></div>` +
           `<table><thead><tr>${thead}</tr></thead><tbody>${tbody}</tbody></table>` +
-          `</body></html>`
-      );
-      win.document.close();
-      setTimeout(() => win.print(), 400);
+          `</body></html>`;
+      const blob = new Blob([documentHtml], { type: 'application/msword' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      const filename = String(title || 'clinic-report').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'clinic-report';
+      link.href = url;
+      link.download = `${filename}.html`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      if (toast) toast.show('Report downloaded.');
     }
   }
 

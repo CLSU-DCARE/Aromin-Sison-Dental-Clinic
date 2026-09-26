@@ -242,7 +242,7 @@ window.AppointmentScheduler = class AppointmentScheduler {
       }).join('')
       : '<tr><td colspan="6" class="empty-cell">No pending booking requests for this week.</td></tr>';
     if (this.state.pending?.length) {
-      const rows = this.state.pending.map(a => `<tr><td>${escapeHtml(a.patient_name)}</td><td>${escapeHtml(a.service_type)}</td><td>${escapeHtml(a.scheduled_date)} ${escapeHtml(String(a.scheduled_time).slice(0,5))}</td><td>Patient portal</td><td>${this._statusTag(a.status)}</td><td>${this._actionControls(a)}</td></tr>`).join('');
+      const rows = this.state.pending.map(a => `<tr><td>${escapeHtml(a.patient_name)}</td><td>${escapeHtml(a.service_type)}</td><td>${escapeHtml(this._dateLabel(a.scheduled_date))} ${escapeHtml(String(a.scheduled_time).slice(0,5))}</td><td>Patient portal</td><td>${this._statusTag(a.status)}</td><td>${this._actionControls(a)}</td></tr>`).join('');
       tbody.innerHTML = (this.state.requests.length ? tbody.innerHTML : '') + rows;
     }
   }

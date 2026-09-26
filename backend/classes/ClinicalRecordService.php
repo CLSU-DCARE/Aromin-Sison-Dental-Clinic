@@ -12,10 +12,41 @@ class ClinicalRecordService
         $stmt->execute($params);
         return array_map(static function ($r) {
             $procedure = $r['treatment_given'] ?: ($r['diagnosis'] ?: $r['treatment_protocol']);
-            $category = str_starts_with((string) $procedure, 'Braces Progress') ? 'Progress' : ($r['treatment_given'] ? 'Treatment' : 'Protocol');
+            $category = self::categoryFor($procedure, (bool) $r['treatment_given']);
             return $r + ['id' => (int) $r['record_id'], 'initials' => self::initials((string) $r['name']), 'category' => $category,
                 'procedure' => $procedure, 'date' => $r['date_recorded'], 'status' => 'Recorded', 'tag' => 'green'];
         }, $stmt->fetchAll());
+    }
+
+    private static function categoryFor(?string $procedure, bool $hasTreatment): string
+    {
+        $service = trim((string) $procedure);
+        if (str_starts_with($service, 'Braces Progress')) return 'Treatment';
+        return [
+            'Cleaning & Check-up' => 'Preventive',
+            'Consultation' => 'Consultation',
+            'Dental Examination' => 'Consultation',
+        ][$service] ?? ($hasTreatment ? 'Treatment' : 'Protocol');
+    }
+
+    public static function delete(int $recordId): array
+    {
+        if ($recordId < 1) ApiResponse::error(422, 'validation_failed', 'Choose a valid treatment record.');
+        [$where, $params] = DataScope::current()->patientFilter();
+        $pdo = Database::pdo();
+        $stmt = $pdo->prepare("SELECT r.record_id FROM treatment_records r JOIN patients p ON p.patient_id=r.patient_id WHERE r.record_id=? AND $where FOR UPDATE");
+        $stmt->execute(array_merge([$recordId], $params));
+        if (!$stmt->fetchColumn()) ApiResponse::error(404, 'not_found', 'Treatment record not found.');
+        $pdo->beginTransaction();
+        try {
+            $pdo->prepare('DELETE FROM inventory_transactions WHERE treatment_record_id=?')->execute([$recordId]);
+            $pdo->prepare('DELETE FROM treatment_records WHERE record_id=?')->execute([$recordId]);
+            $pdo->commit();
+            return ['record_id' => $recordId];
+        } catch (\Throwable $e) {
+            if ($pdo->inTransaction()) $pdo->rollBack();
+            throw $e;
+        }
     }
 
     public static function save(array $body, bool $editing): array
@@ -60,7 +91,7 @@ class ClinicalRecordService
                 $recordId = (int) $pdo->lastInsertId();
                 InventoryUsageService::consumeForTreatment($pdo, $recordId, $texts['treatment_given']);
             }
-            PortalEvent::patient($patientId, 'Treatment record updated', 'Your clinic treatment record has been updated.', 'info');
+            PortalEvent::treatmentRecord($patientId, $recordId);
             $pdo->commit();
             return ['record_id' => $recordId];
         } catch (\Throwable $e) { if ($pdo->inTransaction()) $pdo->rollBack(); throw $e; }

@@ -222,7 +222,7 @@ class ContractService
             $data['next_note'] !== '' ? $data['next_note'] : null
         );
         $result = self::present(self::findRaw($contractId) + self::patientNames((int) $existing['patient_id']) + ['dentist_name' => self::dentistName($existing['dentist_id'])]);
-        PortalEvent::patient((int) $existing['patient_id'], 'Treatment progress updated', $stage . ' (' . $pct . '%)', 'info');
+        PortalEvent::treatmentProgress((int) $existing['patient_id'], $stage, $pct, $data['next_note'] ?? null, $data['progress_note'] ?? null);
         $pdo->commit();
         return $result;
         } catch (\Throwable $e) { if ($pdo->inTransaction()) $pdo->rollBack(); throw $e; }

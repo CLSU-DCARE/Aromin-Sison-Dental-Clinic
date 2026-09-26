@@ -14,7 +14,7 @@ $input = \ASDC\ApiResponse::requireJson();
 
 $identifierValue = $input['identifier'] ?? $input['email'] ?? '';
 $identifier  = is_string($identifierValue) ? $identifierValue : '';
-$password    = is_string($input['password'] ?? '') ? trim($input['password']) : '';
+$password    = is_string($input['password'] ?? '') ? $input['password'] : '';
 $rememberMe  = isset($input['remember_me']) ? (bool) $input['remember_me'] : false;
 
 $result = \ASDC\AuthService::login($identifier, $password, $rememberMe);

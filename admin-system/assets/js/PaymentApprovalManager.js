@@ -10,7 +10,8 @@
 /* global Modal, showToast, escapeHtml, nameCell, apiFetch, applyBraces, patientMgr */
 window.PaymentApprovalManager = class PaymentApprovalManager {
   constructor () {
-    this._filter   = 'Pending';
+    this._filter   = 'All';
+    this._category = 'All';
     this._receiptModal = new Modal('receiptModal');
     this._receiptCurrent = null;
     this._items = []; // Last server response, used by _findById.
@@ -38,7 +39,6 @@ window.PaymentApprovalManager = class PaymentApprovalManager {
     if (!snapshot && window.staffLiveSync) return window.staffLiveSync.refetch();
     const tbody  = document.getElementById('adminPaymentsBody');
     const empty  = document.getElementById('payAdminEmpty');
-    const countTag = document.getElementById('payQueueCount');
     if (!tbody) return;
 
     let items;
@@ -53,14 +53,15 @@ window.PaymentApprovalManager = class PaymentApprovalManager {
     this._items = items;
 
     const list = items
-      .filter(s => this._filter === 'All' || s.status === this._filter.toLowerCase())
+      .filter(s => {
+        if (this._filter === 'All') return true;
+        if (this._filter === 'Overdue') return s.dueStatus === 'overdue';
+        if (this._filter === 'Completed') return s.status === 'approved';
+        return s.status === this._filter.toLowerCase();
+      })
+      .filter(s => this._category === 'All' || s.category === this._category)
       .slice().reverse();
 
-    if (countTag) {
-      const pending = items.filter(s => s.status === 'pending').length;
-      countTag.hidden = pending === 0;
-      countTag.textContent = pending + ' awaiting confirmation';
-    }
 
     if (!list.length) {
       tbody.innerHTML = '';
@@ -177,6 +178,11 @@ window.PaymentApprovalManager = class PaymentApprovalManager {
     const group = document.querySelector('#view-payments .toolbar-left');
     if (!group) return;
     wireChips(group, label => { this._filter = label; this.render(); });
-    setChipGroup(group, 'Pending');
+    setChipGroup(group, 'All');
+    const categoryGroup = document.querySelectorAll('#view-payments .toolbar-left')[1];
+    if (categoryGroup) {
+      wireChips(categoryGroup, label => { this._category = label; this.render(); });
+      setChipGroup(categoryGroup, 'All');
+    }
   }
 };

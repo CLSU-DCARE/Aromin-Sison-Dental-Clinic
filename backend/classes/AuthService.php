@@ -343,7 +343,7 @@ class AuthService
 
         // Rate limit: 3 attempts per 15 minutes (tracked by email + IP)
         $resetKey = "password_reset:{$email}";
-        $ipKey = 'ip:' . AuthMiddleware::getClientIp();
+        $ipKey = 'password_reset_ip:' . AuthMiddleware::getClientIp();
         $lockout = RateLimiter::lockoutRemaining($resetKey);
         $ipLockout = RateLimiter::lockoutRemaining($ipKey);
         if ($lockout > 0 || $ipLockout > 0) {
@@ -383,7 +383,12 @@ class AuthService
             }
 
             $resetUrl = $baseUrl . '/auth/reset-password.html?token=' . rawurlencode($token);
-            $body = "Hello {$user['full_name']},\n\nUse this link to reset your password:\n\n{$resetUrl}\n\nThe link expires in one hour and can only be used once. If you did not request this, ignore this email.";
+            $body = "Dear {$user['full_name']},\n\n"
+                . "We received a request to reset the password for your account.\n\n"
+                . "To continue, please click the link below. You will be redirected to a secure page where you can verify your account and set a new password.\n\n"
+                . "Reset Password Link:\n{$resetUrl}\n\n"
+                . "For your security, this link will expire after 15 minutes. If you did not request a password reset, please ignore this email or contact the clinic immediately.\n\n"
+                . "Thank you,\nAromin-Sison Dental Clinic";
 
             $mailResult = Mailer::sendEmail($user['email'], 'Reset your Aromin-Sison Dental Clinic password', $body);
             if (empty($mailResult['ok'])) {

@@ -13,6 +13,7 @@ if (typeof window !== 'undefined') !window.ASDC && (window.ASDC = {});
     dashboard:    { title: 'Dashboard',          crumb: 'Overview' },
     patients:     { title: 'Patients',           crumb: 'Patients' },
     braces:       { title: 'Braces Contracts',   crumb: 'Patients' },
+    payments:     { title: 'Payment & Billing',  crumb: 'Billing' },
     records:      { title: 'Treatment Records',  crumb: 'Records' },
     archived:     { title: 'Archived Patients',  crumb: 'Patients' },
     reports:      { title: 'Attendance Reports', crumb: 'Reports' },
@@ -77,6 +78,7 @@ if (typeof window !== 'undefined') !window.ASDC && (window.ASDC = {});
       self.viewSections.forEach(function(s){ s.classList.remove('active', 'view-leave'); });
       target.classList.add('active');
       if (viewKey === 'archived') self._loadArchivedPatients();
+      if (viewKey === 'payments') self._loadPayments();
       window.scrollTo({ top: 0, behavior: 'smooth' });
       ASDC._sidebar.close();
       ASDC._toast.show('Showing ' + meta.title);
@@ -127,10 +129,8 @@ if (inboxEmpty) inboxEmpty.textContent = 'Loading notifications...';
 
   DentistDashboard.prototype._applyRecords = function(){
     var records = AdminState.records || [];
-    // Chip labels are plural ("Treatments"/"Protocols") but record.category
-    // values are singular ("Treatment"/"Protocol") - map them, or every
-    // filter except "All" would always show zero results.
-    var categoryMap = { Treatments: 'Treatment', Protocols: 'Protocol' };
+    // Chip labels are plural ("Treatments") while record categories are singular.
+    var categoryMap = { Treatments: 'Treatment' };
     var category = categoryMap[this.recordsFilter] || this.recordsFilter;
     var filtered = category === 'All'
       ? records
@@ -156,6 +156,23 @@ if (inboxEmpty) inboxEmpty.textContent = 'Loading notifications...';
       self.bracesFilter = label;
       self._applyBracesContracts();
     });
+    document.getElementById('exportDentistBracesBtn')?.addEventListener('click', function(){
+      if (typeof exportTablePDF !== 'function') return;
+      exportTablePDF({
+        title: 'Braces Contracts',
+        columns: [
+          { label: 'Patient', value: function(c){ return c.name + ' (' + c.id + ')'; } },
+          { label: 'Plan', value: function(c){ return c.plan || '-'; } },
+          { label: 'Monthly', value: function(c){ return c.monthly; } },
+          { label: 'Paid', value: function(c){ return c.paid; } },
+          { label: 'Balance', value: function(c){ return c.balance; } },
+          { label: 'Due', value: function(c){ return c.dueDate; } },
+          { label: 'Status', value: function(c){ return c.status; } },
+          { label: 'Progress', value: function(c){ return String(c.progressPct || 0) + '%'; } }
+        ],
+        rows: self.bracesExportRows || []
+      });
+    });
   };
 
   DentistDashboard.prototype._wireReportPeriod = function(){
@@ -175,7 +192,10 @@ if (inboxEmpty) inboxEmpty.textContent = 'Loading notifications...';
     });
     document.getElementById('archivedPatientsBody')?.addEventListener('click', function(event){
       var view = event.target.closest('[data-archive-view]');
-      if (view) self._openArchivedDetails(view.dataset.archiveView);
+      if (view) {
+        event.preventDefault();
+        self._openArchivedDetails(view.dataset.archiveView, view);
+      }
     });
   };
 
@@ -218,10 +238,10 @@ if (inboxEmpty) inboxEmpty.textContent = 'Loading notifications...';
       ].join(' - ');
       return '<tr>' +
         '<td>' + ASDC.HtmlHelpers.nameCell('', name, '#P-' + Number(patient.patient_id)) + '</td>' +
-        '<td>' + ASDC.HtmlHelpers.escapeHtml(patient.archived_at || '') + '</td>' +
+        '<td>' + ASDC.HtmlHelpers.escapeHtml(ASDC.HtmlHelpers.formatDateTime(patient.archived_at || '')) + '</td>' +
         '<td>' + ASDC.HtmlHelpers.escapeHtml(retained) + '</td>' +
         '<td>' + ASDC.HtmlHelpers.escapeHtml(patient.archived_by_name || 'System') + '</td>' +
-        '<td><button class="btn btn-outline btn-sm" data-archive-view="' + Number(patient.patient_id) + '">View</button></td>' +
+        '<td><button type="button" class="btn btn-outline btn-sm" data-archive-view="' + Number(patient.patient_id) + '">View</button></td>' +
       '</tr>';
     }).join('');
   };
@@ -234,14 +254,14 @@ if (inboxEmpty) inboxEmpty.textContent = 'Loading notifications...';
     var name = this._archivedName(data.patient);
     title.textContent = name + ' - #P-' + data.patient.patient_id;
     var groups = [
-      ['Appointments', data.appointments, function(item){ return item.scheduled_date + ' ' + String(item.scheduled_time).slice(0, 5) + ' - ' + item.service_type + ' - ' + item.status; }],
-      ['Treatment Records', data.records, function(item){ return item.date_recorded + ' - ' + (item.treatment_given || item.treatment_protocol || item.diagnosis || 'Clinical record'); }],
+      ['Appointments', data.appointments, function(item){ return ASDC.HtmlHelpers.formatDate(item.scheduled_date) + ' ' + String(item.scheduled_time).slice(0, 5) + ' - ' + item.service_type + ' - ' + item.status; }],
+      ['Treatment Records', data.records, function(item){ return ASDC.HtmlHelpers.formatDate(item.date_recorded) + ' - ' + (item.treatment_given || item.treatment_protocol || item.diagnosis || 'Clinical record'); }],
       ['Braces Contracts', data.contracts, function(item){ return '#B-' + item.contract_id + ' - ' + item.status + ' - ' + ContractFormat.peso(item.balance_amount || 0) + ' balance'; }],
-      ['Payments', data.payments, function(item){ return ContractFormat.peso(item.amount_paid || 0) + ' - ' + item.status + ' - ' + (item.payment_date || item.created_at || ''); }],
-      ['Notifications', data.notifications, function(item){ return item.title + ' - ' + (item.created_at || ''); }]
+      ['Payments', data.payments, function(item){ return ContractFormat.peso(item.amount_paid || 0) + ' - ' + item.status + ' - ' + ASDC.HtmlHelpers.formatDateTime(item.payment_date || item.created_at || ''); }],
+      ['Notifications', data.notifications, function(item){ return item.title + ' - ' + ASDC.HtmlHelpers.formatDateTime(item.created_at || ''); }]
     ];
     body.innerHTML = '<div class="detail-grid">' +
-      '<div class="row"><span>Archived</span><span>' + ASDC.HtmlHelpers.escapeHtml(data.patient.archived_at || '') + '</span></div>' +
+      '<div class="row"><span>Archived</span><span>' + ASDC.HtmlHelpers.escapeHtml(ASDC.HtmlHelpers.formatDateTime(data.patient.archived_at || '')) + '</span></div>' +
       '<div class="row"><span>Archived By</span><span>' + ASDC.HtmlHelpers.escapeHtml(data.patient.archived_by_name || 'System') + '</span></div>' +
       '<div class="row"><span>Retention</span><span>' + ASDC.HtmlHelpers.escapeHtml(data.patient.retention_note || '') + '</span></div>' +
     '</div>' + groups.map(function(group){
@@ -252,13 +272,84 @@ if (inboxEmpty) inboxEmpty.textContent = 'Loading notifications...';
           : '<p class="empty-cell">None retained in this category.</p>');
     }).join('');
     panel.hidden = false;
+    panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
-  DentistDashboard.prototype._openArchivedDetails = function(patientId){
+  DentistDashboard.prototype._loadPayments = function(){
+    var tbody = document.getElementById('dentistPaymentsBody');
+    var empty = document.getElementById('dentistPaymentsEmpty');
+    if (!tbody) return;
     var self = this;
+    var category = this.paymentCategory || 'All';
+    var status = this.paymentStatus || 'All';
+    var statusGroup = document.querySelector('#view-payments [aria-label="Filter payment status"]');
+    if (statusGroup && !statusGroup.dataset.wired) {
+      statusGroup.dataset.wired = '1';
+      new ASDC.FilterChipGroup(statusGroup, function(label){ self.paymentStatus = label; self._loadPayments(); });
+    }
+    var categoryGroup = document.querySelector('#view-payments [aria-label="Filter payment category"]');
+    if (categoryGroup && !categoryGroup.dataset.wired) {
+      categoryGroup.dataset.wired = '1';
+      new ASDC.FilterChipGroup(categoryGroup, function(label){ self.paymentCategory = label; self._loadPayments(); });
+    }
+    tbody.innerHTML = '<tr><td colspan="6" class="empty-cell">Loading payment records...</td></tr>';
+    apiFetch('../backend/api/payments/payments.php', { cache: 'no-store' })
+      .then(function(data){
+        var payments = (Array.isArray(data.payments) ? data.payments : []).filter(function(payment){
+          var statusMatch = status === 'All' ||
+            (status === 'Completed' && payment.status === 'approved') ||
+            (status === 'Overdue' && payment.dueStatus === 'overdue') ||
+            (status !== 'Completed' && status !== 'Overdue' && status !== 'All' && payment.status === status.toLowerCase());
+          return statusMatch && (category === 'All' || payment.category === category);
+        });
+        if (!payments.length) {
+          tbody.innerHTML = '';
+          if (empty) empty.hidden = false;
+          return;
+        }
+        if (empty) empty.hidden = true;
+        tbody.innerHTML = payments.map(function(payment){
+          var tag = payment.status === 'approved' ? 'green' : payment.status === 'rejected' ? 'red' : 'amber';
+          var label = payment.status === 'approved' ? 'Completed' : String(payment.status || 'Pending').replace(/^./, function(c){ return c.toUpperCase(); });
+          var dueTag = payment.dueStatus === 'overdue' ? 'red' : payment.dueStatus === 'paid' ? 'green' : 'amber';
+          return '<tr>' +
+            '<td>' + ASDC.HtmlHelpers.escapeHtml(payment.patient || payment.pid || '') + '</td>' +
+            '<td>' + ASDC.HtmlHelpers.escapeHtml(payment.amount || '') + '</td>' +
+            '<td>' + ASDC.HtmlHelpers.escapeHtml(payment.method || '') + '</td>' +
+            '<td><span class="tag tag-' + dueTag + '">' + ASDC.HtmlHelpers.escapeHtml(ASDC.HtmlHelpers.formatDate(payment.dueDate || 'Not set')) + '</span></td>' +
+            '<td>' + ASDC.HtmlHelpers.escapeHtml(payment.submittedAt || '') + '</td>' +
+            '<td><span class="tag tag-' + tag + '">' + ASDC.HtmlHelpers.escapeHtml(label) + '</span></td>' +
+          '</tr>';
+        }).join('');
+      })
+      .catch(function(error){
+        tbody.innerHTML = '<tr><td colspan="6" class="empty-cell">Unable to load payment records.</td></tr>';
+        showToast(error.message, 'error');
+      });
+  };
+
+  DentistDashboard.prototype._openArchivedDetails = function(patientId, button){
+    var self = this;
+    var panel = document.getElementById('archivedDetailPanel');
+    var body = document.getElementById('archivedDetailBody');
+    if (panel) panel.hidden = false;
+    if (body) body.innerHTML = '<p class="empty-cell">Loading archived patient details...</p>';
+    if (button) {
+      button.disabled = true;
+      button.textContent = 'Loading...';
+    }
     apiFetch('../backend/api/patients/archived.php?patient_id=' + encodeURIComponent(patientId), { cache: 'no-store' })
       .then(function(data){ self._renderArchivedDetails(data); })
-      .catch(function(error){ showToast(error.message, 'error'); });
+      .catch(function(error){
+        if (body) body.innerHTML = '<p class="empty-cell">Unable to load archived patient details.</p>';
+        showToast(error.message, 'error');
+      })
+      .finally(function(){
+        if (button) {
+          button.disabled = false;
+          button.textContent = 'View';
+        }
+      });
   };
 
   DentistDashboard.prototype._wireStatCards = function(){
@@ -368,23 +459,24 @@ if (inboxEmpty) inboxEmpty.textContent = 'Loading notifications...';
 
   DentistDashboard.prototype._applyPatients = function(){
     var self = this;
-      var contracts = (self._contractsRaw || []).map(function(c){
-        return {
-          id: c.id, pid: c.pid, initials: c.initials, name: c.name,
-          plan: c.plan, monthly: ContractFormat.peso(c.monthly),
-          paid: ContractFormat.peso(c.paid), balance: ContractFormat.peso(c.balance),
-          status: c.status, tag: c.tag,
-          progressPct: c.progress ? c.progress.pct : 0
-        };
-      });
-      (self.snapshot?.patients || []).forEach(function(p) {
-        if (!contracts.some(c => c.pid === '#P-' + p.patient_id)) contracts.push({ id: '#P-' + p.patient_id, pid: '#P-' + p.patient_id, initials: '', name: p.first_name + ' ' + p.last_name, plan: 'No braces contract', monthly: '-', paid: '-', balance: '-', dueDate: '-', status: 'No contract', tag: 'green', progressPct: null });
-      });
-      var filtered;
-      if (self.patientsFilter === 'All') filtered = contracts;
-      else if (self.patientsFilter === 'Active') filtered = contracts.filter(function(c){ return c.status !== 'Completed'; });
-      else filtered = contracts.filter(function(c){ return c.status === self.patientsFilter; });
-      self._renderPatients(filtered);
+    var patients = (self.snapshot?.patients || []).map(function(p){
+      var name = [p.first_name, p.last_name].filter(Boolean).join(' ').trim();
+      var active = Number(p.is_active) !== 0;
+      return {
+        id: '#P-' + p.patient_id,
+        pid: p.patient_id,
+        initials: name.split(/\s+/).map(function(word){ return word[0] || ''; }).slice(0, 2).join('').toUpperCase(),
+        name: name,
+        contact: p.contact_number || '-',
+        lastVisit: ASDC.HtmlHelpers.formatDate(p.last_visit || '-'),
+        status: active ? 'Active' : 'Inactive',
+        tag: active ? 'green' : 'red'
+      };
+    });
+    var filtered = self.patientsFilter === 'All'
+      ? patients
+      : patients.filter(function(p){ return p.status === self.patientsFilter; });
+    self._renderPatients(filtered);
   };
 
   DentistDashboard.prototype._renderAll = function(){
@@ -434,11 +526,11 @@ if (inboxEmpty) inboxEmpty.textContent = 'Loading notifications...';
     var tbody = document.getElementById('patientsBody');
     if (!tbody) return;
     if (!patients.length){
-      tbody.innerHTML = '<tr><td colspan="8" class="empty-cell">No patients to display.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="4" class="empty-cell">No patients to display.</td></tr>';
       return;
     }
     tbody.innerHTML = patients.map(function(p){
-      return '<tr><td>' + ASDC.HtmlHelpers.nameCell(p.initials, p.name, p.id) + '</td><td>' + ASDC.HtmlHelpers.escapeHtml(p.plan || '') + '</td><td>' + ASDC.HtmlHelpers.escapeHtml(p.monthly || '') + '</td><td>' + ASDC.HtmlHelpers.escapeHtml(p.paid || '') + '</td><td>' + ASDC.HtmlHelpers.escapeHtml(p.balance) + '</td><td>' + ASDC.HtmlHelpers.statusTag(p) + '</td><td>' + (p.progressPct === null ? '-' : p.progressPct + '%') + '</td><td>' + (p.progressPct === null ? '' : '<button class="btn btn-outline btn-sm" data-action="update-progress" data-contract-id="' + p.id + '" data-pid="' + (p.pid || '') + '">Update Progress</button>') + '</td></tr>';
+      return '<tr><td>' + ASDC.HtmlHelpers.nameCell(p.initials, p.name, p.id) + '</td><td>' + ASDC.HtmlHelpers.escapeHtml(p.contact) + '</td><td>' + ASDC.HtmlHelpers.escapeHtml(p.lastVisit) + '</td><td>' + ASDC.HtmlHelpers.statusTag(p) + '</td></tr>';
     }).join('');
   };
 
@@ -469,12 +561,13 @@ if (inboxEmpty) inboxEmpty.textContent = 'Loading notifications...';
   DentistDashboard.prototype._renderBracesContracts = function(contracts){
     var tbody = document.getElementById('bracesContractsBody');
     if (!tbody) return;
+    this.bracesExportRows = contracts;
     if (!contracts.length){
       tbody.innerHTML = '<tr><td colspan="9" class="empty-cell">No braces contracts match this filter.</td></tr>';
       return;
     }
     tbody.innerHTML = contracts.map(function(c){
-      return '<tr><td>' + ASDC.HtmlHelpers.nameCell(c.initials, c.name, c.id) + '</td><td>' + ASDC.HtmlHelpers.escapeHtml(c.plan || '') + '</td><td>' + ASDC.HtmlHelpers.escapeHtml(c.monthly) + '</td><td>' + ASDC.HtmlHelpers.escapeHtml(c.paid) + '</td><td>' + ASDC.HtmlHelpers.escapeHtml(c.balance) + '</td><td>' + ASDC.HtmlHelpers.escapeHtml(c.dueDate) + '</td><td>' + ASDC.HtmlHelpers.statusTag(c) + '</td><td>' + ASDC.HtmlHelpers.escapeHtml(String(c.progressPct || 0)) + '%</td><td><button class="btn btn-outline btn-sm" data-action="update-progress" data-contract-id="' + c.id + '" data-pid="' + (c.pid || '') + '">Update Progress</button></td></tr>';
+      return '<tr><td>' + ASDC.HtmlHelpers.nameCell(c.initials, c.name, c.id) + '</td><td>' + ASDC.HtmlHelpers.escapeHtml(c.plan || '') + '</td><td>' + ASDC.HtmlHelpers.escapeHtml(c.monthly) + '</td><td>' + ASDC.HtmlHelpers.escapeHtml(c.paid) + '</td><td>' + ASDC.HtmlHelpers.escapeHtml(c.balance) + '</td><td>' + ASDC.HtmlHelpers.escapeHtml(ASDC.HtmlHelpers.formatDate(c.dueDate)) + '</td><td>' + ASDC.HtmlHelpers.statusTag(c) + '</td><td>' + ASDC.HtmlHelpers.escapeHtml(String(c.progressPct || 0)) + '%</td><td><button class="btn btn-outline btn-sm" data-action="update-progress" data-contract-id="' + c.id + '" data-pid="' + (c.pid || '') + '">Update Progress</button></td></tr>';
     }).join('');
   };
 
@@ -482,7 +575,7 @@ if (inboxEmpty) inboxEmpty.textContent = 'Loading notifications...';
     var tbody = document.getElementById('recordsBody');
     if (!tbody) return;
     if (!records.length){
-      tbody.innerHTML = '<tr><td colspan="4" class="empty-cell">No treatment records match this filter.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="5" class="empty-cell">No treatment records match this filter.</td></tr>';
       return;
     }
     tbody.innerHTML = records.map(function(r){
@@ -491,9 +584,15 @@ if (inboxEmpty) inboxEmpty.textContent = 'Loading notifications...';
       }).join('');
       var summary = '<div class="record-summary-cell"><strong>' + ASDC.HtmlHelpers.escapeHtml(r.procedure || 'Treatment record') + '</strong>' +
         (details ? '<div class="record-detail-lines">' + details + '</div>' : '') + '</div>';
-      var edit = '<button class="btn btn-outline btn-sm" data-edit-record="' + Number(r.record_id) + '">Edit</button>';
-      return '<tr class="record-row"><td>' + ASDC.HtmlHelpers.nameCell(r.initials || '', r.name, r.dentist || '') + '</td><td><span class="tag tag-green">' + ASDC.HtmlHelpers.escapeHtml(r.category) + '</span></td><td>' + summary + '</td><td><div class="record-date-cell">' + ASDC.HtmlHelpers.escapeHtml(r.date) + edit + '</div></td></tr>';
+      var actions = '<span class="record-actions"><button class="btn btn-outline btn-sm" data-edit-record="' + Number(r.record_id) + '">Edit</button></span>';
+      return '<tr class="record-row"><td>' + ASDC.HtmlHelpers.nameCell(r.initials || '', r.name, r.dentist || '') + '</td><td><span class="tag tag-green">' + ASDC.HtmlHelpers.escapeHtml(r.category) + '</span></td><td>' + summary + '</td><td><div class="record-date-cell">' + ASDC.HtmlHelpers.escapeHtml(ASDC.HtmlHelpers.formatDate(r.date)) + actions + '</div></td></tr>';
     }).join('');
+  };
+
+  DentistDashboard.prototype._updateSelectedRecordActions = function(){
+    var selected = document.querySelectorAll('#recordsBody .record-select:checked').length;
+    var button = document.getElementById('deleteSelectedRecords');
+    if (button) { button.hidden = selected === 0; button.textContent = 'Delete'; }
   };
 
   DentistDashboard.prototype._renderReports = function(reports){
@@ -563,7 +662,7 @@ if (inboxEmpty) inboxEmpty.textContent = 'Loading notifications...';
       return '<tr>' +
         '<td>' + ASDC.HtmlHelpers.escapeHtml(row.patient || '') + '</td>' +
         '<td>' + ASDC.HtmlHelpers.escapeHtml(row.service || '') + '</td>' +
-        '<td>' + ASDC.HtmlHelpers.escapeHtml((row.date || '') + ' ' + (row.time || '')) + '</td>' +
+        '<td>' + ASDC.HtmlHelpers.escapeHtml(ASDC.HtmlHelpers.formatDate(row.date || '') + ' ' + (row.time || '')) + '</td>' +
         '<td>' + ASDC.HtmlHelpers.escapeHtml(row.dentist || 'Unassigned') + '</td>' +
         '<td>' + ASDC.HtmlHelpers.statusTag({ status: row.status, tag: row.tag }) + '</td>' +
       '</tr>';
@@ -602,14 +701,34 @@ if (inboxEmpty) inboxEmpty.textContent = 'Loading notifications...';
     this.appointmentActions = new AppointmentActions({ scheduler: this.appointmentScheduler });
     this.appointmentScheduler.init();
     this.appointmentActions.init();
+    document.getElementById('addClinicalRecord')?.addEventListener('click', () => {
+      if (self.snapshot) ASDC.openClinicalForm(self.snapshot);
+    });
     const apptGroup = document.querySelector('#view-appointments [aria-label="Filter schedule"]');
     if (apptGroup) new ASDC.FilterChipGroup(apptGroup, label => self.appointmentScheduler.setMode(label));
 
-    document.getElementById('addClinicalRecord')?.addEventListener('click', () => { if (self.snapshot) ASDC.openClinicalForm(self.snapshot); });
     document.getElementById('recordsBody')?.addEventListener('click', event => {
       const button = event.target.closest('[data-edit-record]');
       const record = self.snapshot?.records.find(r => Number(r.record_id) === Number(button?.dataset.editRecord));
       if (record) ASDC.openClinicalForm(self.snapshot, record);
+    });
+    document.getElementById('recordsBody')?.addEventListener('change', event => {
+      if (event.target.matches('.record-select')) self._updateSelectedRecordActions();
+    });
+    document.getElementById('selectAllRecords')?.addEventListener('change', event => {
+      document.querySelectorAll('#recordsBody .record-select').forEach(box => { box.checked = event.target.checked; });
+      self._updateSelectedRecordActions();
+    });
+    document.getElementById('deleteSelectedRecords')?.addEventListener('click', async event => {
+      const ids = Array.from(document.querySelectorAll('#recordsBody .record-select:checked')).map(box => Number(box.dataset.recordId)).filter(Boolean);
+      if (!ids.length || !window.confirm('Delete the selected treatment records? This cannot be undone.')) return;
+      event.currentTarget.disabled = true;
+      try {
+        await Promise.all(ids.map(recordId => apiFetch('../backend/api/patients/records.php', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ record_id: recordId }) })));
+        showToast('Selected treatment records deleted.');
+        await window.staffLiveSync?.refetch?.();
+      } catch (error) { showToast(error.message || 'Unable to delete selected records.', 'error'); }
+      finally { event.currentTarget.disabled = false; }
     });
     window.staffLiveSync = ASDC.startPortalSync({ start: () => self.appointmentScheduler.state.start, apply: data => {
       self.snapshot = data;

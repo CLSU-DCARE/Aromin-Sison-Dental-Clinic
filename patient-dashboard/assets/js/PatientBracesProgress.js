@@ -27,7 +27,7 @@ window.PatientBracesProgress = class PatientBracesProgress {
         ? '<div class="stage-check done"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></div>'
         : `<div class="stage-check ${stage.kind}">${stage.num}</div>`;
 
-      return `<div class="stage">${check}<div><div class="stage-name">${escapeHtml(stage.name)}</div><div class="stage-date">${escapeHtml(stage.date)}</div></div></div>`;
+      return `<div class="stage">${check}<div><div class="stage-name">${escapeHtml(stage.name)}</div><div class="stage-date">${escapeHtml(window.formatDate ? window.formatDate(stage.date) : stage.date)}</div></div></div>`;
     }).join('');
   }
 

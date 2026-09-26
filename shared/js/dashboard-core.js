@@ -105,6 +105,8 @@
   window.pencilIcon = ASDC.HtmlHelpers.pencilIcon;
   window.trashIcon = ASDC.HtmlHelpers.trashIcon;
   window.initials = ASDC.HtmlHelpers.initials;
+  window.formatDate = ASDC.HtmlHelpers.formatDate;
+  window.formatDateTime = ASDC.HtmlHelpers.formatDateTime;
 
   // Notifications
   window.initNotifications = (opts) => {

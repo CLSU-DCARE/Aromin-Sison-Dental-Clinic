@@ -17,6 +17,34 @@
   const initials = (name) =>
     String(name || '').trim().split(/\s+/).filter(Boolean).map(w => w[0]).slice(0, 2).join('').toUpperCase();
 
+  const parseDateValue = (value) => {
+    const raw = String(value || '').trim();
+    if (!raw || raw === '-') return null;
+    const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2})(?::(\d{2}))?)?/);
+    if (match) {
+      return new Date(
+        Number(match[1]), Number(match[2]) - 1, Number(match[3]),
+        Number(match[4] || 0), Number(match[5] || 0), Number(match[6] || 0)
+      );
+    }
+    const parsed = new Date(raw.replace(' ', 'T'));
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  };
+
+  const formatDate = (value) => {
+    const raw = String(value || '').trim();
+    if (!raw || raw === '-') return raw || '-';
+    const date = parseDateValue(raw);
+    return date ? date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : raw;
+  };
+
+  const formatDateTime = (value) => {
+    const raw = String(value || '').trim();
+    if (!raw || raw === '-') return raw || '-';
+    const date = parseDateValue(raw);
+    return date ? date.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }) : raw;
+  };
+
   const avatarInitials = (user, fallback = '?') => {
     const value = typeof user === 'string'
       ? user
@@ -117,5 +145,7 @@
     trashIcon,
     EMPTY_ICON,
     initials,
+    formatDate,
+    formatDateTime,
   };
 })();

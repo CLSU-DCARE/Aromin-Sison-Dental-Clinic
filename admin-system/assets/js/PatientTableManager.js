@@ -43,18 +43,19 @@ window.PatientTableManager = class PatientTableManager {
       this.state.patients = patients.patients.map(p => {
         const contract = contracts.contracts.find(c => Number(c.patient_id) === Number(p.patient_id) && ['Current', 'Overdue'].includes(c.status));
         const name = p.first_name + ' ' + p.last_name;
+        const active = Number(p.is_active) !== 0;
         return {
           id: '#P-' + p.patient_id, pid: p.patient_id, name, initials: this._initialsOf(name),
-          contact: p.contact_number || '-', email: p.email || '', lastVisit: p.last_visit || '-',
+          contact: p.contact_number || '-', email: p.email || '', lastVisit: formatDate(p.last_visit || '-'),
           contract: contract ? contract.id : null,
-          balance: contract ? ContractFormat.peso(contract.balance) : '-',
-          status: contract ? contract.status : 'No contract', tag: contract ? contract.tag : 'green'
+          is_active: active ? 1 : 0,
+          status: active ? 'Active' : 'Inactive', tag: active ? 'green' : 'red'
         };
       });
       this.apply();
     } catch (error) {
       const tbody = document.getElementById('patientsBody');
-      if (tbody && !this.state.patients.length) tbody.innerHTML = '<tr><td colspan="6" class="empty-cell">Unable to load patients. Please try again.</td></tr>';
+      if (tbody && !this.state.patients.length) tbody.innerHTML = '<tr><td colspan="5" class="empty-cell">Unable to load patients. Please try again.</td></tr>';
     }
   }
 
@@ -188,7 +189,7 @@ window.PatientTableManager = class PatientTableManager {
     this.patientsList = list;
     if (!list.length) {
       const extra = this.status !== 'All' ? ` for "${this.status}"` : '';
-      tbody.innerHTML = `<tr><td colspan="6" class="empty-cell">No patients match${q ? ` "${escapeHtml(q)}"` : extra}. Try a different search or filter.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="5" class="empty-cell">No patients match${q ? ` "${escapeHtml(q)}"` : extra}. Try a different search or filter.</td></tr>`;
       return;
     }
     this._renderTable(list);
@@ -202,7 +203,6 @@ window.PatientTableManager = class PatientTableManager {
         <td>${nameCell(p.initials, p.name, p.id)}</td>
         <td>${escapeHtml(p.contact)}</td>
         <td>${escapeHtml(p.lastVisit)}</td>
-        <td>${escapeHtml(p.balance)}</td>
         <td>${statusTag(p)}</td>
         <td><div class="row-actions">
           <button class="icon-btn" data-action="view" data-id="${p.id}" aria-label="View ${escapeHtml(p.name)}">${eyeIcon}</button>
@@ -245,7 +245,7 @@ window.PatientTableManager = class PatientTableManager {
     document.getElementById('detailTitle').textContent = 'Patient Details';
     document.getElementById('detailRows').innerHTML = [
       ['Patient ID', p.id], ['Contract', p.contract || '-'], ['Contact', escapeHtml(p.contact)],
-      ['Last Visit', p.lastVisit], ['Balance', p.balance],
+      ['Last Visit', p.lastVisit],
       ['Status', `<span class="tag tag-${p.tag}">${p.status}</span>`]
     ].map(([label, value]) => `<div class="row"><span>${label}</span><span>${value}</span></div>`).join('');
     document.getElementById('detailEditBtn').hidden = true;
@@ -275,7 +275,7 @@ window.PatientTableManager = class PatientTableManager {
     document.getElementById('pfName').value = '';
     document.getElementById('pfContact').value = '';
     document.getElementById('pfEmail').value = '';
-    ['pfLastVisit', 'pfBalance', 'pfStatus'].forEach(id => {
+    ['pfLastVisit', 'pfStatus'].forEach(id => {
       const field = document.getElementById(id);
       if (field) field.closest('.form-group').hidden = true;
     });
@@ -383,8 +383,7 @@ window.PatientTableManager = class PatientTableManager {
   }
 
   _tagFor (status) {
-    if (status === 'Current') return 'amber';
-    if (status === 'Overdue') return 'red';
+    if (status === 'Inactive') return 'red';
     return 'green';
   }
 };

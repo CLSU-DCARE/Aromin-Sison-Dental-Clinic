@@ -27,10 +27,9 @@ const views = {
   archived: { title: 'Archived Patients', crumb: 'Patients' },
   appointments: { title: 'Appointment Scheduling', crumb: 'Scheduling' },
   braces: { title: 'Braces Contracts', crumb: 'Scheduling' },
-  payments: { title: 'Payment Approvals', crumb: 'Operations' },
+  payments: { title: 'Payment & Billing', crumb: 'Billing' },
   promotions: { title: 'Promotions', crumb: 'Marketing' },
   reports: { title: 'Attendance Reports', crumb: 'Operations' },
-  inventory: { title: 'Inventory', crumb: 'Operations' },
   notifications: { title: 'Notifications', crumb: 'Operations' }
 };
 
@@ -140,11 +139,11 @@ function renderArchivedPatients(){
     ].join(' · ');
     return `<tr>
       <td>${nameCell('', name, '#P-' + Number(patient.patient_id))}</td>
-      <td>${escapeHtml(patient.archived_at || '')}</td>
+      <td>${escapeHtml(formatDateTime(patient.archived_at || ''))}</td>
       <td>${escapeHtml(retained)}</td>
       <td>${escapeHtml(patient.archived_by_name || 'System')}</td>
       <td><div class="row-actions">
-        <button class="btn btn-outline btn-sm" data-archive-view="${Number(patient.patient_id)}">View</button>
+        <button type="button" class="btn btn-outline btn-sm" data-archive-view="${Number(patient.patient_id)}">View</button>
         <button class="btn btn-danger btn-sm" data-archive-delete="${Number(patient.patient_id)}">Delete</button>
         <button class="btn btn-gold btn-sm" data-archive-restore="${Number(patient.patient_id)}">Restore</button>
       </div></td>
@@ -165,14 +164,14 @@ function renderArchivedDetails(data){
   if (restore) restore.dataset.patientId = data.patient.patient_id;
   if (remove) remove.dataset.patientId = data.patient.patient_id;
   const groups = [
-    ['Appointments', data.appointments, item => `${item.scheduled_date} ${String(item.scheduled_time).slice(0,5)} · ${item.service_type} · ${item.status}`],
-    ['Treatment Records', data.records, item => `${item.date_recorded} · ${item.treatment_given || item.treatment_protocol || item.diagnosis || 'Clinical record'}`],
+    ['Appointments', data.appointments, item => `${formatDate(item.scheduled_date)} ${String(item.scheduled_time).slice(0,5)} · ${item.service_type} · ${item.status}`],
+    ['Treatment Records', data.records, item => `${formatDate(item.date_recorded)} · ${item.treatment_given || item.treatment_protocol || item.diagnosis || 'Clinical record'}`],
     ['Braces Contracts', data.contracts, item => `#B-${item.contract_id} · ${item.status} · ${ContractFormat.peso(item.balance_amount || 0)} balance`],
-    ['Payments', data.payments, item => `${ContractFormat.peso(item.amount_paid || 0)} · ${item.status} · ${item.payment_date || item.created_at || ''}`],
-    ['Notifications', data.notifications, item => `${item.title} · ${item.created_at || ''}`]
+    ['Payments', data.payments, item => `${ContractFormat.peso(item.amount_paid || 0)} · ${item.status} · ${formatDateTime(item.payment_date || item.created_at || '')}`],
+    ['Notifications', data.notifications, item => `${item.title} · ${formatDateTime(item.created_at || '')}`]
   ];
   body.innerHTML = `<div class="detail-grid">
-    <div class="row"><span>Archived</span><span>${escapeHtml(data.patient.archived_at || '')}</span></div>
+    <div class="row"><span>Archived</span><span>${escapeHtml(formatDateTime(data.patient.archived_at || ''))}</span></div>
     <div class="row"><span>Archived By</span><span>${escapeHtml(data.patient.archived_by_name || 'System')}</span></div>
     <div class="row"><span>Retention</span><span>${escapeHtml(data.patient.retention_note || '')}</span></div>
   </div>` + groups.map(([label, rows, format]) => {
@@ -181,6 +180,7 @@ function renderArchivedDetails(data){
       (rows.length ? `<ul class="archive-detail-list">${rows.map(row => `<li>${escapeHtml(format(row))}</li>`).join('')}</ul>` : '<p class="empty-cell">None retained in this category.</p>');
   }).join('');
   panel.hidden = false;
+  panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function closeArchivedDetails(){
@@ -190,10 +190,16 @@ function closeArchivedDetails(){
 }
 
 async function openArchivedDetails(patientId){
+  const panel = document.getElementById('archivedDetailPanel');
+  const body = document.getElementById('archivedDetailBody');
+  if (panel) panel.hidden = false;
+  if (body) body.innerHTML = '<p class="empty-cell">Loading archived patient details...</p>';
+  panel?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   try {
     const data = await apiFetch('../backend/api/patients/archived.php?patient_id=' + encodeURIComponent(patientId), { cache: 'no-store' });
     renderArchivedDetails(data);
   } catch (error) {
+    if (body) body.innerHTML = '<p class="empty-cell">Unable to load archived patient details.</p>';
     showToast(error.message, 'error');
   }
 }
@@ -321,12 +327,6 @@ wireChips(bracesGroup, label => {
   applyBraces();
 });
 setChipGroup(bracesGroup, 'Current');
-
-// =====================================================================
-// INVENTORY TABLE: category / stock-level filter (delegated to InventoryTableManager)
-// =====================================================================
-const inventoryMgr = new InventoryTableManager({ state: AdminState });
-inventoryMgr.init();
 
 // =====================================================================
 // APPOINTMENTS: Week / Day / List view modes
@@ -676,9 +676,6 @@ document.getElementById('promoGrid')?.addEventListener('click', event => {
   if (card) openPromotionDetail(card.dataset.promoId, card);
 });
 
-// INVENTORY: add item (delegated to InventoryTableManager)
-// =====================================================================
-
 // ---------- Appointment actions initialized above via AppointmentActions class ----------
 
 // =====================================================================
@@ -692,7 +689,6 @@ if (exportPatientsBtn){
         { label: 'Patient', value: p => p.name + ' (' + p.id + ')' },
         { label: 'Contact', value: p => p.contact },
         { label: 'Last Visit', value: p => p.lastVisit },
-        { label: 'Contract Balance', value: p => p.balance },
         { label: 'Status', value: p => p.status }
       ],
       rows: patientMgr.getFilteredList()
@@ -715,22 +711,6 @@ if (exportBracesBtn){
         { label: 'Status', value: c => c.status }
       ],
       rows: bracesList
-    });
-  });
-}
-
-const exportInventoryBtn = document.getElementById('exportInventoryBtn');
-if (exportInventoryBtn){
-  exportInventoryBtn.addEventListener('click', () => {
-    exportTablePDF({
-      title: 'Inventory Report',
-      columns: [
-        { label: 'Item', value: i => i.item },
-        { label: 'Category', value: i => i.category },
-        { label: 'Stock', value: i => i.stock },
-        { label: 'Status', value: i => i.status }
-      ],
-      rows: inventoryMgr.getFilteredList()
     });
   });
 }
@@ -774,17 +754,27 @@ function renderDashboardStats(stats){
   if (!grid) return;
   const targets = ['appointments', 'patients', 'payments', 'braces'];
   grid.innerHTML = stats.map((stat, index) => {
-    const target = targets[index] || 'dashboard';
+    const isActiveBraces = stat.label === 'Active braces contract';
+    const isOverdueBraces = stat.label === 'Overdue braces contract';
+    const target = isActiveBraces || isOverdueBraces ? 'braces' : (targets[index] || 'dashboard');
+    const filter = isActiveBraces ? 'Current' : (isOverdueBraces ? 'Overdue' : '');
     return statCard(stat).replace(
       'class="stat-card"',
-      `class="stat-card stat-card-link" role="button" tabindex="0" data-stat-target="${target}" aria-label="Open ${escapeHtml(stat.label)}"`
+      `class="stat-card stat-card-link" role="button" tabindex="0" data-stat-target="${target}" data-stat-filter="${filter}" aria-label="Open ${escapeHtml(stat.label)}"`
     );
   }).join('');
 }
 
 document.getElementById('dashStats')?.addEventListener('click', event => {
   const card = event.target.closest('[data-stat-target]');
-  if (card) switchView(card.dataset.statTarget);
+  if (card) {
+    if (card.dataset.statTarget === 'braces' && card.dataset.statFilter) {
+      bracesFilter = card.dataset.statFilter;
+      setChipGroup(bracesGroup, bracesFilter);
+      applyBraces();
+    }
+    switchView(card.dataset.statTarget);
+  }
 });
 
 document.getElementById('dashStats')?.addEventListener('keydown', event => {
@@ -792,6 +782,11 @@ document.getElementById('dashStats')?.addEventListener('keydown', event => {
   const card = event.target.closest('[data-stat-target]');
   if (!card) return;
   event.preventDefault();
+  if (card.dataset.statTarget === 'braces' && card.dataset.statFilter) {
+    bracesFilter = card.dataset.statFilter;
+    setChipGroup(bracesGroup, bracesFilter);
+    applyBraces();
+  }
   switchView(card.dataset.statTarget);
 });
 
@@ -862,9 +857,6 @@ function renderPromotions(promotions){
         <h4>${escapeHtml(p.title)}</h4>
         <p>${escapeHtml(p.desc)}</p>
         <div class="promo-date">${escapeHtml(formatPromoRange(p))}</div>
-        <div class="promo-foot">
-          <span class="tag tag-${p.tag}">${p.status}</span>
-        </div>
         <span class="promo-view">View details</span>
         <button type="button" class="promo-delete-btn" data-action="delete-promo" data-promo-id="${Number(p.id)}">Delete</button>
       </div>
@@ -950,7 +942,7 @@ function renderReports(reports){
     `<tr>
       <td>${escapeHtml(row.patient)}</td>
       <td>${escapeHtml(row.service)}</td>
-      <td>${escapeHtml(row.date)} ${escapeHtml(row.time)}</td>
+      <td>${escapeHtml(formatDate(row.date))} ${escapeHtml(row.time)}</td>
       <td>${escapeHtml(row.dentist || 'Unassigned')}</td>
       <td>${statusTag({ status: row.status, tag: row.tag })}</td>
     </tr>`
@@ -1004,8 +996,6 @@ window.staffLiveSync = ASDC.startPortalSync({
     renderDashboardStats(AdminState.dashboard.stats);
     AdminState.promotions = data.promotions.map(p => ({ ...p, tag: p.status === 'live' ? 'green' : 'amber' }));
     renderPromotions(AdminState.promotions);
-    AdminState.inventory = data.inventory.map(i => inventoryMgr.normalize(i));
-    inventoryMgr.apply();
     if (document.getElementById('view-archived')?.classList.contains('active')) loadArchivedPatients();
   }
 });

@@ -17,7 +17,7 @@ use PDO;
 
 class TokenService
 {
-    private const EXPIRY_SECONDS = 3600; // 1 hour
+    private const EXPIRY_SECONDS = 900; // 15 minutes
 
     public static function generate(): string
     {

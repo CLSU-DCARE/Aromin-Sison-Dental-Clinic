@@ -70,10 +70,10 @@
       let logs = [];
       try {
         const params = new URLSearchParams();
-        if (this._filter === 'Email') params.set('channel', 'email');
+        if (this._filter === 'Successful') params.set('status', 'sent');
         if (this._filter === 'Failed') params.set('status', 'failed');
         params.set('limit', '50');
-        const data = snapshot ? { success: true, logs: snapshot.logs.filter(log => this._filter === 'All' || (this._filter === 'Failed' ? log.status === 'failed' : log.channel === this._filter.toLowerCase())) } : await apiFetch(API_BASE + '/list.php?' + params.toString());
+        const data = snapshot ? { success: true, logs: snapshot.logs.filter(log => this._filter === 'All' || (this._filter === 'Failed' ? log.status === 'failed' : log.status === 'sent')) } : await apiFetch(API_BASE + '/list.php?' + params.toString());
         if (data.success) logs = data.logs || [];
         else throw new Error('list failed');
       } catch (e) {
@@ -101,32 +101,19 @@
               : log.status === 'failed'
                 ? '<span class="tag tag-red">Failed</span>'
                 : '<span class="tag tag-amber">Pending</span>';
-          const apptStatus = log.appointment_status || '';
-          const apptTag = apptStatus
-            ? (['confirmed', 'completed'].includes(apptStatus)
-                ? '<span class="tag tag-green">' + esc(apptStatus.charAt(0).toUpperCase() + apptStatus.slice(1)) + '</span>'
-                : ['pending', 'rescheduled'].includes(apptStatus)
-                  ? '<span class="tag tag-amber">' + esc(apptStatus.charAt(0).toUpperCase() + apptStatus.slice(1)) + '</span>'
-                  : '<span class="tag tag-red">' + esc(apptStatus.charAt(0).toUpperCase() + apptStatus.slice(1)) + '</span>')
-            : '<span class="tag tag-gray">-</span>';
           const subject = log.subject || '\u2014';
-          const date = log.sent_at
-            ? new Date(log.sent_at).toLocaleString('en-US', {
-                month: 'short',
-                day: 'numeric',
-                hour: 'numeric',
-                minute: '2-digit',
-              })
-            : '\u2014';
+          const date = log.sent_at ? formatDateTime(log.sent_at) : '\u2014';
+          const resend = log.status === 'failed'
+            ? `<button class="btn btn-outline btn-sm notif-resend" data-log-id="${esc(log.log_id || '')}">Resend</button>`
+            : '';
           return `<tr>
             <td>${esc(log.patient_name || '')}</td>
             <td>${esc(log.recipient || '')}</td>
             <td>${chTag}</td>
             <td>${esc(subject)}</td>
             <td>${stTag}</td>
-            <td>${apptTag}</td>
             <td>${esc(date)}</td>
-            <td><button class="icon-btn notif-delete" data-log-id="${esc(log.log_id || '')}" title="Delete notification" aria-label="Delete notification">${window.trashIcon || 'Delete'}</button></td>
+            <td><div class="row-actions">${resend}<button class="icon-btn notif-delete" data-log-id="${esc(log.log_id || '')}" title="Delete notification" aria-label="Delete notification">${window.trashIcon || 'Delete'}</button></div></td>
           </tr>`;
         })
         .join('');
@@ -134,6 +121,29 @@
       tbody.querySelectorAll('.notif-delete').forEach((button) => {
         button.addEventListener('click', () => this._deleteLog(button.dataset.logId));
       });
+      tbody.querySelectorAll('.notif-resend').forEach((button) => {
+        button.addEventListener('click', () => this._resendLog(button));
+      });
+    }
+
+    async _resendLog(button) {
+      const logId = button?.dataset.logId;
+      if (!logId || button.disabled) return;
+      button.disabled = true;
+      button.textContent = 'Sending...';
+      try {
+        await apiFetch(API_BASE + '/resend.php', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ log_id: Number(logId) }),
+        });
+        showToast('Notification resent.');
+        window.staffSnapshot = null;
+        await this.renderLog(null);
+      } catch (e) {
+        showToast(e.message || 'Unable to resend notification.', 'error');
+        button.disabled = false;
+        button.textContent = 'Resend';
+      }
     }
 
     async _deleteLog(logId) {

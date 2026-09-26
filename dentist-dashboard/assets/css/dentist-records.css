@@ -1,0 +1,34 @@
+/* The dentist records table has four columns; keep it independent from the
+   shared seven-column receptionist records layout. */
+body.dentist-dashboard #view-records .toolbar{justify-content:space-between;padding-bottom:14px;}
+body.dentist-dashboard #view-records #addClinicalRecord{width:auto;flex:0 0 auto;white-space:nowrap;padding-left:16px;padding-right:16px;}
+body.dentist-dashboard #view-records .records-toolbar-actions{display:flex;align-items:center;gap:10px;}
+body.dentist-dashboard #view-records .table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+body.dentist-dashboard #view-records .table-scroll table{width:100%;min-width:1080px;table-layout:fixed;}
+body.dentist-dashboard #view-records thead th,
+body.dentist-dashboard #view-records .record-row td{padding-left:18px;padding-right:18px;}
+body.dentist-dashboard #view-records thead th:nth-child(1),
+body.dentist-dashboard #view-records .record-row td:nth-child(1){width:24%;min-width:190px;}
+body.dentist-dashboard #view-records thead th:nth-child(2),
+body.dentist-dashboard #view-records .record-row td:nth-child(2){width:14%;min-width:120px;}
+body.dentist-dashboard #view-records thead th:nth-child(3),
+body.dentist-dashboard #view-records .record-row td:nth-child(3){width:auto;min-width:280px;}
+body.dentist-dashboard #view-records thead th:nth-child(4),
+body.dentist-dashboard #view-records .record-row td:nth-child(4){width:292px;min-width:292px;white-space:nowrap;}
+body.dentist-dashboard #view-records .record-row td{padding-top:18px;padding-bottom:18px;vertical-align:top;}
+body.dentist-dashboard #view-records .cell-name{align-items:flex-start;}
+body.dentist-dashboard #view-records .name-block{gap:3px;line-height:1.35;}
+body.dentist-dashboard #view-records .name-block .full,
+body.dentist-dashboard #view-records .record-summary-cell strong{font-weight:500;}
+body.dentist-dashboard #view-records .record-summary-cell{max-width:none;gap:6px;margin:0;}
+body.dentist-dashboard #view-records .record-summary-cell strong{max-width:100%;overflow-wrap:anywhere;}
+body.dentist-dashboard #view-records .record-detail-lines{max-width:68ch;}
+body.dentist-dashboard #view-records .record-date-cell{width:100%;justify-content:flex-start;gap:24px;align-items:center;padding-right:22px;}
+body.dentist-dashboard #view-records .record-actions{display:inline-flex;flex:0 0 auto;gap:8px;align-items:center;margin-left:14px;}
+body.dentist-dashboard #view-records .record-actions .btn{flex:0 0 auto;white-space:nowrap;}
+@media (max-width:900px){
+  body.dentist-dashboard #view-records .table-scroll{overflow-x:auto;}
+  body.dentist-dashboard #view-records .table-scroll table{min-width:840px;}
+  body.dentist-dashboard #view-records thead th:nth-child(4),
+  body.dentist-dashboard #view-records .record-row td:nth-child(4){width:292px;min-width:292px;}
+}

@@ -21,6 +21,7 @@ window.PatientAppointmentBooking = class PatientAppointmentBooking {
   init () {
     this.noteEl     = document.getElementById('bookingNote');
     this.confirmBtn = document.getElementById('confirmBookingBtn');
+    document.getElementById('summaryDentist')?.closest('.row')?.remove();
 
     this._initDateMin();
     this._initSlots();
@@ -58,15 +59,11 @@ window.PatientAppointmentBooking = class PatientAppointmentBooking {
 
   _initSummarySync () {
     const service = document.getElementById('bookService');
-    const dentist = document.getElementById('bookDentist');
     const sync = () => {
       const s = document.getElementById('summaryService');
-      const d = document.getElementById('summaryDentist');
       if (s && service) s.textContent = service.value;
-      if (d && dentist) d.textContent = dentist.value === 'No preference' ? 'Clinic assignment' : dentist.value;
     };
     if (service) service.addEventListener('change', sync);
-    if (dentist) dentist.addEventListener('change', sync);
   }
 
   _initConfirm () {
@@ -96,12 +93,10 @@ window.PatientAppointmentBooking = class PatientAppointmentBooking {
 
       try {
         const service  = document.getElementById('bookService').value;
-        const dentist  = document.getElementById('bookDentist').value;
         const time     = slot.dataset.slot;
 
         await this._api('POST', {
             service_type: service,
-            preferred_dentist: dentist,
             scheduled_date: date.value,
             scheduled_time: time
           });
@@ -113,15 +108,11 @@ window.PatientAppointmentBooking = class PatientAppointmentBooking {
         this._updateConfirmState();
 
         const serviceSelect = document.getElementById('bookService');
-        const dentistSelect = document.getElementById('bookDentist');
         if (serviceSelect) serviceSelect.selectedIndex = 0;
-        if (dentistSelect) dentistSelect.selectedIndex = 0;
         if (date) date.value = '';
 
         const summaryService = document.getElementById('summaryService');
-        const summaryDentist = document.getElementById('summaryDentist');
         if (summaryService) summaryService.textContent = 'Braces Adjustment';
-        if (summaryDentist) summaryDentist.textContent = this.state.profile.primaryDentist;
 
         this._showNote('Booking request sent! Our team will confirm shortly.', 'ok');
         announce('Booking request sent. Check your schedule to track it.');

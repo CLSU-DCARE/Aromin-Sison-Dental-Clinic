@@ -63,17 +63,15 @@
   const field = (label, input) => `<div class="form-group"><label>${esc(label)}</label>${input}</div>`;
   const write = (url, body, method = 'PATCH') => apiFetch('../backend/api/' + url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
   const treatmentOptions = [
-    'Dental Examination',
-    'Consultation',
+    'Braces Adjustment',
     'Cleaning & Check-up',
+    'Consultation',
+    'Dental Examination',
     'Tooth Restoration / Composite Filling',
     'Tooth Extraction',
     'Root Canal Treatment',
     'Teeth Whitening',
-    'Braces Adjustment',
-    'Braces Progress',
     'Retainer Fitting',
-    'Other Dental Treatment',
   ];
   const treatmentSelect = value => {
     const current = String(value || '').trim();
@@ -87,10 +85,17 @@
     }
   };
   ASDC.confirmAction = confirmAction;
-  ASDC.openProfileForm = patient => form('Edit patient profile',
-    field('Full name', `<input name="name" required maxlength="100" value="${esc(patient.name)}">`) +
-    field('Contact number', `<input name="contact_number" maxlength="20" value="${esc(patient.contact === '-' ? '' : patient.contact)}">`),
-    values => write('patients/profile.php', { ...values, patient_id: patient.pid }));
+  ASDC.openProfileForm = patient => {
+    const receptionist = window.location.pathname.includes('/admin-system/');
+    const statusField = receptionist
+      ? field('Patient status', `<select name="is_active"><option value="1" ${Number(patient.is_active) !== 0 ? 'selected' : ''}>Active</option><option value="0" ${Number(patient.is_active) === 0 ? 'selected' : ''}>Inactive</option></select>`)
+      : '';
+    return form('Edit patient profile',
+      field('Full name', `<input name="name" required maxlength="100" value="${esc(patient.name)}">`) +
+      field('Contact number', `<input name="contact_number" maxlength="20" value="${esc(patient.contact === '-' ? '' : patient.contact)}">`) +
+      statusField,
+      values => write('patients/profile.php', { ...values, patient_id: patient.pid }));
+  };
 
   ASDC.openClinicalForm = (snapshot, record = null) => {
     const patients = record ? snapshot.patients.filter(p => Number(p.patient_id) === Number(record.patient_id)) : snapshot.patients;

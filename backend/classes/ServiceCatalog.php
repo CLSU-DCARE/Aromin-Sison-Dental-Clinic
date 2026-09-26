@@ -7,7 +7,12 @@ class ServiceCatalog
         'Braces Adjustment',
         'Cleaning & Check-up',
         'Consultation',
+        'Dental Examination',
+        'Tooth Restoration / Composite Filling',
+        'Tooth Extraction',
+        'Root Canal Treatment',
         'Teeth Whitening',
+        'Retainer Fitting',
     ];
 
     public static function isAppointmentService(string $service): bool

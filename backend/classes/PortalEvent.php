@@ -26,6 +26,66 @@ class PortalEvent
         }
     }
 
+    public static function treatmentRecord(int $patientId, int $recordId): void
+    {
+        $stmt = Database::pdo()->prepare(
+            'SELECT r.date_recorded, r.diagnosis, r.treatment_given, r.treatment_protocol,
+                    d.full_name AS dentist_name
+             FROM treatment_records r
+             LEFT JOIN dentists d ON d.dentist_id = r.dentist_id
+             WHERE r.record_id=? AND r.patient_id=?'
+        );
+        $stmt->execute([$recordId, $patientId]);
+        $row = $stmt->fetch();
+        if (!$row) return;
+
+        $service = trim((string) ($row['treatment_given'] ?: 'Treatment record'));
+        $lines = [
+            'Your treatment record has been updated.',
+            'Service: ' . $service,
+            'Date: ' . self::fmtDate($row['date_recorded']),
+            'Dentist: ' . ($row['dentist_name'] ?: 'To be assigned'),
+        ];
+        if (trim((string) $row['diagnosis'])) $lines[] = 'Notes: ' . trim((string) $row['diagnosis']);
+        if (trim((string) $row['treatment_protocol'])) $lines[] = 'Dentist notes: ' . trim((string) $row['treatment_protocol']);
+        $message = implode("\n", $lines);
+        self::patient($patientId, 'Treatment Record Updated', $message, 'info');
+        try {
+            NotificationSendService::send($patientId, [
+                'template_key' => 'treatment_record_updated_patient',
+                'replacements' => [
+                    'service_treatment' => $service,
+                    'date' => self::fmtDate($row['date_recorded']),
+                    'dentist' => $row['dentist_name'] ?: 'To be assigned',
+                    'notes' => trim((string) ($row['treatment_protocol'] ?: $row['diagnosis'])) ?: 'No additional notes.',
+                ],
+            ]);
+        } catch (\Throwable $e) { error_log('Treatment record email notification failed: ' . $e->getMessage()); }
+    }
+
+    public static function treatmentProgress(int $patientId, string $stage, int $progress, ?string $next = null, ?string $note = null): void
+    {
+        $lines = [
+            'Your treatment progress has been updated.',
+            'Current stage: ' . $stage,
+            'Progress: ' . $progress . '%',
+            'Next step: ' . (trim((string) $next) ?: 'To be advised by your dentist.'),
+        ];
+        if (trim((string) $note)) $lines[] = 'Dentist notes: ' . trim((string) $note);
+        self::patient($patientId, 'Treatment Progress Updated', implode("\n", $lines), 'info');
+        try {
+            NotificationSendService::send($patientId, [
+                'template_key' => 'braces_progress_updated',
+                'replacements' => [
+                    'stage' => $stage,
+                    'progress' => (string) $progress,
+                    'next' => trim((string) $next) ?: 'To be advised by your dentist.',
+                    'notes' => trim((string) $note) ?: 'No additional notes.',
+                ],
+            ]);
+        } catch (\Throwable $e) { error_log('Treatment progress email notification failed: ' . $e->getMessage()); }
+    }
+
     public static function appointment(int $id, string $action, array $context = []): void
     {
         $stmt = Database::pdo()->prepare(
@@ -317,7 +377,7 @@ class PortalEvent
     {
         if (!$value) return 'Not set';
         $date = \DateTime::createFromFormat('Y-m-d', $value);
-        return $date ? $date->format('F j, Y') : $value;
+        return $date ? $date->format('M j, Y') : $value;
     }
 
     private static function fmtTime(?string $value): string

@@ -15,7 +15,7 @@
 <link rel="stylesheet" href="../shared/css/variables.css?v=4">
 <link rel="stylesheet" href="../shared/css/buttons.css?v=5">
 <link rel="stylesheet" href="../shared/css/panels.css?v=4">
-<link rel="stylesheet" href="assets/css/admin.css?v=20260926-promo-date-format">
+<link rel="stylesheet" href="assets/css/admin.css?v=20260926-booking-panel-gap">
 </head>
 <body>
 
@@ -72,17 +72,13 @@
       </button>
 
       <div class="nav-group-label">Operations</div>
-      <button class="nav-item" data-view="payments" data-tooltip="Payments">
+      <button class="nav-item" data-view="payments" data-tooltip="Payment & Billing">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg>
-        <span class="nav-label">Payment Approvals</span>
+        <span class="nav-label">Payment &amp; Billing</span>
       </button>
       <button class="nav-item" data-view="reports" data-tooltip="Reports">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
         <span class="nav-label">Attendance Reports</span>
-      </button>
-      <button class="nav-item" data-view="inventory" data-tooltip="Inventory">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
-        <span class="nav-label">Inventory</span>
       </button>
       <button class="nav-item" data-view="notifications" data-tooltip="Notifications">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
@@ -199,7 +195,7 @@
         <div class="page-head">
           <div>
             <div class="eyebrow">Patients</div>
-            <p>Patient records and orthodontic contract status.</p>
+            <p>Patient records and account status.</p>
           </div>
           <button class="btn btn-gold" id="addPatientBtn">+ Add Patient</button>
         </div>
@@ -208,10 +204,10 @@
           <div class="toolbar">
             <div class="toolbar-left" role="group" aria-label="Filter patients">
               <button class="filter-chip active" aria-pressed="true">All</button>
-              <button class="filter-chip" aria-pressed="false">Current</button>
-              <button class="filter-chip" aria-pressed="false">Overdue</button>
+              <button class="filter-chip" aria-pressed="false">Active</button>
+              <button class="filter-chip" aria-pressed="false">Inactive</button>
             </div>
-            <button class="btn btn-outline btn-sm" id="exportPatientsBtn">Export</button>
+            <button class="btn btn-outline btn-sm" id="exportPatientsBtn">Download</button>
           </div>
           <div class="table-scroll">
             <table>
@@ -220,7 +216,6 @@
                   <th>Patient</th>
                   <th>Contact</th>
                   <th>Last Visit</th>
-                  <th>Contract Balance</th>
                   <th>Status</th>
                   <th></th>
                 </tr>
@@ -259,11 +254,6 @@
         <div class="panel" id="archivedDetailPanel" hidden>
           <div class="panel-head">
             <h3 id="archivedDetailTitle">Archived Patient</h3>
-            <div class="row-actions">
-              <button class="btn btn-outline btn-sm" id="archivedCloseBtn" type="button" aria-label="Close archived patient details">Close</button>
-              <button class="btn btn-danger btn-sm" id="archivedDeleteBtn" type="button">Delete Permanently</button>
-              <button class="btn btn-gold btn-sm" id="archivedRestoreBtn" type="button">Restore Patient</button>
-            </div>
           </div>
           <div id="archivedDetailBody"></div>
         </div>
@@ -276,7 +266,6 @@
             <div class="eyebrow">Records</div>
             <p>Treatment history for patients with a current braces contract.</p>
           </div>
-          <button class="btn btn-outline btn-sm" id="archiveRecordsBtn">Archive</button>
         </div>
         <div class="panel">
           <div class="toolbar">
@@ -285,13 +274,11 @@
               <button class="filter-chip" aria-pressed="false">Treatments</button>
               <button class="filter-chip" aria-pressed="false">Progress</button>
             </div>
-            <button class="btn btn-gold btn-sm" id="addRecordBtn">+ New Record</button>
           </div>
           <div class="table-scroll">
             <table>
               <thead>
                 <tr>
-                  <th class="check-cell"><input type="checkbox" id="selectAllRecords" aria-label="Select all records"></th>
                   <th>Patient</th>
                   <th>Procedure</th>
                   <th>Date</th>
@@ -375,7 +362,7 @@
               <button class="filter-chip" aria-pressed="false">Completed</button>
               <button class="filter-chip" aria-pressed="false">Overdue</button>
             </div>
-            <button class="btn btn-outline btn-sm" id="exportBracesBtn">Export</button>
+            <button class="btn btn-outline btn-sm" id="exportBracesBtn">Download</button>
           </div>
           <div class="table-scroll">
             <table>
@@ -409,23 +396,28 @@
         <div class="promo-grid" id="promoGrid"></div>
       </section>
 
-      <!-- ===== PAYMENT APPROVALS ===== -->
+      <!-- ===== PAYMENT & BILLING ===== -->
       <section class="view" id="view-payments">
         <div class="page-head">
           <div>
-            <div class="eyebrow">Operations</div>
-            <p>Receipts submitted by patients wait here for confirmation before the payment is approved.</p>
+            <div class="eyebrow">Billing</div>
+            <p>Review patient payments, receipts, and billing status.</p>
           </div>
         </div>
         <div class="panel">
           <div class="toolbar">
             <div class="toolbar-left" role="group" aria-label="Filter payments">
-              <button class="filter-chip active" aria-pressed="true">Pending</button>
-              <button class="filter-chip" aria-pressed="false">Approved</button>
+              <button class="filter-chip active" aria-pressed="true">All</button>
+              <button class="filter-chip" aria-pressed="false">Pending</button>
+              <button class="filter-chip" aria-pressed="false">Completed</button>
+              <button class="filter-chip" aria-pressed="false">Overdue</button>
               <button class="filter-chip" aria-pressed="false">Rejected</button>
-              <button class="filter-chip" aria-pressed="false">All</button>
             </div>
-            <span class="tag tag-amber" id="payQueueCount" hidden></span>
+            <div class="toolbar-left" role="group" aria-label="Filter payment category">
+              <button class="filter-chip active" aria-pressed="true">All</button>
+              <button class="filter-chip" aria-pressed="false">Braces</button>
+              <button class="filter-chip" aria-pressed="false">Treatment</button>
+            </div>
           </div>
           <div class="table-scroll">
             <table>
@@ -502,49 +494,6 @@
         </div>
       </section>
 
-      <!-- ===== INVENTORY ===== -->
-      <section class="view" id="view-inventory">
-        <div class="page-head">
-          <div>
-            <div class="eyebrow">Operations</div>
-            <p>Supplies, stock levels, and reorder points.</p>
-          </div>
-          <button class="btn btn-gold" id="addInventoryBtn">+ Add Supply</button>
-        </div>
-        <div class="stat-grid stat-grid-3" id="inventoryStats"></div>
-        <div class="panel">
-          <div class="toolbar">
-            <div class="toolbar-left" role="group" aria-label="Filter inventory">
-              <button class="filter-chip active" aria-pressed="true">All</button>
-              <button class="filter-chip" aria-pressed="false">Low stock</button>
-              <button class="filter-chip" aria-pressed="false">Consumables</button>
-              <button class="filter-chip" aria-pressed="false">Equipment</button>
-            </div>
-            <button class="btn btn-outline btn-sm" id="exportInventoryBtn">Export</button>
-          </div>
-          <div class="table-scroll">
-            <table>
-              <thead>
-                <tr>
-                  <th>Item</th>
-                  <th>Category</th>
-                  <th>Stock</th>
-                  <th>Unit</th>
-                  <th>Last Restocked</th>
-                  <th>Status</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody id="inventoryBody"></tbody>
-            </table>
-          </div>
-        </div>
-        <div class="panel panel-gap">
-          <div class="panel-head"><div><h3>Automatic Usage Rules</h3><p class="panel-subtext">Supplies deducted when a matching treatment is completed.</p></div><button class="btn btn-outline btn-sm" id="addUsageRuleBtn">+ Add Rule</button></div>
-          <div class="table-scroll"><table><thead><tr><th>Service</th><th>Supply</th><th>Quantity Used</th><th></th></tr></thead><tbody id="usageRulesBody"></tbody></table></div>
-        </div>
-      </section>
-
       <!-- ===== NOTIFICATIONS ===== -->
       <section class="view" id="view-notifications">
         <div class="page-head">
@@ -558,7 +507,7 @@
           <div class="toolbar">
             <div class="toolbar-left" role="group" aria-label="Filter notifications">
               <button class="filter-chip active" aria-pressed="true">All</button>
-              <button class="filter-chip" aria-pressed="false">Email</button>
+              <button class="filter-chip" aria-pressed="false">Successful</button>
               <button class="filter-chip" aria-pressed="false">Failed</button>
             </div>
           </div>
@@ -571,9 +520,8 @@
                   <th>Channel</th>
                   <th>Subject</th>
                   <th>Status</th>
-                  <th>Appt Status</th>
                   <th>Sent</th>
-                  <th></th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody id="notifLogBody"></tbody>
@@ -727,14 +675,10 @@
       <input type="text" id="pfLastVisit" autocomplete="off" placeholder="e.g. Aug 14, 2026">
     </div>
     <div class="form-group">
-      <label for="pfBalance">Balance</label>
-      <input type="text" id="pfBalance" autocomplete="off" placeholder="e.g. ₱0.00">
-    </div>
-    <div class="form-group">
-      <label for="pfStatus">Contract Status</label>
+      <label for="pfStatus">Patient Status</label>
       <select id="pfStatus">
-        <option>Current</option>
-        <option>Overdue</option>
+        <option>Active</option>
+        <option>Inactive</option>
       </select>
     </div>
     <p class="form-note" id="patientFormNote" role="status" hidden></p>
@@ -1054,23 +998,23 @@
 <script src="../shared/js/core/NotificationPanel.js?v=20260916-integration" defer></script>
 <script src="../shared/js/core/LogoutManager.js?v=20260921-sessionfix" defer></script>
 <script src="../shared/js/core/FullscreenToggle.js?v=20260916-integration" defer></script>
-<script src="../shared/js/core/ReportExporter.js?v=20260916-integration" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
+<script src="../shared/js/core/ReportExporter.js?v=20260926-a4-pdf-download" defer></script>
 <script src="../shared/js/core/routing.js?v=20260921-session-content-fix" defer></script>
 <script src="../shared/js/core/SessionRefreshManager.js?v=20260921-sessionfix" defer></script>
 <script src="../shared/js/dashboard-core.js?v=20260921-sessionfix" defer></script>
 <script src="../shared/js/state/admin.js?v=20260916-integration" defer></script>
 <script src="../shared/js/core/ContractFormat.js?v=20260916-integration" defer></script>
-<script src="assets/js/NotificationManager.js?v=20260916-integration" defer></script>
+<script src="assets/js/NotificationManager.js?v=20260926-resend-failed" defer></script>
 <script src="assets/js/AppointmentScheduler.js?v=20260919-status-actions" defer></script>
 <script src="assets/js/AppointmentActions.js?v=20260916-appointment-dialogs" defer></script>
-<script src="assets/js/PaymentApprovalManager.js?v=20260919-due-date" defer></script>
-<script src="assets/js/PatientTableManager.js?v=20260916-patient-delete" defer></script>
-<script src="assets/js/RecordTableManager.js?v=20260925-treatment-records-only" defer></script>
-<script src="assets/js/InventoryTableManager.js?v=20260924-inventory-usage" defer></script>
+<script src="assets/js/PaymentApprovalManager.js?v=20260926-overdue-filter" defer></script>
+<script src="assets/js/PatientTableManager.js?v=20260926-patient-status" defer></script>
+<script src="assets/js/RecordTableManager.js?v=20260926-records-clean-layout" defer></script>
 <script src="../patient-dashboard/assets/js/PatientLiveSync.js?v=20260916-integration" defer></script>
 <script src="../shared/js/core/PortalSync.js?v=20260921-sessionfix" defer></script>
-<script src="../shared/js/core/PortalForms.js?v=20260919-treatment-dropdown" defer></script>
-<script src="assets/js/admin.js?v=20260926-promo-date-format" defer></script>
+<script src="../shared/js/core/PortalForms.js?v=20260926-remove-other-treatment" defer></script>
+<script src="assets/js/admin.js?v=20260926-patient-status" defer></script>
 
 </body>
 </html>

@@ -14,7 +14,6 @@ window.RecordTableManager = class RecordTableManager {
     this.filter          = null;
     this.recordsList     = [];
     this.selectedRecords = new Set();
-    this._formModal      = null;
   }
 
   init () {
@@ -22,7 +21,6 @@ window.RecordTableManager = class RecordTableManager {
     this._bindSelectAll();
     this._bindCheckboxes();
     this._bindViewAction();
-    this._bindFormModal();
     this.apply();
   }
 
@@ -42,7 +40,7 @@ window.RecordTableManager = class RecordTableManager {
     const list = this.filter ? this.state.records.filter(r => r.category === this.filter) : this.state.records;
     this.recordsList = list;
     if (!list.length) {
-      tbody.innerHTML = '<tr><td colspan="7" class="empty-cell">No treatment records match this filter.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="6" class="empty-cell">No treatment records match this filter.</td></tr>';
       this._syncSelectAll();
       return;
     }
@@ -54,10 +52,9 @@ window.RecordTableManager = class RecordTableManager {
     if (!tbody) return;
     tbody.innerHTML = records.map((r, i) =>
       `<tr class="record-row">
-        <td class="check-cell"><input type="checkbox" class="row-check" data-index="${i}" ${this.selectedRecords.has(r) ? 'checked' : ''} aria-label="Select record: ${escapeHtml(r.procedure)}"></td>
         <td>${nameCell(r.initials, r.name)}</td>
         <td>${this._recordSummary(r)}</td>
-        <td>${escapeHtml(r.date)}</td>
+        <td>${escapeHtml(this._formatDate(r.date))}</td>
         <td>${escapeHtml(r.dentist || '')}</td>
         <td>${statusTag(r)}</td>
         <td><div class="row-actions"><button class="icon-btn" data-action="view" data-index="${i}" aria-label="View record: ${escapeHtml(r.procedure)}">${eyeIcon}</button></div></td>
@@ -135,10 +132,18 @@ window.RecordTableManager = class RecordTableManager {
       const record = this.recordsList[Number(btn.dataset.index)];
       if (!record) return;
       this._openDetail('Record Details', [
-        ['Patient', escapeHtml(record.name)], ['Procedure', escapeHtml(record.procedure)], ['Date', escapeHtml(record.date)],
+        ['Patient', escapeHtml(record.name)], ['Procedure', escapeHtml(record.procedure)], ['Date', escapeHtml(this._formatDate(record.date))],
         ['Dentist', escapeHtml(record.dentist || '')], ['Diagnosis', escapeHtml(record.diagnosis || '')], ['Notes / protocol', escapeHtml(record.treatment_protocol || '')]
       ]);
     });
+  }
+
+  _formatDate (value) {
+    const raw = String(value || '').trim();
+    const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!match) return raw || '-';
+    return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]))
+      .toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   }
 
   _openDetail (title, rows) {
@@ -158,8 +163,4 @@ window.RecordTableManager = class RecordTableManager {
    *  Private – add record form
    * ----------------------------------------------------------------*/
 
-  _bindFormModal () {
-    const button = document.getElementById('addRecordBtn');
-    if (button) { button.disabled = true; button.title = 'Treatment records management is unavailable.'; }
-  }
 };

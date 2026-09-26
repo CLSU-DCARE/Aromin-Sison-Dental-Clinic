@@ -14,7 +14,7 @@
 <link rel="stylesheet" href="../shared/css/variables.css?v=4">
 <link rel="stylesheet" href="../shared/css/buttons.css?v=5">
 <link rel="stylesheet" href="../shared/css/panels.css?v=4">
-<link rel="stylesheet" href="assets/css/patient.css?v=20260919-page-head-style">
+<link rel="stylesheet" href="assets/css/patient.css?v=20260926-promo-card-cleanup">
 <link rel="stylesheet" href="../shared/css/dashboard-system.css?v=20260924-unified-dashboard-shell">
 </head>
 <body>
@@ -204,11 +204,7 @@
             <div class="panel-pad">
               <div class="form-group">
                 <label for="bookService">Service</label>
-                <select id="bookService"><option>Braces Adjustment</option><option>Cleaning &amp; Check-up</option><option>Consultation</option><option>Teeth Whitening</option></select>
-              </div>
-              <div class="form-group">
-                <label for="bookDentist">Preferred Dentist</label>
-                <select id="bookDentist"><option>No preference</option></select>
+<select id="bookService"><option>Braces Adjustment</option><option>Cleaning &amp; Check-up</option><option>Consultation</option><option>Dental Examination</option><option>Tooth Restoration / Composite Filling</option><option>Tooth Extraction</option><option>Root Canal Treatment</option><option>Teeth Whitening</option><option>Retainer Fitting</option></select>
               </div>
               <div class="form-group">
                 <label for="bookDate">Preferred Date</label>
@@ -232,7 +228,6 @@
               </div>
               <div class="booking-summary">
                 <div class="row"><span>Service</span><span id="summaryService">Braces Adjustment</span></div>
-                <div class="row"><span>Dentist</span><span id="summaryDentist">Loading…</span></div>
                 <div class="row"><span>Selected Time</span><span id="selectedSlot">Not yet selected</span></div>
               </div>
               <button type="button" id="confirmBookingBtn" class="btn btn-gold btn-block" disabled>
@@ -564,14 +559,14 @@
 <script src="../shared/js/state/patient.js?v=20260916-integration" defer></script>
 <script src="../shared/js/core/ContractFormat.js?v=20260916-integration" defer></script>
 <script src="../shared/js/core/PortalForms.js?v=20260916-appointment-dialogs" defer></script>
-<script src="assets/js/PatientAppointmentBooking.js?v=20260916-integration" defer></script>
+<script src="assets/js/PatientAppointmentBooking.js?v=20260926-receptionist-assigns-dentist" defer></script>
 <script src="assets/js/PatientRescheduleModal.js?v=20260916-integration" defer></script>
 <script src="assets/js/PatientBracesProgress.js?v=20260916-integration" defer></script>
 <script src="assets/js/PatientContractView.js?v=20260919-payment-placeholder" defer></script>
 <script src="assets/js/PatientProfileEditor.js?v=20260921-avatar-fallback" defer></script>
 <script src="assets/js/PatientPaymentSubmission.js?v=20260919-gcash-cash" defer></script>
 <script src="assets/js/PatientLiveSync.js?v=20260916-integration" defer></script>
-<script src="assets/js/patient.js?v=20260925-confirmed-next-visit" defer></script>
+<script src="assets/js/patient.js?v=20260926-consistent-dates" defer></script>
 
 </body>
 </html>

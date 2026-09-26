@@ -59,7 +59,7 @@ function initLoginForm(form) {
 
     const data = new FormData(form);
     const identifier = String(data.get('identifier') || data.get('email') || '').trim();
-    const password = String(data.get('password') || '').trim();
+    const password = String(data.get('password') || '');
     if (!identifier) {
       showAlert('Please enter your email address or mobile number.');
       setLoading(btn, false);

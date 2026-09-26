@@ -682,7 +682,7 @@ background:var(--ivory-2);color:rgba(27,27,25,0.65);padding:13px 10px;min-height
 .appointment-card-actions{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px;}
 .appointment-card-actions .btn{min-height:28px;padding:5px 8px;font-size:10px;line-height:1.2;white-space:nowrap;}
 .appointment-week-nav{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap;}
-.appointment-request-panel{margin-top:22px;}
+.appointment-request-panel{margin:22px 0 14px;}
 .appointment-request-panel .panel-head{align-items:flex-start;gap:20px;}
 .appointment-request-panel .panel-head p{margin-top:6px;color:rgba(27,27,25,0.62);font-size:13px;}
 .appointment-request-table{min-width:920px;}
@@ -1113,6 +1113,49 @@ body.sidebar-open{overflow:hidden;}
   justify-content:space-between;
   gap:12px;
 }
+
+#view-records .table-scroll table{min-width:1040px;table-layout:fixed;}
+#view-records .toolbar{justify-content:flex-start;padding-bottom:14px;}
+#view-records thead th,
+#view-records .record-row td{padding-left:18px;padding-right:18px;}
+#view-records thead th:nth-child(1),
+#view-records .record-row td:nth-child(1){width:52px;min-width:52px;padding-left:20px;padding-right:8px;}
+#view-records thead th:nth-child(2),
+#view-records .record-row td:nth-child(2){width:210px;min-width:210px;}
+#view-records thead th:nth-child(3),
+#view-records .record-row td:nth-child(3){width:auto;min-width:280px;max-width:none;}
+#view-records thead th:nth-child(4),
+#view-records .record-row td:nth-child(4){width:148px;min-width:148px;white-space:nowrap;}
+#view-records thead th:nth-child(5),
+#view-records .record-row td:nth-child(5){width:190px;min-width:190px;}
+#view-records thead th:nth-child(6),
+#view-records .record-row td:nth-child(6){width:138px;min-width:138px;}
+#view-records thead th:nth-child(7),
+#view-records .record-row td:nth-child(7){width:72px;min-width:72px;padding-left:8px;padding-right:16px;}
+#view-records .record-row td{padding-top:17px;padding-bottom:17px;}
+#view-records .record-row .name-block .full,
+#view-records .record-summary-cell strong{font-weight:500;}
+#view-records .record-summary-cell{width:100%;max-width:none;gap:7px;}
+#view-records .record-summary-cell strong{max-width:100%;}
+#view-records .record-summary-cell span,
+#view-records .tag{font-weight:500;}
+#view-records .record-detail-lines{max-width:68ch;}
+#view-records .record-date-cell{justify-content:flex-start;}
+
+/* Receptionist records are view-only: six columns without selection controls. */
+#view-records .table-scroll table{min-width:980px;}
+#view-records thead th:nth-child(1),
+#view-records .record-row td:nth-child(1){width:210px;min-width:210px;padding-left:20px;}
+#view-records thead th:nth-child(2),
+#view-records .record-row td:nth-child(2){width:auto;min-width:300px;}
+#view-records thead th:nth-child(3),
+#view-records .record-row td:nth-child(3){width:148px;min-width:148px;white-space:nowrap;}
+#view-records thead th:nth-child(4),
+#view-records .record-row td:nth-child(4){width:190px;min-width:190px;}
+#view-records thead th:nth-child(5),
+#view-records .record-row td:nth-child(5){width:138px;min-width:138px;}
+#view-records thead th:nth-child(6),
+#view-records .record-row td:nth-child(6){width:72px;min-width:72px;padding-left:8px;padding-right:16px;}
 
 /* Send Notification modal: textarea + hint */
 #snBody{
