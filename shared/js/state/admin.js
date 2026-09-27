@@ -18,7 +18,7 @@ const AdminState = {
         "trend": "",
         "trendClass": "",
         "num": "-",
-        "label": "Active Appointments This Day"
+        "label": "Active Appointments This Week"
       },
       {
         "iconBg": "rgba(199,145,62,0.14)",

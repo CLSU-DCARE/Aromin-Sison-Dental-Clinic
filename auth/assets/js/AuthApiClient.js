@@ -12,6 +12,7 @@
     register: '../backend/api/auth/register.php',
     forgotPassword: '../backend/api/auth/forgot-password.php',
     resetPassword: '../backend/api/auth/reset-password.php',
+    resetToken: '../backend/api/auth/reset-token.php',
     refresh: '../backend/api/auth/refresh.php',
     autoLogin: '../backend/api/auth/auto-login.php',
     sessions: '../backend/api/auth/sessions.php',
@@ -266,6 +267,19 @@
           credentials: 'same-origin',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ token, password }),
+        }
+      );
+      const payload = await AuthApiClient.readJson(response);
+      return { response, payload };
+    }
+
+    static async validateResetToken(token) {
+      const response = await AuthApiClient.fetchWithTimeout(
+        ENDPOINTS.resetToken + '?token=' + encodeURIComponent(token),
+        {
+          method: 'GET',
+          credentials: 'same-origin',
+          headers: { 'Accept': 'application/json' },
         }
       );
       const payload = await AuthApiClient.readJson(response);

@@ -3,8 +3,8 @@
  * CLI-only production maintenance task.
  *
  * Schedule daily from the operating system. It removes expired authentication
- * state and audit entries beyond the configured retention period; it never
- * modifies clinic, appointment, treatment, or payment data.
+ * state, trims audit entries beyond the configured retention period, and sends
+ * one-day-ahead appointment and balance reminders.
  */
 if (PHP_SAPI !== 'cli') {
     http_response_code(404);
@@ -26,10 +26,12 @@ try {
     $expiredRememberTokens = \ASDC\RememberToken::cleanupExpired();
     $expiredSessions = \ASDC\SessionManager::cleanupAllExpired();
     $expiredAuditRows = \ASDC\SessionAudit::cleanupOld($retention);
+    $reminders = \ASDC\ReminderService::sendDailyReminders();
 
     echo json_encode([
         'success' => true,
         'audit_retention_days' => $retention,
+        'reminders' => $reminders,
         'deleted' => [
             'password_reset_tokens' => $expiredResetTokens,
             'remember_tokens' => $expiredRememberTokens,

@@ -79,20 +79,33 @@ function executed(string $queryFragment): array
 {
     return array_values(array_filter(Database::$executed, static fn (array $entry): bool => str_contains($entry['query'], $queryFragment)));
 }
+function executed_exact(string $query): array
+{
+    return array_values(array_filter(Database::$executed, static fn (array $entry): bool => $entry['query'] === $query));
+}
 $_SERVER['SCRIPT_NAME'] = '/clinic/backend/api/auth/forgot-password.php';
 $_SERVER['HTTP_HOST'] = 'localhost';
+putenv('ASDC_APP_URL=https://clinic.example.org');
+check(AuthService::resetBaseUrl() === 'http://localhost/clinic', 'Local reset requests must produce local links even when ASDC_APP_URL points to production.');
 $result = AuthService::forgotPassword('patient@example.invalid');
 check($result['success'] === true && Mailer::$calls === 1 && TokenService::$stored === 1, 'First request must create a token and reach the mailer.');
 check(count(RateLimiter::$recorded) === 2, 'Account and IP attempts must be tracked.');
 check($result['success'] === true, 'The reset request must still succeed while sending a branded HTML email.');
+$broadDeletes = executed_exact('DELETE FROM password_reset_tokens WHERE user_id = ?');
+check(count($broadDeletes) === 0, 'Creating a new reset token must not delete previous valid links before delivery succeeds.');
+$oldTokenCleanup = executed('DELETE FROM password_reset_tokens WHERE user_id = ? AND token_hash <> ? AND used_at IS NULL');
+check(count($oldTokenCleanup) === 1, 'Older links should be retired only after the new reset email is delivered.');
 
 // A delivery failure must stay private to the requester while removing only
-// the token created by this request. The hash predicate protects a newer token.
+// the token created by this request. It must not invalidate a previous link
+// that may still be the user's only working reset email.
 Mailer::$succeeds = false;
 Database::$executed = [];
 RateLimiter::$lockouts = [];
 $result = AuthService::forgotPassword('patient@example.invalid');
 check($result['success'] === true, 'Delivery failures must keep the generic success response.');
+$broadDeletes = executed_exact('DELETE FROM password_reset_tokens WHERE user_id = ?');
+check(count($broadDeletes) === 0, 'A failed delivery must not delete all of the user reset tokens.');
 $cleanup = executed('DELETE FROM password_reset_tokens WHERE user_id = ? AND token_hash = ? AND used_at IS NULL');
 check(count($cleanup) === 1, 'A failed delivery must clean up its newly-created token.');
 check($cleanup[0]['params'] === [1, hash('sha256', str_repeat('a', 64))], 'Cleanup must match the specific user and token hash.');

@@ -107,7 +107,17 @@ class PaymentApprovalService
     {
         self::ensureGeneralTreatmentBillingTables();
         $stmt = Database::pdo()->prepare(
-            "SELECT cp.*, c.start_date, c.duration_months, c.total_amount, c.monthly_payment, c.balance_amount
+            "SELECT cp.*, c.start_date, c.duration_months, c.total_amount, c.monthly_payment, c.balance_amount,
+                    (
+                        SELECT COALESCE(SUM(cp2.amount_paid), 0)
+                        FROM contract_payments cp2
+                        WHERE cp2.contract_id = cp.contract_id
+                          AND cp2.status = 'approved'
+                          AND (
+                            cp2.payment_date < cp.payment_date
+                            OR (cp2.payment_date = cp.payment_date AND cp2.payment_id < cp.payment_id)
+                          )
+                    ) AS approved_before_payment
              FROM contract_payments cp
              JOIN braces_contracts c ON c.contract_id = cp.contract_id
              WHERE c.patient_id = ?
@@ -131,6 +141,16 @@ class PaymentApprovalService
         self::ensureGeneralTreatmentBillingTables();
         $stmt = Database::pdo()->query(
             "SELECT cp.*, c.start_date, c.duration_months, c.total_amount, c.monthly_payment, c.balance_amount,
+                    (
+                        SELECT COALESCE(SUM(cp2.amount_paid), 0)
+                        FROM contract_payments cp2
+                        WHERE cp2.contract_id = cp.contract_id
+                          AND cp2.status = 'approved'
+                          AND (
+                            cp2.payment_date < cp.payment_date
+                            OR (cp2.payment_date = cp.payment_date AND cp2.payment_id < cp.payment_id)
+                          )
+                    ) AS approved_before_payment,
                     p.first_name, p.last_name, p.patient_id
              FROM contract_payments cp
              JOIN braces_contracts c ON c.contract_id = cp.contract_id
@@ -148,13 +168,23 @@ class PaymentApprovalService
         self::ensureGeneralTreatmentBillingTables();
         $stmt = Database::pdo()->prepare(
             "SELECT cp.*, c.start_date, c.duration_months, c.total_amount, c.monthly_payment, c.balance_amount,
+                    (
+                        SELECT COALESCE(SUM(cp2.amount_paid), 0)
+                        FROM contract_payments cp2
+                        WHERE cp2.contract_id = cp.contract_id
+                          AND cp2.status = 'approved'
+                          AND (
+                            cp2.payment_date < cp.payment_date
+                            OR (cp2.payment_date = cp.payment_date AND cp2.payment_id < cp.payment_id)
+                          )
+                    ) AS approved_before_payment,
                     p.first_name, p.last_name, p.patient_id
              FROM contract_payments cp
              JOIN braces_contracts c ON c.contract_id = cp.contract_id
              JOIN patients p ON p.patient_id = c.patient_id
              WHERE cp.status = ?
                AND p.archived_at IS NULL
-             ORDER BY cp.created_at ASC, cp.payment_id ASC"
+             ORDER BY cp.created_at DESC, cp.payment_id DESC"
         );
         $stmt->execute([$status]);
         $contractPayments = array_map([self::class, 'present'], $stmt->fetchAll());
@@ -463,7 +493,7 @@ class PaymentApprovalService
              JOIN patients p ON p.patient_id = tb.patient_id
              WHERE tp.status = ?
                AND p.archived_at IS NULL
-             ORDER BY tp.created_at ASC, tp.payment_id ASC"
+             ORDER BY tp.created_at DESC, tp.payment_id DESC"
         );
         $stmt->execute([$status]);
         return array_map([self::class, 'presentTreatment'], $stmt->fetchAll());
@@ -828,9 +858,9 @@ class PaymentApprovalService
 
         $durationMonths = max(1, (int) $row['duration_months']);
         $monthly = max(0, (float) ($row['monthly_payment'] ?? 0));
-        $paid = max(0, (float) ($row['total_amount'] ?? 0) - (float) ($row['balance_amount'] ?? 0));
-        $coveredMonths = $monthly > 0 ? (int) floor($paid / $monthly) : 0;
-        $monthIndex = min(max(1, $coveredMonths + 1), $durationMonths);
+        $paidBeforeThisPayment = max(0, (float) ($row['approved_before_payment'] ?? 0));
+        $coveredMonthsBeforeThisPayment = $monthly > 0 ? (int) floor($paidBeforeThisPayment / $monthly) : 0;
+        $monthIndex = min(max(1, $coveredMonthsBeforeThisPayment + 1), $durationMonths);
         $due = clone $start;
         $due->modify('+' . $monthIndex . ' months');
 

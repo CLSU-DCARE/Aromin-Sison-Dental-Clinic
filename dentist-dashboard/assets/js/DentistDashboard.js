@@ -27,7 +27,7 @@ if (typeof window !== 'undefined') !window.ASDC && (window.ASDC = {});
     this.viewCrumb = document.getElementById('viewCrumb');
     this.recordsFilter = 'All';
     this.patientsFilter = 'All';
-    this.bracesFilter = 'All';
+    this.bracesFilter = 'Current';
     this.reportPeriod = 'this_week';
     this.archivedPatients = [];
     this.appointmentScheduler = null;
@@ -352,26 +352,41 @@ if (inboxEmpty) inboxEmpty.textContent = 'Loading notifications...';
     if (!grid) return;
     grid.addEventListener('click', function(event){
       var card = event.target.closest('[data-stat-target]');
-      if (card) self._switchView(card.dataset.statTarget);
+      if (card) {
+        self._applyStatCardFilter(card);
+        self._switchView(card.dataset.statTarget);
+      }
     });
     grid.addEventListener('keydown', function(event){
       if (event.key !== 'Enter' && event.key !== ' ') return;
       var card = event.target.closest('[data-stat-target]');
       if (!card) return;
       event.preventDefault();
+      self._applyStatCardFilter(card);
       self._switchView(card.dataset.statTarget);
     });
+  };
+
+  DentistDashboard.prototype._applyStatCardFilter = function(card){
+    if (card.dataset.statTarget !== 'braces' || !card.dataset.statFilter) return;
+    var group = document.querySelector('#view-braces .toolbar-left');
+    this.bracesFilter = card.dataset.statFilter;
+    if (typeof setChipGroup === 'function') setChipGroup(group, this.bracesFilter);
+    this._applyBracesContracts();
   };
 
   DentistDashboard.prototype._renderStats = function(){
     var grid = document.getElementById('dashStats');
     if (!grid) return;
-    var targets = ['appointments', 'patients', 'patients', 'patients'];
+    var targets = ['appointments', 'braces', 'payments', 'braces'];
     grid.innerHTML = AdminState.dashboard.stats.map(function(stat, index){
-      var target = targets[index] || 'dashboard';
+      var isActiveBraces = stat.label === 'Active braces contract';
+      var isOverdueBraces = stat.label === 'Overdue braces contract';
+      var target = isActiveBraces || isOverdueBraces ? 'braces' : (targets[index] || 'dashboard');
+      var filter = isActiveBraces ? 'Current' : (isOverdueBraces ? 'Overdue' : '');
       return ASDC.HtmlHelpers.statCard(stat).replace(
         'class="stat-card"',
-        'class="stat-card stat-card-link" role="button" tabindex="0" data-stat-target="' + target + '" aria-label="Open ' + ASDC.HtmlHelpers.escapeHtml(stat.label) + '"'
+        'class="stat-card stat-card-link" role="button" tabindex="0" data-stat-target="' + target + '" data-stat-filter="' + filter + '" aria-label="Open ' + ASDC.HtmlHelpers.escapeHtml(stat.label) + '"'
       );
     }).join('');
   };

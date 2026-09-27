@@ -20,12 +20,12 @@ class StaffDashboardService
             $contracts = ContractService::listAll($scope);
             $records = ClinicalRecordService::listAll();
             $notifications = UserNotificationService::listForUser((int) $scope->getUserId());
-            $stmt = $pdo->prepare("SELECT COUNT(*) FROM appointments a WHERE a.scheduled_date=CURRENT_DATE() AND a.status IN ('pending','confirmed') AND $where");
-            $stmt->execute($params); $dayCount = (int) $stmt->fetchColumn();
+            $stmt = $pdo->prepare("SELECT COUNT(*) FROM appointments a WHERE a.scheduled_date BETWEEN ? AND ? AND a.status IN ('pending','confirmed') AND $where");
+            $stmt->execute(array_merge([$week['week_start'], $week['week_end']], $params)); $weekActiveCount = (int) $stmt->fetchColumn();
             [$contractWhere, $contractParams] = $scope->contractFilter();
             $stmt = $pdo->prepare("SELECT COALESCE(SUM(cp.amount_paid),0) FROM contract_payments cp JOIN braces_contracts c ON c.contract_id=cp.contract_id WHERE cp.status='approved' AND YEARWEEK(cp.payment_date,1)=YEARWEEK(CURRENT_DATE(),1) AND $contractWhere");
             $stmt->execute($contractParams); $collections = (float) $stmt->fetchColumn();
-            $metrics = [$dayCount, count(array_unique(array_column(array_filter($contracts, fn($c) => $c['status_code'] === 'active'), 'patient_id'))), $collections, count(array_filter($contracts, fn($c) => $c['status_code'] === 'defaulted'))];
+            $metrics = [$weekActiveCount, count(array_unique(array_column(array_filter($contracts, fn($c) => $c['status_code'] === 'active'), 'patient_id'))), $collections, count(array_filter($contracts, fn($c) => $c['status_code'] === 'defaulted'))];
             $payments = $scope->isReceptionist() ? PaymentApprovalService::listAll() : [];
             $logs = $scope->isReceptionist() ? NotificationLogService::list()['logs'] : [];
             $promotions = $scope->isReceptionist() ? $pdo->query('SELECT promo_id AS id,title,description AS `desc`,image_path,status,start_date,end_date FROM promotions ORDER BY promo_id DESC')->fetchAll() : [];

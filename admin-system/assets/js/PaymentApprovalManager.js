@@ -57,8 +57,7 @@ window.PaymentApprovalManager = class PaymentApprovalManager {
         if (this._filter === 'Overdue') return s.dueStatus === 'overdue';
         if (this._filter === 'Completed') return s.status === 'approved';
         return s.status === this._filter.toLowerCase();
-      })
-      .slice().reverse();
+      });
 
 
     if (!list.length) {

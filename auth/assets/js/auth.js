@@ -139,7 +139,7 @@ function wireForgotPasswordForm(form, modal) {
     try {
       const { response, payload } = await ASDC.AuthApiClient.forgotPassword(emailField.value.trim());
       if (!response.ok || payload.success !== true) {
-        showAlert(payload.error || 'Unable to send a reset link. Please try again.');
+        showAlert(payload.error?.message || payload.error || payload.message || 'Unable to send a reset link. Please try again.');
         return;
       }
       const titleEl = document.getElementById('recoveryModalTitle');
@@ -165,15 +165,36 @@ function wireResetPasswordForm(form) {
   if (!/^[a-f0-9]{64}$/.test(token)) {
     showAlert('This password reset link is invalid or incomplete. Request a new one.');
     btn.disabled = true;
+  } else if (ASDC.AuthApiClient.validateResetToken) {
+    btn.disabled = true;
+    ASDC.AuthApiClient.validateResetToken(token)
+      .then(({ response, payload }) => {
+        if (!response.ok || payload.valid !== true) {
+          showAlert(payload.message || 'This password reset link is invalid or has expired. Request a new one.');
+          return;
+        }
+        hideAlert();
+        btn.disabled = false;
+      })
+      .catch(() => {
+        showAlert('Unable to verify this reset link. Refresh the page or request a new link.');
+      });
   }
 
   form.addEventListener('submit', async e => {
     e.preventDefault();
     if (!validateForm(form) || btn.disabled) return;
+    const password = form.elements.password;
+    const confirmation = form.elements.confirm_password;
+    if (password && confirmation && password.value !== confirmation.value) {
+      setFieldError(confirmation, 'Passwords do not match.');
+      confirmation.focus();
+      return;
+    }
     hideAlert();
     setLoading(btn, true);
     try {
-      const { response, payload } = await ASDC.AuthApiClient.resetPassword(token, form.elements.password.value);
+      const { response, payload } = await ASDC.AuthApiClient.resetPassword(token, password.value);
       if (!response.ok) {
         showAlert(payload.error || 'Unable to reset your password. Please request a new link.');
         return;

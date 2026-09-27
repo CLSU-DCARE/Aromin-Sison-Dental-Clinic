@@ -341,16 +341,10 @@ class AuthService
 
         AuthMiddleware::secureSessionStart();
 
-        // Rate limit: 3 attempts per 15 minutes (tracked by email + IP)
+        // Rate limit reset emails, not every click. The checks happen before
+        // delivery, while recording happens only after a reset email is sent.
         $resetKey = "password_reset:{$email}";
         $ipKey = 'password_reset_ip:' . AuthMiddleware::getClientIp();
-        $lockout = RateLimiter::lockoutRemaining($resetKey);
-        $ipLockout = RateLimiter::lockoutRemaining($ipKey);
-        if ($lockout > 0 || $ipLockout > 0) {
-            return ['success' => false, 'error' => 'Too many reset requests. Please wait 15 minutes and try again.', 'code' => 429];
-        }
-        RateLimiter::record($resetKey, self::RESET_MAX_ATTEMPTS, self::RESET_WINDOW_SECONDS);
-        RateLimiter::record($ipKey, self::RESET_MAX_ATTEMPTS, self::RESET_WINDOW_SECONDS);
 
         $pdo = Database::pdo();
         $roleSql = "role IN ('dentist', 'receptionist', 'patient')";
@@ -359,6 +353,12 @@ class AuthService
         $user = $stmt->fetch();
 
         if ($user) {
+            $lockout = RateLimiter::lockoutRemaining($resetKey);
+            $ipLockout = RateLimiter::lockoutRemaining($ipKey);
+            if ($lockout > 0 || $ipLockout > 0) {
+                return ['success' => false, 'error' => 'Too many reset requests. Please wait 15 minutes and try again.', 'code' => 429];
+            }
+
             // Build the link from OUR configured address, never from the request.
             // (The "Host" header is sent by the visitor, so an attacker could fake it and
             // get the victim to receive a link that points to the attacker's website.)
@@ -373,7 +373,6 @@ class AuthService
 
             $pdo->beginTransaction();
             try {
-                $pdo->prepare('DELETE FROM password_reset_tokens WHERE user_id = ?')->execute([$user['user_id']]);
                 TokenService::store($pdo, $user['user_id'], $tokenHash);
                 $pdo->commit();
             } catch (\Throwable $e) {
@@ -391,7 +390,21 @@ class AuthService
                 . "Thank you,\nAromin-Sison Dental Clinic";
 
             $mailResult = Mailer::sendEmail($user['email'], 'Reset your Aromin-Sison Dental Clinic password', $body);
-            if (empty($mailResult['ok'])) {
+            if (!empty($mailResult['ok'])) {
+                RateLimiter::record($resetKey, self::RESET_MAX_ATTEMPTS, self::RESET_WINDOW_SECONDS);
+                RateLimiter::record($ipKey, self::RESET_MAX_ATTEMPTS, self::RESET_WINDOW_SECONDS);
+                // Only retire older links after the new reset email is known to
+                // have been delivered. Otherwise a failed delivery would strand
+                // the user by invalidating their previous still-valid link.
+                try {
+                    $cleanup = $pdo->prepare(
+                        'DELETE FROM password_reset_tokens WHERE user_id = ? AND token_hash <> ? AND used_at IS NULL'
+                    );
+                    $cleanup->execute([$user['user_id'], $tokenHash]);
+                } catch (\Throwable $e) {
+                    error_log('[PASSWORD RESET OLD TOKEN CLEANUP FAILED] User ID ' . $user['user_id']);
+                }
+            } else {
                 // Do not leave a usable link behind when no email was delivered.
                 // Matching both values means a concurrent, newer reset request is
                 // never deleted by this older request's cleanup.
@@ -425,16 +438,26 @@ class AuthService
     public static function resetBaseUrl(): ?string
     {
         $configured = rtrim(trim((string) Env::get('ASDC_APP_URL', '')), '/');
+        $host = strtolower((string) ($_SERVER['HTTP_HOST'] ?? ''));
         if ($configured !== '') {
             $parts = parse_url($configured);
             $okScheme = isset($parts['scheme']) && in_array(strtolower($parts['scheme']), ['http', 'https'], true);
-            return ($okScheme && !empty($parts['host'])) ? $configured : null;
+            if (!$okScheme || empty($parts['host'])) {
+                return null;
+            }
+            if (self::isLocalHost($host) && !self::isLocalHost((string) $parts['host'])) {
+                return self::localRequestBaseUrl($host);
+            }
+            return $configured;
         }
 
-        $host = strtolower((string) ($_SERVER['HTTP_HOST'] ?? ''));
+        return self::localRequestBaseUrl($host);
+    }
+
+    private static function localRequestBaseUrl(string $host): ?string
+    {
         $hostName = preg_replace('/:\d+$/', '', $host);
-        $isLocal = $hostName === 'localhost' || $hostName === '127.0.0.1' || str_ends_with($hostName, '.test');
-        if (!$isLocal || !preg_match('/^[a-z0-9.\-]+(:\d+)?$/', $host)) {
+        if (!self::isLocalHost($hostName) || !preg_match('/^[a-z0-9.\-]+(:\d+)?$/', $host)) {
             return null;
         }
 
@@ -442,6 +465,12 @@ class AuthService
         $appBase = preg_replace('#/backend/api/auth/forgot-password\.php$#', '', $scriptPath);
         $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
         return $scheme . '://' . $host . $appBase;
+    }
+
+    private static function isLocalHost(string $host): bool
+    {
+        $hostName = preg_replace('/:\d+$/', '', strtolower($host));
+        return $hostName === 'localhost' || $hostName === '127.0.0.1' || str_ends_with($hostName, '.test');
     }
 
     /**
@@ -469,7 +498,8 @@ class AuthService
 
             if (!$reset) {
                 $pdo->rollBack();
-                return ['success' => false, 'error' => 'This password reset link is invalid or has expired. Request a new one.', 'code' => 400];
+                $status = self::resetTokenStatus($token);
+                return ['success' => false, 'error' => $status['message'], 'code' => 400];
             }
 
             $passwordHash = password_hash($password, PASSWORD_DEFAULT);
@@ -498,5 +528,61 @@ class AuthService
         }
 
         return ['success' => true, 'message' => 'Your password has been reset.'];
+    }
+
+    public static function resetTokenStatus(string $token): array
+    {
+        if (!preg_match('/^[a-f0-9]{64}$/', $token)) {
+            return [
+                'success' => true,
+                'valid' => false,
+                'status' => 'malformed',
+                'message' => 'This password reset link is invalid or incomplete. Request a new one.',
+            ];
+        }
+
+        $pdo = Database::pdo();
+        $tokenHash = TokenService::hash($token);
+        $stmt = $pdo->prepare(
+            'SELECT used_at, expires_at, (expires_at <= NOW()) AS is_expired
+             FROM password_reset_tokens
+             WHERE token_hash = ?
+             ORDER BY reset_id DESC
+             LIMIT 1'
+        );
+        $stmt->execute([$tokenHash]);
+        $row = $stmt->fetch();
+
+        if (!$row) {
+            return [
+                'success' => true,
+                'valid' => false,
+                'status' => 'not_found',
+                'message' => 'This reset link is not active on this server. Request a new link and open the newest email.',
+            ];
+        }
+        if (!empty($row['used_at'])) {
+            return [
+                'success' => true,
+                'valid' => false,
+                'status' => 'used',
+                'message' => 'This reset link has already been used. Request a new one if you still need to change your password.',
+            ];
+        }
+        if ((int) $row['is_expired'] === 1) {
+            return [
+                'success' => true,
+                'valid' => false,
+                'status' => 'expired',
+                'message' => 'This reset link has expired. Request a new one and use it within 15 minutes.',
+            ];
+        }
+
+        return [
+            'success' => true,
+            'valid' => true,
+            'status' => 'valid',
+            'message' => 'This reset link is valid.',
+        ];
     }
 }
