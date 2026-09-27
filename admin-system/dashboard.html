@@ -15,7 +15,7 @@
 <link rel="stylesheet" href="../shared/css/variables.css?v=4">
 <link rel="stylesheet" href="../shared/css/buttons.css?v=5">
 <link rel="stylesheet" href="../shared/css/panels.css?v=4">
-<link rel="stylesheet" href="assets/css/admin.css?v=20260926-booking-panel-gap">
+<link rel="stylesheet" href="assets/css/admin.css?v=20260927-readonly-records-layout">
 </head>
 <body>
 
@@ -272,7 +272,8 @@
             <div class="toolbar-left" role="group" aria-label="Filter records">
               <button class="filter-chip active" aria-pressed="true">All</button>
               <button class="filter-chip" aria-pressed="false">Treatments</button>
-              <button class="filter-chip" aria-pressed="false">Progress</button>
+              <button class="filter-chip" aria-pressed="false">Preventive</button>
+              <button class="filter-chip" aria-pressed="false">Consultation</button>
             </div>
           </div>
           <div class="table-scroll">
@@ -280,11 +281,9 @@
               <thead>
                 <tr>
                   <th>Patient</th>
-                  <th>Procedure</th>
+                  <th>Category</th>
+                  <th>Details</th>
                   <th>Date</th>
-                  <th>Dentist</th>
-                  <th>Status</th>
-                  <th></th>
                 </tr>
               </thead>
               <tbody id="recordsBody"></tbody>
@@ -1005,7 +1004,7 @@
 <script src="assets/js/AppointmentActions.js?v=20260916-appointment-dialogs" defer></script>
 <script src="assets/js/PaymentApprovalManager.js?v=20260926-overdue-filter" defer></script>
 <script src="assets/js/PatientTableManager.js?v=20260926-patient-status" defer></script>
-<script src="assets/js/RecordTableManager.js?v=20260926-records-clean-layout" defer></script>
+<script src="assets/js/RecordTableManager.js?v=20260927-readonly-records-layout" defer></script>
 <script src="../patient-dashboard/assets/js/PatientLiveSync.js?v=20260916-integration" defer></script>
 <script src="../shared/js/core/PortalSync.js?v=20260921-sessionfix" defer></script>
 <script src="../shared/js/core/PortalForms.js?v=20260926-remove-other-treatment" defer></script>

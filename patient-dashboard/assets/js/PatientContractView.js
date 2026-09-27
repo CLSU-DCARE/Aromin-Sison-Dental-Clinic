@@ -68,19 +68,175 @@ window.PatientContractView = class PatientContractView {
   }
 
   async downloadContract () {
-    const html = await this._contractHtml();
-    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
+    const jsPDF = window.jspdf && window.jspdf.jsPDF;
+    if (!jsPDF) {
+      showToast('PDF generator is still loading. Please try again.', 'error');
+      return;
+    }
+
     const user     = this.state.user || {};
-    const filename = 'braces-contract-' + String(user.pid || 'patient').replace(/[^a-z0-9-]+/gi, '-').replace(/^-+|-+$/g, '').toLowerCase() + '.html';
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-    showToast('Contract downloaded.');
+    const contract = this.state.contract || { summary: [], progress: {}, payments: [] };
+    const logo = await this._getLogo();
+    const filename = 'braces-contract-' + String(user.pid || 'patient').replace(/[^a-z0-9-]+/gi, '-').replace(/^-+|-+$/g, '').toLowerCase() + '.pdf';
+    const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+    this._drawContractPdf(pdf, { user, contract, logo });
+    pdf.save(filename);
+    showToast('PDF contract downloaded.');
+  }
+
+  _drawContractPdf (pdf, { user, contract, logo }) {
+    const left = 10;
+    const right = 287;
+    const pageBottom = 196;
+    const bodySize = 14;
+    let y = 16;
+    const genDate = new Date().toLocaleString('en-US', { dateStyle: 'long', timeStyle: 'short' });
+
+    const clean = value => String(value ?? '').replace(/â‚±/g, '\u20b1');
+    const drawText = (text, x, textY, options = {}) => {
+      const normalized = clean(text);
+      if (!normalized.includes('\u20b1')) {
+        pdf.text(normalized, x, textY, options);
+        return;
+      }
+
+      let cursorX = x;
+      normalized.split('\u20b1').forEach((part, index) => {
+        if (index > 0) {
+          pdf.text('P', cursorX, textY, options);
+          pdf.line(cursorX - 0.2, textY - 2.8, cursorX + 3.2, textY - 2.8);
+          pdf.line(cursorX - 0.2, textY - 1.7, cursorX + 3.2, textY - 1.7);
+          cursorX += 3.8;
+        }
+        if (part) {
+          pdf.text(part, cursorX, textY, options);
+          cursorX += pdf.getTextWidth(part);
+        }
+      });
+    };
+    const addWrapped = (text, x, lineY, maxWidth, size = bodySize, style = 'normal') => {
+      pdf.setFont('helvetica', style);
+      pdf.setFontSize(size);
+      const lines = pdf.splitTextToSize(clean(text), maxWidth);
+      pdf.text(lines, x, lineY);
+      return lineY + (lines.length * (size * 0.45)) + 2;
+    };
+    const ensureSpace = amount => {
+      if (y + amount <= pageBottom) return;
+      pdf.addPage();
+      y = 18;
+    };
+
+    pdf.setTextColor(27, 27, 25);
+    if (logo) pdf.addImage(logo, 'PNG', left, 9, 31, 18);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(14);
+    pdf.text('Braces Contract', logo ? 43 : left, 22);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(8);
+    pdf.setTextColor(95, 95, 88);
+    pdf.text('AROMIN-SISON DENTAL CLINIC', right, 17, { align: 'right' });
+    pdf.text(('GENERATED ' + genDate).toUpperCase(), right, 23, { align: 'right' });
+    pdf.setDrawColor(156, 139, 62);
+    pdf.setLineWidth(0.45);
+    pdf.line(left, 34, right, 34);
+    y = 44;
+
+    pdf.setTextColor(27, 27, 25);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(bodySize);
+    pdf.text('Contract Holder:', left, y);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text(user.name || '', left + 28, y);
+    pdf.setFont('helvetica', 'normal');
+    pdf.text(' - ' + (user.pid || ''), left + 28 + pdf.getTextWidth(user.name || ''), y);
+
+    const summary = contract.summary || [];
+    if (summary.length) {
+      const cards = summary.slice(0, 5);
+      const gap = 3;
+      const cardY = 52;
+      const cardH = 22;
+      const cardW = (right - left - (gap * (cards.length - 1))) / cards.length;
+      cards.forEach((box, index) => {
+        const x = left + (index * (cardW + gap));
+        pdf.setDrawColor(218, 218, 214);
+        pdf.setLineWidth(0.25);
+        pdf.roundedRect(x, cardY, cardW, cardH, 2, 2);
+        pdf.setTextColor(0, 0, 0);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(bodySize);
+        drawText(box.v || '', x + 3, cardY + 10);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(8);
+        pdf.setTextColor(70, 78, 82);
+        pdf.text(String(box.l || '').toUpperCase(), x + 3, cardY + 17);
+      });
+    }
+
+    const progress = contract.progress || {};
+    y = 88;
+    pdf.setTextColor(0, 0, 0);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(bodySize);
+    pdf.text('Contract Progress', left, y);
+    y += 9;
+    pdf.setDrawColor(239, 234, 224);
+    pdf.setLineWidth(2.8);
+    pdf.line(left, y + 2, right, y + 2);
+    const pct = Math.max(0, Math.min(100, parseFloat(String(progress.width || '0').replace('%', '')) || 0));
+    pdf.setDrawColor(156, 139, 62);
+    pdf.line(left, y + 2, left + ((right - left) * pct / 100), y + 2);
+    y += 9;
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(8);
+    pdf.setTextColor(75, 75, 70);
+    drawText(progress.left || '', left, y);
+    pdf.text(clean(progress.right || ''), right, y, { align: 'right' });
+    y += 17;
+
+    const payments = contract.payments || [];
+    pdf.setTextColor(0, 0, 0);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(bodySize);
+    pdf.text('Payment History', left, y);
+    y += 9;
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(8);
+    pdf.setFillColor(241, 237, 227);
+    pdf.rect(left, y - 6, right - left, 10, 'F');
+    pdf.setTextColor(60, 68, 72);
+    pdf.text('DATE', left + 2, y);
+    pdf.text('AMOUNT', 83, y);
+    pdf.text('METHOD', 141, y);
+    pdf.text('OR NUMBER', 195, y);
+    y += 11;
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(bodySize);
+    pdf.setTextColor(0, 0, 0);
+    payments.forEach(payment => {
+      ensureSpace(10);
+      pdf.text(clean(window.formatDate ? window.formatDate(payment.date) : payment.date), left + 2, y);
+      drawText(payment.amount, 83, y);
+      pdf.text(clean(payment.method), 141, y);
+      pdf.text(clean(payment.or), 195, y);
+      pdf.setDrawColor(225, 225, 220);
+      pdf.line(left, y + 3, right, y + 3);
+      y += 11;
+    });
+    if (!payments.length) {
+      y = addWrapped('No payments recorded yet.', left + 2, y, right - left, bodySize);
+    }
+
+    y += 8;
+    ensureSpace(18);
+    y = addWrapped('This document is a summary of the orthodontic payment contract between the patient and Aromin-Sison Dental Clinic.', left, y, right - left, 8);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(8);
+    pdf.setTextColor(95, 95, 88);
+    pdf.setDrawColor(225, 225, 220);
+    pdf.line(left, pageBottom - 9, right, pageBottom - 9);
+    pdf.text(('Aromin-Sison Dental Clinic - Generated for ' + (user.name || '')).toUpperCase(), left, pageBottom);
   }
 
   async _contractHtml () {

@@ -37,10 +37,12 @@ window.RecordTableManager = class RecordTableManager {
   apply () {
     const tbody = document.getElementById('recordsBody');
     if (!tbody) return;
-    const list = this.filter ? this.state.records.filter(r => r.category === this.filter) : this.state.records;
+    const categoryMap = { Treatments: 'Treatment' };
+    const category = categoryMap[this.filter] || this.filter;
+    const list = category ? this.state.records.filter(r => r.category === category) : this.state.records;
     this.recordsList = list;
     if (!list.length) {
-      tbody.innerHTML = '<tr><td colspan="6" class="empty-cell">No treatment records match this filter.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="4" class="empty-cell">No treatment records match this filter.</td></tr>';
       this._syncSelectAll();
       return;
     }
@@ -52,12 +54,10 @@ window.RecordTableManager = class RecordTableManager {
     if (!tbody) return;
     tbody.innerHTML = records.map((r, i) =>
       `<tr class="record-row">
-        <td>${nameCell(r.initials, r.name)}</td>
+        <td>${nameCell(r.initials, r.name, r.dentist || '')}</td>
+        <td>${this._categoryTag(r.category)}</td>
         <td>${this._recordSummary(r)}</td>
-        <td>${escapeHtml(this._formatDate(r.date))}</td>
-        <td>${escapeHtml(r.dentist || '')}</td>
-        <td>${statusTag(r)}</td>
-        <td><div class="row-actions"><button class="icon-btn" data-action="view" data-index="${i}" aria-label="View record: ${escapeHtml(r.procedure)}">${eyeIcon}</button></div></td>
+        <td><div class="record-date-cell">${escapeHtml(this._formatDate(r.date))}</div></td>
       </tr>`
     ).join('');
     this._syncSelectAll();
@@ -77,9 +77,13 @@ window.RecordTableManager = class RecordTableManager {
       .map(value => escapeHtml(value))
       .join('<br>');
     return `<div class="record-summary-cell"><strong>${escapeHtml(record.procedure || 'Treatment record')}</strong>` +
-      (record.category ? `<span>${escapeHtml(record.category)}</span>` : '') +
       (notes ? `<p>${notes}</p>` : '') +
       `</div>`;
+  }
+
+  _categoryTag (category) {
+    const label = category || 'Treatment';
+    return `<span class="tag tag-green">${escapeHtml(label)}</span>`;
   }
 
   /* ------------------------------------------------------------------
