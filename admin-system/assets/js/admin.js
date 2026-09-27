@@ -142,10 +142,10 @@ function renderArchivedPatients(){
       <td>${escapeHtml(formatDateTime(patient.archived_at || ''))}</td>
       <td>${escapeHtml(retained)}</td>
       <td>${escapeHtml(patient.archived_by_name || 'System')}</td>
-      <td><div class="row-actions">
-        <button type="button" class="btn btn-outline btn-sm" data-archive-view="${Number(patient.patient_id)}">View</button>
-        <button class="btn btn-danger btn-sm" data-archive-delete="${Number(patient.patient_id)}">Delete</button>
-        <button class="btn btn-gold btn-sm" data-archive-restore="${Number(patient.patient_id)}">Restore</button>
+      <td><div class="row-actions archive-actions">
+        <button type="button" class="btn btn-outline btn-sm archive-action-btn" data-archive-view="${Number(patient.patient_id)}">View</button>
+        <button class="btn btn-danger btn-sm archive-action-btn" data-archive-delete="${Number(patient.patient_id)}">Delete</button>
+        <button class="btn btn-gold btn-sm archive-action-btn" data-archive-restore="${Number(patient.patient_id)}">Restore</button>
       </div></td>
     </tr>`;
   }).join('');

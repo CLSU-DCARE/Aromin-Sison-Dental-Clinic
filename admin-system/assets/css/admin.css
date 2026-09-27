@@ -502,6 +502,30 @@ tbody tr:hover{background:rgba(241,237,227,0.5);}
 .tag-red{background:rgba(180,84,63,0.12);color:var(--red-text);}
 .tag-red::before{background:var(--red-text);}
 .row-actions{display:flex;gap:9px;}
+#view-archived .archive-table{min-width:1180px;}
+#view-archived .archive-table th:last-child,
+#view-archived .archive-table td:last-child{
+  width:284px;
+  padding-right:28px;
+}
+#view-archived .archive-actions{
+  justify-content:flex-end;
+  gap:10px;
+}
+#view-archived .archive-action-btn{
+  min-width:78px;
+}
+#view-archived .archive-action-btn.btn-outline{
+  background:var(--white);
+  border-color:var(--line);
+  color:var(--ink);
+  box-shadow:0 1px 2px rgba(17,17,16,0.04);
+}
+#view-archived .archive-action-btn.btn-outline:hover{
+  background:var(--ivory-2);
+  border-color:rgba(156,139,62,0.42);
+  color:var(--dark-deep);
+}
 /* Selection checkboxes in the records table (Archive uses them). */
 .check-cell{width:46px;padding-right:0;padding-left:20px;vertical-align:middle;}
 .check-cell input[type="checkbox"]{
