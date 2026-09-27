@@ -168,6 +168,30 @@ button{font-family:inherit;cursor:pointer;background:none;border:none;color:inhe
 }
 .link-btn:hover{border-color:var(--gold-text);color:var(--gold);}
 
+.auth-role-back{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:38px;
+  height:38px;
+  margin:0 0 12px -8px;
+  border-radius:50%;
+  color:var(--gold-text);
+  transition:color .2s ease, background .2s ease, transform .15s ease;
+}
+.auth-role-back svg{
+  width:18px;
+  height:18px;
+  stroke-width:2.2;
+  flex-shrink:0;
+}
+.auth-role-back:hover{
+  background:rgba(156,139,62,0.1);
+  color:var(--gold);
+  transform:translateX(-2px);
+}
+.auth-role-back:active{transform:translateX(-2px) scale(.97);}
+
 .terms-line{font-size:13px;color:rgba(27,27,25,0.6);line-height:1.5;}
 
 /* ---- Submit buttons ----
