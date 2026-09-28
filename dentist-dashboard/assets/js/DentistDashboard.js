@@ -683,6 +683,9 @@ if (inboxEmpty) inboxEmpty.textContent = 'Loading notifications...';
     var grid = document.getElementById(containerId);
     if (!grid) return;
     var header = [''].concat(week.days).map(function(d){
+      if (typeof d === 'object') {
+        return '<div class="cell head' + (d.holiday ? ' holiday-head' : '') + '"><span>' + d.label + '</span>' + (d.holiday ? '<small>Holiday<br>' + d.holiday + '</small>' : '') + '</div>';
+      }
       return '<div class="cell' + (d ? ' head' : '') + '">' + d + '</div>';
     }).join('');
     var body = week.rows.map(function(row){
@@ -697,7 +700,7 @@ if (inboxEmpty) inboxEmpty.textContent = 'Loading notifications...';
 
   DentistDashboard.prototype._renderDashboardAppointmentBlocks = function(cell){
     if (cell.status === 'holiday') {
-      return '<div class="appt-block">Holiday <span class="t">' + cell.t + '</span></div>';
+      return '';
     }
     var items = Array.isArray(cell.items) && cell.items.length
       ? cell.items

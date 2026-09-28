@@ -18,7 +18,14 @@
       const esc = ns.HtmlHelpers.escapeHtml;
       return {
         label: dates[0].toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' – ' + dates[5].toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-        days: dates.map(date => date.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric' })),
+        days: dates.map(date => {
+          const dateIso = iso(date);
+          const closure = ns.HolidayCalendar?.closureForDate(dateIso);
+          return {
+            label: date.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric' }),
+            holiday: closure ? esc(closure.name) : ''
+          };
+        }),
         rows: times.map(time => ({
           time: timeLabel(time),
           appts: dates.map(date => {
@@ -28,7 +35,7 @@
               return {
                 status: 'holiday',
                 name: 'Holiday',
-                t: esc(closure.name)
+                t: ''
               };
             }
             const items = active.filter(a => a.scheduled_date === iso(date) && a.scheduled_time === time);

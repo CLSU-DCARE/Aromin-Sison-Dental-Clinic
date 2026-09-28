@@ -196,15 +196,20 @@ window.AppointmentScheduler = class AppointmentScheduler {
     if (!times.length) times.push('09:00', '10:00', '11:00', '13:00', '14:00', '15:00', '16:00');
 
     const header = ['']
-      .concat(visibleDays.map(day => this._dateLabel(day, { weekday: 'short', month: 'short', day: 'numeric' })))
-      .map((label, index) => `<div class="cell${index ? ' head' : ''}">${escapeHtml(label)}</div>`)
+      .concat(visibleDays)
+      .map((day, index) => {
+        if (!index) return '<div class="cell"></div>';
+        const closure = window.ASDC?.HolidayCalendar?.closureForDate(day);
+        const label = this._dateLabel(day, { weekday: 'short', month: 'short', day: 'numeric' });
+        return `<div class="cell head${closure ? ' holiday-head' : ''}"><span>${escapeHtml(label)}</span>${closure ? `<small>Holiday<br>${escapeHtml(closure.name)}</small>` : ''}</div>`;
+      })
       .join('');
 
     const cells = times.map(time => {
       const row = visibleDays.map(day => {
         const closure = window.ASDC?.HolidayCalendar?.closureForDate(day);
         if (closure) {
-          return `<div class="cell holiday-cell"><strong>Holiday</strong><span class="t">${escapeHtml(closure.name)}</span></div>`;
+          return '<div class="cell holiday-cell"></div>';
         }
         const items = visibleAppointments.filter(
           appt => appt.scheduled_date === day && String(appt.scheduled_time).slice(0, 5) === time

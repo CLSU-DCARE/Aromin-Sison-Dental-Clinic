@@ -795,7 +795,9 @@ function renderWeekGrid(containerId, week){
   const grid = document.getElementById(containerId);
   if (!grid) return;
   const header = ['', ...week.days].map(d =>
-    `<div class="cell${d ? ' head': ''}">${d}</div>`).join('');
+    typeof d === 'object'
+      ? `<div class="cell head${d.holiday ? ' holiday-head' : ''}"><span>${d.label}</span>${d.holiday ? `<small>Holiday<br>${d.holiday}</small>` : ''}</div>`
+      : `<div class="cell${d ? ' head': ''}">${d}</div>`).join('');
   const body = week.rows.map(row =>
     `<div class="cell time">${row.time}</div>` + row.appts.map(a =>
       a ? `<div class="cell${a.status === 'holiday' ? ' holiday-cell' : ''}">${renderDashboardAppointmentBlocks(a)}</div>`
@@ -807,7 +809,7 @@ function renderWeekGrid(containerId, week){
 
 function renderDashboardAppointmentBlocks(cell){
   if (cell.status === 'holiday') {
-    return `<div class="appt-block">Holiday <span class="t">${cell.t}</span></div>`;
+    return '';
   }
   const items = Array.isArray(cell.items) && cell.items.length
     ? cell.items
