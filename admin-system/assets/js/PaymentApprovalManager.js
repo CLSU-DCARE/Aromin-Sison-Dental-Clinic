@@ -124,13 +124,15 @@ window.PaymentApprovalManager = class PaymentApprovalManager {
     this._receiptModal.open(document.getElementById('receiptClose'));
   }
 
-  async _review (s, action) {
+  async _review (s, action, reason = '') {
     if (this._reviewing) return;
     this._reviewing = true;
     try {
+      const body = { payment_id: s.id, action };
+      if (action === 'reject') body.reject_reason = reason;
       await apiFetch('../backend/api/payments/payments.php', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ payment_id: s.id, action })
+        body: JSON.stringify(body)
       });
       if (this._receiptModal.modal) this._receiptModal.close();
       showToast('Payment ' + (action === 'approve' ? 'approved' : 'rejected') + ' for ' + s.patient);
@@ -142,7 +144,23 @@ window.PaymentApprovalManager = class PaymentApprovalManager {
   }
 
   _approve (s) { return this._review(s, 'approve'); }
-  _reject (s) { return this._review(s, 'reject'); }
+  async _reject (s) {
+    let reason = '';
+    if (window.ASDC?.promptText) {
+      reason = await window.ASDC.promptText({
+        title: 'Reject payment',
+        message: 'Why is this payment being rejected?',
+        label: 'Rejection reason',
+        confirmLabel: 'Reject Payment',
+        maxLength: 200
+      });
+    } else {
+      reason = window.prompt('Reason for rejecting this payment:') || '';
+    }
+    reason = String(reason || '').trim();
+    if (!reason) return;
+    return this._review(s, 'reject', reason);
+  }
 
   _dueTag (s) {
     const tag = {

@@ -25,7 +25,7 @@ class PatientDashboardService
                 'meta' => $r['date_recorded'] . ($r['dentist'] ? ' · ' . $r['dentist'] : ''),
             ], $stmt->fetchAll());
             $notifications = UserNotificationService::listForUser((int) $_SESSION['user_id']);
-            $dentists = $pdo->query("SELECT dentist_id,full_name FROM dentists WHERE is_active=1 ORDER BY full_name")->fetchAll();
+            $dentists = DentistDirectory::listActive();
             $announcements = $pdo->query("SELECT promo_id AS id,title,description AS `desc`,image_path,status,start_date,end_date FROM promotions WHERE status IN ('live','scheduled') AND (end_date IS NULL OR end_date>=CURRENT_DATE()) ORDER BY promo_id DESC")->fetchAll();
             $pdo->commit();
             return compact('appointments', 'braces', 'submissions', 'profile', 'treatments', 'notifications', 'dentists', 'announcements');

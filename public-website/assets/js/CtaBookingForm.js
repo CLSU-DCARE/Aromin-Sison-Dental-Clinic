@@ -14,6 +14,25 @@
     var today = new Date();
     today.setMinutes(today.getMinutes() - today.getTimezoneOffset());
     ctaDate.min = today.toISOString().split('T')[0];
+    ctaDate.addEventListener('change', function(){
+      syncClosedDateNote();
+    });
+  }
+
+  function closedDateMessage(){
+    return window.ASDC && window.ASDC.HolidayCalendar
+      ? window.ASDC.HolidayCalendar.message(ctaDate && ctaDate.value)
+      : '';
+  }
+
+  function syncClosedDateNote(){
+    var message = closedDateMessage();
+    if (message) {
+      showNote(message, 'err');
+      return true;
+    }
+    hideNote();
+    return false;
   }
 
   function showNote(message, kind){
@@ -23,6 +42,11 @@
     note.classList.toggle('ok', kind === 'ok');
     note.classList.toggle('err', kind === 'err');
     note.hidden = false;
+  }
+
+  function hideNote(){
+    var note = document.getElementById('ctaNote');
+    if (note) note.hidden = true;
   }
 
   ctaForm.addEventListener('submit', function(e){
@@ -40,9 +64,14 @@
       if (ctaDate) ctaDate.focus();
       return;
     }
+    var closedMessage = closedDateMessage();
+    if (closedMessage){
+      showNote(closedMessage, 'err');
+      ctaDate.focus();
+      return;
+    }
 
-    var note = document.getElementById('ctaNote');
-    if (note) note.hidden = true;
+    hideNote();
     btn.classList.add('is-loading');
     btn.disabled = true;
 

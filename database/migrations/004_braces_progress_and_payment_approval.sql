@@ -35,7 +35,7 @@ ALTER TABLE contract_payments
 INSERT INTO notification_templates (template_key, name, channel, subject, body, is_active) VALUES
 ('payment_rejected', 'Payment Rejected', 'both',
  'Payment Submission Rejected - Aromin-Sison Dental Clinic',
- 'Hi {patient_name}, your recent payment submission of {amount} could not be verified and was rejected. Please check your receipt and resubmit, or contact us for help. - Aromin-Sison Dental Clinic',
+ 'Hi {patient_name}, your recent payment submission of {amount} could not be verified and was rejected. Reason: {reason}. Please check your receipt and resubmit, or contact us for help. - Aromin-Sison Dental Clinic',
  1),
 ('braces_progress_updated', 'Braces Progress Updated', 'both',
  'Your Treatment Progress Was Updated - Aromin-Sison Dental Clinic',

@@ -346,6 +346,7 @@ const appointmentScheduler = new AppointmentScheduler({
 const appointmentActions  = new AppointmentActions({ scheduler: appointmentScheduler });
 appointmentScheduler.init();
 appointmentActions.init();
+document.getElementById('dashWeekGrid')?.addEventListener('click', event => appointmentActions.handleGridClick(event));
 const apptGroup = document.querySelector('[aria-label="Filter schedule"]');
 wireChips(apptGroup, label => appointmentScheduler.setMode(label));
 
@@ -797,11 +798,42 @@ function renderWeekGrid(containerId, week){
     `<div class="cell${d ? ' head': ''}">${d}</div>`).join('');
   const body = week.rows.map(row =>
     `<div class="cell time">${row.time}</div>` + row.appts.map(a =>
-      a ? `<div class="cell"><div class="appt-block${a.status === 'completed' ? ' appt-completed' : ''}">${a.name} <span class="t">${a.t}</span>${a.status === 'completed' ? '<span class="appt-status">Completed</span>' : ''}</div></div>`
+      a ? `<div class="cell${a.status === 'holiday' ? ' holiday-cell' : ''}">${renderDashboardAppointmentBlocks(a)}</div>`
         : '<div class="cell"></div>'
     ).join('')
   ).join('');
   grid.innerHTML = header + body;
+}
+
+function renderDashboardAppointmentBlocks(cell){
+  if (cell.status === 'holiday') {
+    return `<div class="appt-block">Holiday <span class="t">${cell.t}</span></div>`;
+  }
+  const items = Array.isArray(cell.items) && cell.items.length
+    ? cell.items
+    : [{ appointment_id: 0, status: cell.status, name: cell.name, service: cell.t, time: '' }];
+  return items.map(item => {
+    const status = String(item.status || '').toLowerCase();
+    return `<div class="appt-block${status === 'completed' ? ' appt-completed' : ''}">` +
+      `<strong>${item.name}</strong>` +
+      `<span class="t">${item.time ? `${item.time} · ` : ''}${item.service}</span>` +
+      `${status === 'completed' ? '<span class="appt-status">Completed</span>' : ''}` +
+      `${dashboardAppointmentActions(item)}` +
+      `</div>`;
+  }).join('');
+}
+
+function dashboardAppointmentActions(item){
+  const status = String(item.status || '').toLowerCase();
+  const id = Number(item.appointment_id);
+  if (!id || !['pending', 'confirmed'].includes(status)) return '';
+  return `<div class="appointment-card-actions">` +
+    (status === 'pending'
+      ? `<button type="button" class="btn btn-sm btn-approve" data-appointment-action="approve" data-appointment-id="${id}">Approve</button><button type="button" class="btn btn-sm btn-reject" data-appointment-action="reject" data-appointment-id="${id}">Reject</button>`
+      : `<button type="button" class="btn btn-sm btn-approve" data-appointment-action="complete" data-appointment-id="${id}">Complete</button><button type="button" class="btn btn-sm btn-outline" data-appointment-action="no_show" data-appointment-id="${id}">No-show</button>`) +
+    `<button type="button" class="btn btn-sm btn-outline" data-appointment-action="reschedule" data-appointment-id="${id}">Reschedule</button>` +
+    `<button type="button" class="btn btn-sm btn-reject" data-appointment-action="cancel" data-appointment-id="${id}">Cancel</button>` +
+    `</div>`;
 }
 
 function renderQueue(queue){

@@ -5,7 +5,7 @@
  *
  * GET  /backend/api/payments/payments.php?status=pending   -> list (default: all)
  * POST /backend/api/payments/payments.php
- *   Body: { payment_id, action: "approve"|"reject" }
+ *   Body: { payment_id, action: "approve"|"reject", reject_reason? }
  */
 require_once __DIR__ . '/../../autoload.php';
 require_once __DIR__ . '/../../config/headers.php';
@@ -43,6 +43,6 @@ if (!$paymentId || !in_array($action, ['approve', 'reject'], true)) {
 $reviewerId = (int) $_SESSION['user_id'];
 $result = $action === 'approve'
     ? \ASDC\PaymentApprovalService::approve($paymentId, $reviewerId)
-    : \ASDC\PaymentApprovalService::reject($paymentId, $reviewerId);
+    : \ASDC\PaymentApprovalService::reject($paymentId, $reviewerId, $body['reject_reason'] ?? '');
 
 \ASDC\ApiResponse::ok(['payment' => $result], $action === 'approve' ? 'Payment approved' : 'Payment rejected');

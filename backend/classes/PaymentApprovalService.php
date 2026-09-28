@@ -13,7 +13,7 @@
  *   PaymentApprovalService::submit($patientId, $data, $receiptPath);
  *   PaymentApprovalService::listPending();
  *   PaymentApprovalService::approve($paymentId, $reviewerId);
- *   PaymentApprovalService::reject($paymentId, $reviewerId);
+ *   PaymentApprovalService::reject($paymentId, $reviewerId, $reason);
  */
 
 namespace ASDC;
@@ -197,17 +197,18 @@ class PaymentApprovalService
         return self::review($paymentId, $reviewerId, true);
     }
 
-    public static function reject($paymentId, int $reviewerId): array
+    public static function reject($paymentId, int $reviewerId, string $reason = ''): array
     {
-        return self::review($paymentId, $reviewerId, false);
+        return self::review($paymentId, $reviewerId, false, $reason);
     }
 
-    private static function review($paymentId, int $reviewerId, bool $approve): array
+    private static function review($paymentId, int $reviewerId, bool $approve, string $reason = ''): array
     {
         self::ensureGeneralTreatmentBillingTables();
+        $reason = self::normalizeRejectionReason($reason, $approve);
         $ref = self::paymentRef($paymentId);
         if ($ref['type'] === 'treatment') {
-            return self::reviewTreatment($ref['id'], $reviewerId, $approve);
+            return self::reviewTreatment($ref['id'], $reviewerId, $approve, $reason);
         }
         $paymentId = $ref['id'];
         $pdo = Database::pdo();
@@ -238,8 +239,18 @@ class PaymentApprovalService
             }
             $status = $approve ? 'approved' : 'rejected';
             $orNumber = $approve ? 'OR-' . date('Ymd') . '-' . str_pad((string) $paymentId, 3, '0', STR_PAD_LEFT) : null;
-            $stmt = $pdo->prepare('UPDATE contract_payments SET status = ?, reviewed_by = ?, reviewed_at = NOW(), or_number = ? WHERE payment_id = ?');
-            $stmt->execute([$status, $reviewerId, $orNumber, $paymentId]);
+            if ($approve) {
+                $stmt = $pdo->prepare('UPDATE contract_payments SET status = ?, reviewed_by = ?, reviewed_at = NOW(), or_number = ? WHERE payment_id = ?');
+                $stmt->execute([$status, $reviewerId, $orNumber, $paymentId]);
+            } else {
+                $stmt = $pdo->prepare(
+                    "UPDATE contract_payments
+                        SET status = ?, reviewed_by = ?, reviewed_at = NOW(), or_number = ?,
+                            note = LEFT(TRIM(CONCAT(COALESCE(note, ''), IF(COALESCE(note, '') = '', '', '\n\n'), ?)), 255)
+                      WHERE payment_id = ?"
+                );
+                $stmt->execute([$status, $reviewerId, $orNumber, 'Rejection reason: ' . $reason, $paymentId]);
+            }
             if ($approve) ContractService::applyPayment((int) $row['contract_id'], (float) $row['amount_paid']);
             $contract = ContractService::findRaw((int) $row['contract_id']);
             if ($approve) {
@@ -260,7 +271,13 @@ class PaymentApprovalService
                     true
                 );
             } else {
-                PortalEvent::patient((int) $contract['patient_id'], 'Payment rejected', 'Your payment submission could not be approved. Please review your billing details and contact the clinic if needed.', 'pay', true);
+                PortalEvent::patient(
+                    (int) $contract['patient_id'],
+                    'Payment rejected',
+                    'Your payment submission could not be approved. Reason: ' . $reason,
+                    'pay',
+                    true
+                );
             }
             $pdo->commit();
         } catch (\Throwable $error) {
@@ -277,13 +294,15 @@ class PaymentApprovalService
             );
         }
         if (!$approve) self::notifyPatient((int) $row['contract_id'], 'payment_rejected', [
+            'reason' => $reason,
             'amount' => '₱' . number_format((float) $row['amount_paid'], 2),
         ]);
         return self::present(self::findRaw($paymentId));
     }
 
-    private static function reviewTreatment(int $paymentId, int $reviewerId, bool $approve): array
+    private static function reviewTreatment(int $paymentId, int $reviewerId, bool $approve, string $reason = ''): array
     {
+        $reason = self::normalizeRejectionReason($reason, $approve);
         $pdo = Database::pdo();
         $pdo->beginTransaction();
         try {
@@ -314,8 +333,18 @@ class PaymentApprovalService
 
             $status = $approve ? 'approved' : 'rejected';
             $orNumber = $approve ? 'OR-' . date('Ymd') . '-T' . str_pad((string) $paymentId, 3, '0', STR_PAD_LEFT) : null;
-            $stmt = $pdo->prepare('UPDATE treatment_payments SET status = ?, reviewed_by = ?, reviewed_at = NOW(), or_number = ? WHERE payment_id = ?');
-            $stmt->execute([$status, $reviewerId, $orNumber, $paymentId]);
+            if ($approve) {
+                $stmt = $pdo->prepare('UPDATE treatment_payments SET status = ?, reviewed_by = ?, reviewed_at = NOW(), or_number = ? WHERE payment_id = ?');
+                $stmt->execute([$status, $reviewerId, $orNumber, $paymentId]);
+            } else {
+                $stmt = $pdo->prepare(
+                    "UPDATE treatment_payments
+                        SET status = ?, reviewed_by = ?, reviewed_at = NOW(), or_number = ?,
+                            note = LEFT(TRIM(CONCAT(COALESCE(note, ''), IF(COALESCE(note, '') = '', '', '\n\n'), ?)), 255)
+                      WHERE payment_id = ?"
+                );
+                $stmt->execute([$status, $reviewerId, $orNumber, 'Rejection reason: ' . $reason, $paymentId]);
+            }
 
             if ($approve) {
                 self::applyTreatmentPayment((int) $row['bill_id'], (float) $row['amount_paid']);
@@ -336,7 +365,13 @@ class PaymentApprovalService
                     true
                 );
             } else {
-                PortalEvent::patient((int) $bill['patient_id'], 'Payment rejected', 'Your payment submission could not be approved. Please review your billing details and contact the clinic if needed.', 'pay', true);
+                PortalEvent::patient(
+                    (int) $bill['patient_id'],
+                    'Payment rejected',
+                    'Your payment submission could not be approved. Reason: ' . $reason,
+                    'pay',
+                    true
+                );
             }
             $pdo->commit();
         } catch (\Throwable $error) {
@@ -354,6 +389,7 @@ class PaymentApprovalService
         }
         if (!$approve) self::notifyPatientById((int) $bill['patient_id'], 'payment_rejected', [
             'amount' => 'PHP ' . number_format((float) $row['amount_paid'], 2),
+            'reason' => $reason,
         ]);
         return self::presentTreatment(self::findTreatmentRaw($paymentId));
     }
@@ -684,6 +720,19 @@ class PaymentApprovalService
         } catch (\Throwable $e) {
             error_log('Payment notification failed: ' . $e->getMessage());
         }
+    }
+
+    private static function normalizeRejectionReason(string $reason, bool $approve): string
+    {
+        if ($approve) return '';
+        $reason = trim(preg_replace('/\s+/', ' ', $reason) ?? '');
+        if ($reason === '') {
+            ApiResponse::error(422, 'validation_failed', 'Please provide a reason for rejecting this payment.');
+        }
+        if (strlen($reason) > 200) {
+            ApiResponse::error(422, 'validation_failed', 'Payment rejection reason must be 200 characters or fewer.');
+        }
+        return $reason;
     }
 
     private static function billingContext(int $contractId, float $paymentAmount = 0): array

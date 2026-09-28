@@ -72,7 +72,13 @@ class PatientService
         $pdo = Database::pdo();
         $pdo->beginTransaction();
         try {
-            $stmt = $pdo->prepare('SELECT user_id, archived_at FROM patients WHERE patient_id = ? FOR UPDATE');
+            $stmt = $pdo->prepare(
+                'SELECT p.user_id, p.archived_at, COALESCE(u.is_active, 1) AS is_active
+                   FROM patients p
+                   LEFT JOIN users u ON u.user_id = p.user_id
+                  WHERE p.patient_id = ?
+                  FOR UPDATE'
+            );
             $stmt->execute([$patientId]);
             $row = $stmt->fetch();
             if (!$row) {
@@ -83,6 +89,10 @@ class PatientService
             if ($row['archived_at']) {
                 $pdo->rollBack();
                 ApiResponse::error(409, 'already_archived', 'Patient is already archived.');
+            }
+            if ((int) $row['is_active'] !== 0) {
+                $pdo->rollBack();
+                ApiResponse::error(409, 'patient_active', 'Only inactive patients can be archived. Set the patient status to inactive first.');
             }
 
             $userId = $row['user_id'] ? (int) $row['user_id'] : null;

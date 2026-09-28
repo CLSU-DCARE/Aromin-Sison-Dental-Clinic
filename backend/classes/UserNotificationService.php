@@ -65,8 +65,18 @@ class UserNotificationService
         ];
         if ($row['contact_number']) $lines[] = 'Contact number: ' . $row['contact_number'];
         if ($row['email']) $lines[] = 'Email: ' . $row['email'];
+        $reason = self::cancellationReason((string) ($row['notes'] ?? ''));
+        if ($reason !== '') $lines[] = 'Reason: ' . $reason;
 
         return implode("\n", $lines);
+    }
+
+    private static function cancellationReason(string $notes): string
+    {
+        if (preg_match('/(?:Cancellation|Rejection) reason:\s*(.+?)(?:\R{2,}|\z)/is', $notes, $matches)) {
+            return trim($matches[1]);
+        }
+        return '';
     }
 
     private static function messageForTitle(string $title): string

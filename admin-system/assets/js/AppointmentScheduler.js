@@ -163,15 +163,17 @@ window.AppointmentScheduler = class AppointmentScheduler {
     const tag      = document.getElementById('apptModeTag');
     if (!grid || !listView || !tbody || !tag) return;
 
-    const days = Array.from({ length: 7 }, (_, i) => this._addDays(this.state.start, i));
-    const range = `${this._dateLabel(days[0], { month: 'short', day: 'numeric' })} – ${this._dateLabel(days[6], { month: 'short', day: 'numeric', year: 'numeric' })}`;
+    const days = Array.from({ length: 6 }, (_, i) => this._addDays(this.state.start, i));
+    const range = `${this._dateLabel(days[0], { month: 'short', day: 'numeric' })} – ${this._dateLabel(days[5], { month: 'short', day: 'numeric', year: 'numeric' })}`;
     tag.textContent = range + (this.state.mode === 'Week' ? '' : ` · ${this.state.mode} view`);
+
+    const visibleAppointments = this.state.appointments.filter(item => days.includes(item.scheduled_date));
 
     if (this.state.mode === 'List') {
       grid.hidden     = true;
       listView.hidden = false;
-      tbody.innerHTML = this.state.appointments.length
-        ? this.state.appointments.map(item =>
+      tbody.innerHTML = visibleAppointments.length
+        ? visibleAppointments.map(item =>
           `<tr><td>${escapeHtml(this._dateLabel(item.scheduled_date, { weekday: 'short', month: 'short', day: 'numeric' }))}</td>` +
           `<td>${escapeHtml(this._timeLabel(item.scheduled_time))}</td>` +
           `<td>${escapeHtml(item.patient_name)}</td>` +
@@ -190,7 +192,7 @@ window.AppointmentScheduler = class AppointmentScheduler {
     const visibleDays = this.state.mode === 'Day' ? [days.includes(today) ? today : days[0]] : days;
     grid.style.setProperty('--appointment-day-count', visibleDays.length);
 
-    const times = [...new Set(this.state.appointments.map(item => String(item.scheduled_time).slice(0, 5)))].sort();
+    const times = [...new Set(visibleAppointments.map(item => String(item.scheduled_time).slice(0, 5)))].sort();
     if (!times.length) times.push('09:00', '10:00', '11:00', '13:00', '14:00', '15:00', '16:00');
 
     const header = ['']
@@ -200,7 +202,11 @@ window.AppointmentScheduler = class AppointmentScheduler {
 
     const cells = times.map(time => {
       const row = visibleDays.map(day => {
-        const items = this.state.appointments.filter(
+        const closure = window.ASDC?.HolidayCalendar?.closureForDate(day);
+        if (closure) {
+          return `<div class="cell holiday-cell"><strong>Holiday</strong><span class="t">${escapeHtml(closure.name)}</span></div>`;
+        }
+        const items = visibleAppointments.filter(
           appt => appt.scheduled_date === day && String(appt.scheduled_time).slice(0, 5) === time
         );
         return items.length

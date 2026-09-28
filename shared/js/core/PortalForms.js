@@ -60,6 +60,52 @@
       dialog.showModal();
     });
   }
+  function promptText({
+    title = 'Provide details',
+    message = '',
+    label = 'Reason',
+    confirmLabel = 'Continue',
+    cancelLabel = 'Cancel',
+    requiredMessage = 'This field is required.',
+    maxLength = 1000
+  } = {}) {
+    return new Promise(resolve => {
+      const dialog = document.createElement('dialog');
+      let settled = false;
+      const settle = value => {
+        if (settled) return;
+        settled = true;
+        resolve(value);
+        dialog.close();
+      };
+
+      dialog.className = 'workflow-dialog';
+      const limit = Number(maxLength) || 1000;
+      dialog.innerHTML = `<form class="modal workflow-dialog-panel workflow-confirm-panel"><h3>${esc(title)}</h3>${message ? `<p>${esc(message)}</p>` : ''}${field(label, `<textarea name="reason" required maxlength="${limit}" rows="4"></textarea>`)}<p class="form-note err workflow-dialog-error" role="alert" data-error hidden></p><div class="modal-actions"><button type="button" class="btn btn-secondary" data-cancel>${esc(cancelLabel)}</button><button type="submit" class="btn btn-danger">${esc(confirmLabel)}</button></div></form>`;
+      document.body.appendChild(dialog);
+      dialog.querySelector('[data-cancel]').addEventListener('click', () => settle(null));
+      dialog.querySelector('form').addEventListener('submit', event => {
+        event.preventDefault();
+        const reason = String(new FormData(event.target).get('reason') || '').trim();
+        if (!reason) {
+          const note = dialog.querySelector('[data-error]');
+          note.textContent = requiredMessage;
+          note.hidden = false;
+          return;
+        }
+        settle(reason);
+      });
+      dialog.addEventListener('cancel', event => {
+        event.preventDefault();
+        settle(null);
+      });
+      dialog.addEventListener('close', () => {
+        if (!settled) resolve(null);
+        dialog.remove();
+      });
+      dialog.showModal();
+    });
+  }
   const field = (label, input) => `<div class="form-group"><label>${esc(label)}</label>${input}</div>`;
   const write = (url, body, method = 'PATCH') => apiFetch('../backend/api/' + url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
   const treatmentOptions = [
@@ -85,6 +131,7 @@
     }
   };
   ASDC.confirmAction = confirmAction;
+  ASDC.promptText = promptText;
   ASDC.openProfileForm = patient => {
     const receptionist = window.location.pathname.includes('/admin-system/');
     const statusField = receptionist
@@ -142,14 +189,36 @@
         form('Reschedule appointment', field('Date', `<input type="date" name="scheduled_date" required value="${esc(appointment.scheduled_date)}">`) + field('Time', `<input type="time" name="scheduled_time" required value="${esc(appointment.scheduled_time.slice(0,5))}">`), async values => { await write('appointments/actions.php', { ...body, ...values }); await refreshStaffSnapshot(); });
         return;
       }
+      if (action === 'cancel') {
+        const reason = await promptText({
+          title: 'Cancel Appointment',
+          message: 'Why is this appointment being cancelled?',
+          label: 'Cancellation reason',
+          confirmLabel: 'Cancel Appointment'
+        });
+        if (!reason) return;
+        body.cancel_reason = reason;
+      }
+      if (action === 'reject') {
+        const reason = await promptText({
+          title: 'Reject Appointment',
+          message: 'Why is this appointment being rejected?',
+          label: 'Rejection reason',
+          confirmLabel: 'Reject Appointment'
+        });
+        if (!reason) return;
+        body.reject_reason = reason;
+      }
       const actionLabel = action.replace('_', '-');
-      const confirmed = await confirmAction({
-        title: 'Update Appointment',
-        message: 'Update this appointment to ' + actionLabel + '?',
-        confirmLabel: 'Update',
-        tone: ['reject', 'cancel', 'no_show'].includes(action) ? 'danger' : 'gold'
-      });
-      if (!confirmed) return;
+      if (!['cancel', 'reject'].includes(action)) {
+        const confirmed = await confirmAction({
+          title: 'Update Appointment',
+          message: 'Update this appointment to ' + actionLabel + '?',
+          confirmLabel: 'Update',
+          tone: ['reject', 'cancel', 'no_show'].includes(action) ? 'danger' : 'gold'
+        });
+        if (!confirmed) return;
+      }
       button.disabled = true;
       try { await write('appointments/actions.php', body, 'POST'); await refreshStaffSnapshot(); ASDC._toast.show('Appointment updated.'); }
       catch (error) { ASDC._toast.show(error.message, 'error'); }

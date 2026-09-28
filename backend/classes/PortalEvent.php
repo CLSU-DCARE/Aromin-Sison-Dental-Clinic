@@ -137,7 +137,7 @@ class PortalEvent
                 self::renderTemplate(self::templateKeyForAppointment($action, 'staff'), self::appointmentMessage($row, $action, 'staff', $context), $replacements),
                 'appt',
                 (int) $row['patient_id'],
-                $action === 'confirmed',
+                in_array($action, ['confirmed', 'cancelled'], true),
                 isset($row['dentist_id']) ? (int) $row['dentist_id'] : null,
                 true
             );
@@ -158,17 +158,23 @@ class PortalEvent
         $row = $stmt->fetch();
         if (!$row) return;
 
+        $staffTitle = match ($action) {
+            'cancelled' => 'Appointment Request Cancelled',
+            'rejected' => 'Appointment Request Rejected',
+            'rescheduled' => 'Appointment Request Rescheduled',
+            default => 'New Appointment Request',
+        };
         $message = self::renderTemplate(
-            'appointment_request_submitted_staff',
-            self::requestMessage($row, 'staff'),
+            $action === 'received' ? 'appointment_request_submitted_staff' : null,
+            self::requestMessage($row, 'staff', $action),
             self::requestReplacements($row)
         );
         self::staff(
-            'New Appointment Request',
+            $staffTitle,
             $message,
             'appt',
             null,
-            false,
+            in_array($action, ['cancelled', 'rejected', 'rescheduled'], true),
             isset($row['preferred_dentist_id']) ? (int) $row['preferred_dentist_id'] : null,
             true
         );
@@ -250,18 +256,25 @@ class PortalEvent
 
         if ($row['contact_number']) $lines[] = 'Contact number: ' . $row['contact_number'];
         if ($row['email']) $lines[] = 'Email: ' . $row['email'];
-        if (!empty($context['reason'])) $lines[] = 'Reason: ' . $context['reason'];
+        $reason = self::appointmentReason($row, $context);
+        if ($reason !== '') $lines[] = 'Reason: ' . $reason;
 
         return implode("\n", $lines);
     }
 
-    private static function requestMessage(array $row, string $audience): string
+    private static function requestMessage(array $row, string $audience, string $action = 'received'): string
     {
         $patientName = trim(($row['first_name'] ?? '') . ' ' . ($row['last_name'] ?? ''));
-        $lines = [
-            $audience === 'staff'
+        $opening = match ($action) {
+            'cancelled' => 'An appointment request has been cancelled.',
+            'rejected' => 'An appointment request has been rejected.',
+            'rescheduled' => 'An appointment request has been rescheduled.',
+            default => $audience === 'staff'
                 ? 'A new appointment request has been submitted by a patient and is ready for review.'
                 : 'Your appointment request has been successfully submitted and is now waiting for the clinic review.',
+        };
+        $lines = [
+            $opening,
             'Appointment ID: #' . $row['request_id'],
         ];
         if ($audience === 'staff') $lines[] = 'Patient: ' . ($patientName ?: 'Walk-in request');
@@ -322,8 +335,20 @@ class PortalEvent
             'dentist_name' => $row['dentist_name'] ?: 'To be assigned',
             'contact_number' => $row['contact_number'] ?: 'Not provided',
             'email' => $row['email'] ?: 'Not provided',
-            'reason' => $context['reason'] ?? 'No reason provided',
+            'reason' => self::appointmentReason($row, $context) ?: 'No reason provided',
         ];
+    }
+
+    private static function appointmentReason(array $row, array $context = []): string
+    {
+        $reason = trim((string) ($context['reason'] ?? ''));
+        if ($reason !== '') return $reason;
+
+        $notes = (string) ($row['notes'] ?? '');
+        if (preg_match('/(?:Cancellation|Rejection) reason:\s*(.+?)(?:\R{2,}|\z)/is', $notes, $matches)) {
+            return trim($matches[1]);
+        }
+        return '';
     }
 
     private static function templateKeyForAppointment(string $action, string $audience): ?string

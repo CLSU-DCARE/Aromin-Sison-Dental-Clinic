@@ -65,6 +65,11 @@ class InputValidator
         return $trimmed;
     }
 
+    public static function isSunday(string $date): bool
+    {
+        return (int) (new \DateTimeImmutable($date))->format('w') === 0;
+    }
+
     public static function slot(array $body, string $dateKey, string $timeKey): array
     {
         $date = self::date($body[$dateKey] ?? null);
@@ -75,6 +80,10 @@ class InputValidator
         }
         if (!$time) {
             $fields[$timeKey] = 'Use a valid time.';
+        }
+        $closedMessage = $date ? HolidayCalendar::closedMessage($date) : null;
+        if ($closedMessage) {
+            $fields[$dateKey] = $closedMessage;
         }
         if ($fields) {
             ApiResponse::error(422, 'validation_failed', 'Please correct the highlighted fields.', $fields);

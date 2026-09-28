@@ -207,7 +207,7 @@ window.PatientTableManager = class PatientTableManager {
         <td><div class="row-actions">
           <button class="icon-btn" data-action="view" data-id="${p.id}" aria-label="View ${escapeHtml(p.name)}">${eyeIcon}</button>
           <button class="icon-btn" data-action="edit" data-id="${p.id}" aria-label="Edit ${escapeHtml(p.name)}">${pencilIcon}</button>
-          <button class="icon-btn" data-action="delete" data-id="${p.id}" aria-label="Delete ${escapeHtml(p.name)}">${trashIcon}</button>
+          <button class="icon-btn" data-action="delete" data-id="${p.id}" aria-label="Archive ${escapeHtml(p.name)}">${trashIcon}</button>
         </div></td>
       </tr>`
     ).join('');
@@ -344,7 +344,9 @@ window.PatientTableManager = class PatientTableManager {
     this._deletingPatient = patient;
     if (!this._deleteModal.modal) return;
     document.getElementById('deleteTitle').textContent = 'Archive this patient?';
-    document.getElementById('deleteText').textContent = `This will deactivate ${patient.name} and hide the profile from active patient lists. Clinical, appointment, contract, payment, and notification records are retained for audit.`;
+    document.getElementById('deleteText').textContent = Number(patient.is_active) === 0
+      ? `This will archive ${patient.name} and hide the profile from active patient lists. Clinical, appointment, contract, payment, and notification records are retained for audit.`
+      : `${patient.name} is still active. Archiving will not proceed until the patient status is set to inactive.`;
     this._deleteModal.open(document.querySelector(`[data-action="delete"][data-id="${patient.id}"]`));
   }
 

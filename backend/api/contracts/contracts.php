@@ -32,9 +32,7 @@ require_role('receptionist');
 $body = \ASDC\ApiResponse::requireJson();
 // Validate foreign keys and money before any write; never accept a patient account as a dentist.
 if (!empty($body['dentist_id'])) {
-    $check = \ASDC\Database::pdo()->prepare('SELECT dentist_id FROM dentists WHERE dentist_id=? AND is_active=1');
-    $check->execute([$body['dentist_id']]);
-    if (!$check->fetchColumn()) \ASDC\ApiResponse::error(422, 'validation_failed', 'Choose an active dentist.');
+    if (!\ASDC\DentistDirectory::isAllowed((int) $body['dentist_id'])) \ASDC\ApiResponse::error(422, 'validation_failed', 'Choose an active dentist.');
 }
 if ($method === 'POST') {
     $check = \ASDC\Database::pdo()->prepare('SELECT patient_id FROM patients WHERE patient_id=? AND archived_at IS NULL');

@@ -22,3 +22,5 @@ spl_autoload_register(function (string $class): void {
         require $file;
     }
 });
+
+date_default_timezone_set(\ASDC\Env::get('ASDC_TIMEZONE', 'Asia/Manila') ?: 'Asia/Manila');

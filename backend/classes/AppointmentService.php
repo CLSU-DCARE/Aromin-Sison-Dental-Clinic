@@ -79,24 +79,36 @@ class AppointmentService
     /**
      * Cancel an appointment or request by ID.
      */
-    public static function cancel(string $type, int $id, string $status = 'cancelled'): void
+    public static function cancel(string $type, int $id, string $status = 'cancelled', string $reason = ''): void
     {
         $pdo = Database::pdo();
         $scope = DataScope::current();
         $table = $type === 'request' ? 'appointment_requests' : 'appointments';
         $key   = $type === 'request' ? 'request_id' : 'appointment_id';
+        $reason = trim($reason);
 
         if ($type === 'appointment') {
             $check = $pdo->prepare(
-                'SELECT 1 FROM appointments a
+                'SELECT a.appointment_id, a.patient_id FROM appointments a
                   JOIN patients p ON p.patient_id=a.patient_id
                  WHERE a.appointment_id=? AND p.archived_at IS NULL'
             );
             $check->execute([$id]);
-            if (!$check->fetchColumn()) ApiResponse::error(409, 'archived_patient', 'Archived patient appointments are retained for history only.');
-                }
+            $appointment = $check->fetch();
+            if (!$appointment) ApiResponse::error(409, 'archived_patient', 'Archived patient appointments are retained for history only.');
+            if (!$scope->canAccessAppointment($appointment)) ApiResponse::error(403, 'forbidden', 'You do not have permission to update this appointment.');
+        } else {
+            $check = $pdo->prepare('SELECT request_id FROM appointment_requests WHERE request_id=?');
+            $check->execute([$id]);
+            $request = $check->fetch();
+            if (!$request) ApiResponse::error(404, 'not_found', 'Appointment request not found.');
+            if (!$scope->canAccessRequest($request)) ApiResponse::error(403, 'forbidden', 'You do not have permission to update this appointment request.');
+        }
         if (!in_array($status, ['cancelled', 'rejected', 'completed', 'no_show'], true)
             || ($type === 'request' && !in_array($status, ['cancelled', 'rejected'], true))) ApiResponse::error(422, 'validation_failed', 'Invalid status.');
+        if (in_array($status, ['cancelled', 'rejected'], true) && ($reason === '' || mb_strlen($reason) > 1000)) {
+            ApiResponse::error(422, 'validation_failed', 'Please provide a ' . ($status === 'rejected' ? 'rejection' : 'cancellation') . ' reason.');
+        }
         if ($type === 'appointment' && in_array($status, ['completed', 'no_show'], true)) {
             $scheduled = $pdo->prepare('SELECT scheduled_date, scheduled_time FROM appointments WHERE appointment_id=?');
             $scheduled->execute([$id]);
@@ -108,8 +120,18 @@ class AppointmentService
                 }
             }
         }
-        $extra = $type === 'request' ? ', reviewed_by=?, reviewed_at=NOW()' : '';
-        $params = $type === 'request' ? [$status, (int) $_SESSION['user_id'], $id] : [$status, $id];
+        $reasonNote = match ($status) {
+            'cancelled' => 'Cancellation reason: ' . $reason,
+            'rejected' => 'Rejection reason: ' . $reason,
+            default => null,
+        };
+        $noteSql = $reasonNote !== null
+            ? ", notes = TRIM(CONCAT(COALESCE(notes, ''), IF(COALESCE(notes, '') = '', '', '\n\n'), ?))"
+            : '';
+        $extra = ($type === 'request' ? ', reviewed_by=?, reviewed_at=NOW()' : '') . $noteSql;
+        $params = $type === 'request' ? [$status, (int) $_SESSION['user_id']] : [$status];
+        if ($reasonNote !== null) $params[] = $reasonNote;
+        $params[] = $id;
         $allowed = $type === 'request' ? "('pending','rescheduled')" : ($status === 'rejected' ? "('pending')" : (in_array($status, ['completed','no_show'], true) ? "('confirmed')" : "('pending','confirmed')"));
         $pdo->beginTransaction();
         try {
@@ -118,7 +140,7 @@ class AppointmentService
             if (!$stmt->rowCount()) { $pdo->rollBack(); ApiResponse::error(409, 'state_changed', 'This appointment no longer permits that action.'); }
             if ($type === 'appointment') {
                 if ($status === 'completed') ClinicalRecordService::recordCompletedAppointment($pdo, $id);
-                PortalEvent::appointment($id, $status);
+                PortalEvent::appointment($id, $status, $reason !== '' ? ['reason' => $reason] : []);
             } else {
                 PortalEvent::appointmentRequest($id, $status);
             }
@@ -151,6 +173,10 @@ class AppointmentService
                     $pdo->rollBack();
                     ApiResponse::error(404, 'not_found', 'Active appointment request not found.');
                 }
+                if (!$scope->canAccessRequest($reqRow)) {
+                    $pdo->rollBack();
+                    ApiResponse::error(403, 'forbidden', 'You do not have permission to reschedule this appointment request.');
+                }
                 if (AppointmentSlotManager::isTaken($pdo, $date, $time, null, $id)) {
                     $pdo->rollBack();
                     ApiResponse::error(409, 'slot_unavailable', 'That appointment slot is no longer available.');
@@ -164,7 +190,7 @@ class AppointmentService
                 $stmt->execute([$date, $time, (int) $_SESSION['user_id'], $id]);
             } else {
                 $stmt = $pdo->prepare(
-                    "SELECT a.appointment_id, a.dentist_id, a.scheduled_date, a.scheduled_time FROM appointments a
+                    "SELECT a.appointment_id, a.patient_id, a.dentist_id, a.scheduled_date, a.scheduled_time FROM appointments a
                      JOIN patients p ON p.patient_id=a.patient_id
                      WHERE a.appointment_id=? AND a.status IN ('pending','confirmed') AND p.archived_at IS NULL FOR UPDATE"
                 );
@@ -173,6 +199,10 @@ class AppointmentService
                 if (!$apptRow) {
                     $pdo->rollBack();
                     ApiResponse::error(404, 'not_found', 'Active appointment not found.');
+                }
+                if (!$scope->canAccessAppointment($apptRow)) {
+                    $pdo->rollBack();
+                    ApiResponse::error(403, 'forbidden', 'You do not have permission to reschedule this appointment.');
                 }
                 if (AppointmentSlotManager::isTaken($pdo, $date, $time, $id, null)) {
                     $pdo->rollBack();
@@ -371,9 +401,7 @@ class AppointmentService
 
     private static function isActiveDentist(PDO $pdo, int $dentistId): bool
     {
-        $stmt = $pdo->prepare('SELECT 1 FROM dentists WHERE dentist_id=? AND is_active=1');
-        $stmt->execute([$dentistId]);
-        return (bool) $stmt->fetchColumn();
+        return DentistDirectory::isAllowed($dentistId);
     }
 
     private static function findOrCreatePatient(PDO $pdo, array $request): int

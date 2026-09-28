@@ -39,6 +39,10 @@ window.PatientAppointmentBooking = class PatientAppointmentBooking {
     const today = new Date();
     today.setMinutes(today.getMinutes() - today.getTimezoneOffset());
     date.min = today.toISOString().split('T')[0];
+    date.addEventListener('change', () => {
+      this._syncClosedDateNote();
+      this._updateConfirmState();
+    });
   }
 
   _initSlots () {
@@ -50,7 +54,7 @@ window.PatientAppointmentBooking = class PatientAppointmentBooking {
           if (item.hasAttribute('aria-pressed')) item.setAttribute('aria-pressed', selected ? 'true' : 'false');
         });
         document.getElementById('selectedSlot').textContent = slot.dataset.slot;
-        this._showNote('', '', true);
+        this._syncClosedDateNote();
         this._updateConfirmState();
       });
     });
@@ -83,6 +87,13 @@ window.PatientAppointmentBooking = class PatientAppointmentBooking {
       if (!date || !date.value) {
         this._showNote('Please choose a preferred date.', 'err');
         if (date) date.focus();
+        return;
+      }
+
+      const closedMessage = window.ASDC?.HolidayCalendar?.message(date.value) || '';
+      if (closedMessage) {
+        this._showNote(closedMessage, 'err');
+        date.focus();
         return;
       }
 
@@ -127,7 +138,20 @@ window.PatientAppointmentBooking = class PatientAppointmentBooking {
   }
 
   _updateConfirmState () {
-    if (this.confirmBtn) this.confirmBtn.disabled = !document.querySelector('.slot.selected');
+    const date = document.getElementById('bookDate');
+    const closed = Boolean(window.ASDC?.HolidayCalendar?.closureForDate(date?.value));
+    if (this.confirmBtn) this.confirmBtn.disabled = closed || !document.querySelector('.slot.selected');
+  }
+
+  _syncClosedDateNote () {
+    const date = document.getElementById('bookDate');
+    const message = window.ASDC?.HolidayCalendar?.message(date?.value) || '';
+    if (message) {
+      this._showNote(message, 'err');
+      return true;
+    }
+    this._showNote('', '', true);
+    return false;
   }
 
   _showNote (message, kind, hide) {

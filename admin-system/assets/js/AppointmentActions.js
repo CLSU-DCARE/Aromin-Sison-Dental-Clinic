@@ -67,13 +67,25 @@ window.AppointmentActions = class AppointmentActions {
 
       if (['reject', 'cancel'].includes(action)) {
         const actionLabel = action === 'reject' ? 'Reject' : 'Cancel';
-        const confirmed = await ASDC.confirmAction({
-          title: `${actionLabel} Booking Request`,
-          message: `${actionLabel} the booking request from ${request.patient_name}?`,
-          confirmLabel: actionLabel,
-          tone: 'danger'
-        });
-        if (!confirmed) return;
+        if (action === 'cancel' || action === 'reject') {
+          const reason = await ASDC.promptText({
+            title: `${actionLabel} Booking Request`,
+            message: `Why is the booking request from ${request.patient_name} being ${action === 'reject' ? 'rejected' : 'cancelled'}?`,
+            label: action === 'reject' ? 'Rejection reason' : 'Cancellation reason',
+            confirmLabel: `${actionLabel} Request`
+          });
+          if (!reason) return;
+          if (action === 'reject') button.dataset.rejectReason = reason;
+          else button.dataset.cancelReason = reason;
+        } else {
+          const confirmed = await ASDC.confirmAction({
+            title: `${actionLabel} Booking Request`,
+            message: `${actionLabel} the booking request from ${request.patient_name}?`,
+            confirmLabel: actionLabel,
+            tone: 'danger'
+          });
+          if (!confirmed) return;
+        }
       }
 
       const rowButtons = button.closest('tr').querySelectorAll('button');
@@ -81,7 +93,13 @@ window.AppointmentActions = class AppointmentActions {
       button.classList.add('is-loading');
 
       try {
-        await this.run(action, 'request', requestId);
+        await this.run(action, 'request', requestId, Object.assign(
+          {},
+          button.dataset.cancelReason ? { cancel_reason: button.dataset.cancelReason } : {},
+          button.dataset.rejectReason ? { reject_reason: button.dataset.rejectReason } : {}
+        ));
+        delete button.dataset.cancelReason;
+        delete button.dataset.rejectReason;
         const messages = {
           approve: 'Booking request approved and added to the schedule',
           reject: 'Booking request rejected',
@@ -135,6 +153,26 @@ window.AppointmentActions = class AppointmentActions {
       complete: 'Complete',
       no_show: 'Mark No-show'
     }[action] || action.charAt(0).toUpperCase() + action.slice(1).replace('_', ' ');
+    let cancelReason = '';
+    let rejectReason = '';
+    if (action === 'reject') {
+      rejectReason = await ASDC.promptText({
+        title: 'Reject Appointment',
+        message: `Why is the appointment for ${appointment.patient_name} being rejected?`,
+        label: 'Rejection reason',
+        confirmLabel: 'Reject Appointment'
+      });
+      if (!rejectReason) return;
+    }
+    if (action === 'cancel') {
+      cancelReason = await ASDC.promptText({
+        title: 'Cancel Appointment',
+        message: `Why is the appointment for ${appointment.patient_name} being cancelled?`,
+        label: 'Cancellation reason',
+        confirmLabel: 'Cancel Appointment'
+      });
+      if (!cancelReason) return;
+    }
     if (['complete', 'no_show'].includes(action)) {
       const scheduledAt = new Date(`${appointment.scheduled_date}T${String(appointment.scheduled_time).slice(0, 5)}`);
       if (!Number.isNaN(scheduledAt.getTime()) && scheduledAt > new Date()) {
@@ -142,20 +180,26 @@ window.AppointmentActions = class AppointmentActions {
         return;
       }
     }
-    const confirmed = await ASDC.confirmAction({
-      title: `${actionLabel} Appointment`,
-      message: `${actionLabel} the appointment for ${appointment.patient_name}?`,
-      confirmLabel: actionLabel,
-      tone: ['reject', 'cancel'].includes(action) ? 'danger' : 'gold'
-    });
-    if (!confirmed) return;
+    if (!['cancel', 'reject'].includes(action)) {
+      const confirmed = await ASDC.confirmAction({
+        title: `${actionLabel} Appointment`,
+        message: `${actionLabel} the appointment for ${appointment.patient_name}?`,
+        confirmLabel: actionLabel,
+        tone: ['reject', 'cancel'].includes(action) ? 'danger' : 'gold'
+      });
+      if (!confirmed) return;
+    }
 
     const controls = button.closest('.appointment-card-actions, .appointment-request-actions');
     const buttons  = controls ? controls.querySelectorAll('button') : [button];
     buttons.forEach(b => { b.disabled = true; });
     button.classList.add('is-loading');
 
-    this.run(action, 'appointment', appointmentId)
+    this.run(action, 'appointment', appointmentId, Object.assign(
+      {},
+      cancelReason ? { cancel_reason: cancelReason } : {},
+      rejectReason ? { reject_reason: rejectReason } : {}
+    ))
       .then(() => showToast('Appointment updated', 'success'))
       .catch(error => {
         showToast(error.message, 'error');

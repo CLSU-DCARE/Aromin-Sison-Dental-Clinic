@@ -309,7 +309,7 @@ INSERT INTO notification_templates (template_key, name, channel, subject, body) 
 
 ('payment_rejected', 'Payment Rejected', 'email',
  'Payment Update - Aromin-Sison Dental Clinic',
- 'Hi {patient_name}, your submitted payment of {amount} could not be approved. Your current balance is {balance}. Please contact the clinic or submit a corrected receipt. - Aromin-Sison Dental Clinic'),
+ 'Hi {patient_name}, your submitted payment of {amount} could not be approved. Reason: {reason}. Your current balance is {balance}. Please contact the clinic or submit a corrected receipt. - Aromin-Sison Dental Clinic'),
 
 ('braces_progress_updated', 'Braces Progress Updated', 'email',
  'Braces Progress Update - Aromin-Sison Dental Clinic',

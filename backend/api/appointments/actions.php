@@ -22,10 +22,10 @@ if (!in_array($action, ['approve', 'reschedule', 'cancel', 'reject', 'complete',
 }
 
 match ($action) {
-    'reject'     => \ASDC\AppointmentService::cancel($type, $id, 'rejected'),
+    'reject'     => \ASDC\AppointmentService::cancel($type, $id, 'rejected', $body['reject_reason'] ?? ''),
     'complete'   => \ASDC\AppointmentService::cancel($type, $id, 'completed'),
     'no_show'    => \ASDC\AppointmentService::cancel($type, $id, 'no_show'),
-    'cancel'     => \ASDC\AppointmentService::cancel($type, $id),
+    'cancel'     => \ASDC\AppointmentService::cancel($type, $id, 'cancelled', $body['cancel_reason'] ?? ''),
     'reschedule' => \ASDC\AppointmentService::reschedule($type, $id, $body['scheduled_date'] ?? '', $body['scheduled_time'] ?? ''),
     'approve'    => \ASDC\AppointmentService::approve($type, $id, \ASDC\InputValidator::positiveId($body['dentist_id'] ?? null)),
 };

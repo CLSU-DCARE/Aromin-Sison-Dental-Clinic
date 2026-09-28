@@ -41,6 +41,7 @@ class Database
                     PDO::ATTR_EMULATE_PREPARES   => false,
                 ]
             );
+            self::$pdo->exec("SET time_zone = " . self::$pdo->quote(Env::get('ASDC_DB_TIME_ZONE', '+08:00') ?: '+08:00'));
         } catch (PDOException $e) {
             error_log('Database connection failed: ' . $e->getMessage());
             http_response_code(500);

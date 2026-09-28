@@ -22,8 +22,24 @@
         rows: times.map(time => ({
           time: timeLabel(time),
           appts: dates.map(date => {
+            const dateIso = iso(date);
+            const closure = ns.HolidayCalendar?.closureForDate(dateIso);
+            if (closure) {
+              return {
+                status: 'holiday',
+                name: 'Holiday',
+                t: esc(closure.name)
+              };
+            }
             const items = active.filter(a => a.scheduled_date === iso(date) && a.scheduled_time === time);
             return items.length ? {
+              items: items.map(a => ({
+                appointment_id: Number(a.appointment_id),
+                status: String(a.status || ''),
+                name: esc(a.patient_name || ''),
+                service: esc(a.service_type || ''),
+                time: esc(timeLabel(a.scheduled_time))
+              })),
               status: items.every(a => String(a.status).toLowerCase() === 'completed') ? 'completed' : '',
               name: esc(items.map(a => a.patient_name).join(', ')),
               t: esc(timeLabel(time) + ' · ' + items.map(a => a.service_type).join(', '))

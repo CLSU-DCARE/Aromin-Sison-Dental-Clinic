@@ -81,6 +81,10 @@ class PatientAppointmentService
         if (!InputValidator::date($date) || $date < date('Y-m-d')) {
             ApiResponse::error(400, 'request_failed', 'Please choose today or a future date.');
         }
+        $closedMessage = HolidayCalendar::closedMessage($date);
+        if ($closedMessage) {
+            ApiResponse::error(400, 'request_failed', $closedMessage);
+        }
         if ($time === null) {
             ApiResponse::error(400, 'request_failed', 'Please choose a valid appointment time.');
         }
@@ -113,6 +117,10 @@ class PatientAppointmentService
         $notes = null;
 
         if ($preferred !== '' && $preferred !== 'No preference') {
+            if (!in_array($preferred, DentistDirectory::allowedNames(), true)) {
+                $pdo->rollBack();
+                ApiResponse::error(422, 'validation_failed', 'Choose an active dentist or no preference.');
+            }
             $dentist = $pdo->prepare(
                 "SELECT dentist_id FROM dentists WHERE full_name=? AND is_active=1 LIMIT 1"
             );
@@ -172,6 +180,10 @@ class PatientAppointmentService
         }
         if (!InputValidator::date($date) || $date < date('Y-m-d')) {
             ApiResponse::error(400, 'request_failed', 'Please choose today or a future date.');
+        }
+        $closedMessage = HolidayCalendar::closedMessage($date);
+        if ($closedMessage) {
+            ApiResponse::error(400, 'request_failed', $closedMessage);
         }
         if ($time === null) {
             ApiResponse::error(400, 'request_failed', 'Please choose a valid appointment time.');
@@ -247,13 +259,17 @@ class PatientAppointmentService
     {
         $id = InputValidator::positiveId($input['appointment_id'] ?? null);
         if (!$id) ApiResponse::error(422, 'validation_failed', 'Choose an appointment.');
+        $reason = isset($input['cancel_reason']) && is_string($input['cancel_reason']) ? trim($input['cancel_reason']) : '';
+        if ($reason === '' || mb_strlen($reason) > 1000) {
+            ApiResponse::error(422, 'validation_failed', 'Please provide a cancellation reason.');
+        }
         $pdo = Database::pdo();
         $pdo->beginTransaction();
         try {
-            $stmt = $pdo->prepare("UPDATE appointments SET status='cancelled' WHERE appointment_id=? AND patient_id=? AND status IN ('pending','confirmed') AND TIMESTAMP(scheduled_date,scheduled_time)>NOW()");
-            $stmt->execute([$id, $patientId]);
+            $stmt = $pdo->prepare("UPDATE appointments SET status='cancelled', notes=TRIM(CONCAT(COALESCE(notes, ''), IF(COALESCE(notes, '') = '', '', '\n\n'), ?)) WHERE appointment_id=? AND patient_id=? AND status IN ('pending','confirmed') AND TIMESTAMP(scheduled_date,scheduled_time)>NOW()");
+            $stmt->execute(['Cancellation reason: ' . $reason, $id, $patientId]);
             if (!$stmt->rowCount()) { $pdo->rollBack(); ApiResponse::error(404, 'not_found', 'Appointment not found or no longer cancellable.'); }
-            PortalEvent::appointment($id, 'cancelled');
+            PortalEvent::appointment($id, 'cancelled', ['reason' => $reason]);
             $pdo->commit();
             return ['appointment_id' => $id, 'status' => 'cancelled'];
         } catch (\Throwable $e) { if ($pdo->inTransaction()) $pdo->rollBack(); throw $e; }

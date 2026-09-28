@@ -12,10 +12,7 @@ require_once __DIR__ . '/../../config/auth.php';
 require_role('receptionist', 'dentist', 'patient');
 
 try {
-    $stmt = \ASDC\Database::pdo()->query(
-        "SELECT dentist_id, full_name FROM dentists WHERE is_active = 1 ORDER BY full_name"
-    );
-    \ASDC\ApiResponse::ok(['dentists' => $stmt->fetchAll()]);
+    \ASDC\ApiResponse::ok(['dentists' => \ASDC\DentistDirectory::listActive()]);
 } catch (\PDOException $e) {
     error_log('Dentist list failed: ' . $e->getMessage());
     \ASDC\ApiResponse::error(500, 'server_error', 'Unable to load dentists.');

@@ -11,6 +11,11 @@ $method = \ASDC\ApiResponse::method('POST', 'DELETE');
 \ASDC\AuthMiddleware::requireLogin();
 \ASDC\CsrfToken::requireValid();
 
+$role = \ASDC\AuthMiddleware::role();
+if ($role === 'patient') {
+    \ASDC\ApiResponse::error(403, 'profile_read_only', 'Patient profiles are read-only. Please contact the clinic to update your information.');
+}
+
 $pdo = \ASDC\Database::pdo();
 $userId = (int) \ASDC\AuthMiddleware::userId();
 

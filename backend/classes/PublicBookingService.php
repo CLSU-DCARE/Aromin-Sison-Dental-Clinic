@@ -66,10 +66,7 @@ class PublicBookingService
         }
 
         if ($dentistId) {
-            $pdo = Database::pdo();
-            $stmt = $pdo->prepare("SELECT 1 FROM dentists WHERE dentist_id=? AND is_active=1");
-            $stmt->execute([$dentistId]);
-            if (!$stmt->fetchColumn()) {
+            if (!DentistDirectory::isAllowed($dentistId)) {
                 ApiResponse::error(422, 'validation_failed', 'Please choose an active dentist.', ['preferred_dentist_id' => 'Dentist is unavailable.']);
             }
         }

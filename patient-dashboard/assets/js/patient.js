@@ -840,16 +840,16 @@ rescheduleModal.init();
 document.getElementById('scheduleBody')?.addEventListener('click', async event => {
   const button = event.target.closest('[data-cancel-appointment]');
   if (!button || button.disabled) return;
-  const confirmed = await ASDC.confirmAction({
+  const reason = await ASDC.promptText({
     title: 'Cancel Appointment',
-    message: 'Cancel this appointment?',
-    confirmLabel: 'Cancel Appointment',
-    tone: 'danger'
+    message: 'Why are you cancelling this appointment?',
+    label: 'Cancellation reason',
+    confirmLabel: 'Cancel Appointment'
   });
-  if (!confirmed) return;
+  if (!reason) return;
   button.disabled = true;
   try {
-    await apiFetch(PATIENT_APPOINTMENTS_ENDPOINT, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'cancel', appointment_id: Number(button.dataset.cancelAppointment) }) });
+    await apiFetch(PATIENT_APPOINTMENTS_ENDPOINT, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'cancel', appointment_id: Number(button.dataset.cancelAppointment), cancel_reason: reason }) });
     await refreshAfterPatientAction(); showToast('Appointment cancelled.');
   } catch (error) { showToast(error.message, 'error'); }
   finally { button.disabled = false; }
