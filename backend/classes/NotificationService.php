@@ -25,72 +25,16 @@ class NotificationService
      */
     public static function notifyEvent(PDO $pdo, string $event, int $patientId, array $replacements = []): array
     {
-        NotificationSchema::ensureLogAppointmentColumn();
-
         $templateKey = self::EVENT_MAP[$event] ?? null;
         if (!$templateKey) {
             return ['ok' => false, 'error' => "Unknown event: $event"];
         }
-
-        $stmt = $pdo->prepare('SELECT patient_id, first_name, last_name, contact_number, email FROM patients WHERE patient_id = ?');
-        $stmt->execute([$patientId]);
-        $patient = $stmt->fetch();
-        if (!$patient) {
-            return ['ok' => false, 'error' => 'Patient not found.'];
-        }
-
-        $template = NotificationTemplateService::getByKey($templateKey);
-        if (!$template) {
-            return ['ok' => false, 'error' => "Template '$templateKey' not found or inactive."];
-        }
-
-        $defaults = ['patient_name' => $patient['first_name'] . ' ' . $patient['last_name']];
-        $replacements = array_merge($defaults, $replacements);
-
-        $renderedBody    = TemplateRenderer::render($template['body'], $replacements);
-        $renderedSubject = $template['subject'] ? TemplateRenderer::render($template['subject'], $replacements) : null;
-
-        $channels = ['email'];
-        $results  = [];
-
-        foreach ($channels as $ch) {
-            $recipient = $patient['email'];
-            $status    = 'pending';
-            $error     = null;
-
-            if (!$recipient) {
-                $status = 'failed';
-                $error  = 'Patient has no email on file.';
-            } else {
-                if ($ch === 'email') {
-                    $r = Mailer::sendEmail($recipient, $renderedSubject ?: 'Notification - Aromin-Sison Dental Clinic', $renderedBody);
-                } else {
-                    $r = ['ok' => false, 'error' => 'Unsupported notification channel.'];
-                }
-                $status = $r['ok'] ? 'sent' : 'failed';
-                $error  = $r['error'] ?? null;
-            }
-
-            $logStmt = $pdo->prepare('INSERT INTO notification_logs (patient_id, template_id, channel, recipient, subject, body, status, error_message) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
-            $logStmt->execute([
-                $patientId,
-                $template['template_id'],
-                $ch,
-                $recipient ?? '',
-                $renderedSubject,
-                $renderedBody,
-                $status,
-                $error,
-            ]);
-
-            $results[] = [
-                'channel'   => $ch,
-                'recipient' => $recipient ?? null,
-                'status'    => $status,
-                'error'     => $error,
-            ];
-        }
-
-        return ['ok' => true, 'results' => $results];
+        $result = NotificationSendService::send($patientId, [
+            'template_key' => $templateKey,
+            'replacements' => $replacements,
+        ]);
+        return $result['success']
+            ? ['ok' => true, 'results' => $result['results']]
+            : ['ok' => false, 'error' => $result['error'] ?? 'Notification failed.'];
     }
 }

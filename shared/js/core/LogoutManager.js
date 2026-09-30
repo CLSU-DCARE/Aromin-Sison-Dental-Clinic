@@ -9,6 +9,24 @@
 
   const LOGOUT_URL = '../backend/api/auth/logout.php';
 
+  function apiBaseUrl() {
+    const configured = (window.ASDC && window.ASDC.API_BASE_URL) || '';
+    if (configured) return configured.replace(/\/+$/, '');
+    if (location.hostname === 'arominsisondental.vercel.app') {
+      return 'https://asdc-api-production.up.railway.app';
+    }
+    return '';
+  }
+
+  function apiUrl(path) {
+    const base = apiBaseUrl();
+    return base ? base + '/' + String(path).replace(/^\.\.\//, '') : path;
+  }
+
+  function credentialsMode() {
+    return apiBaseUrl() ? 'include' : 'same-origin';
+  }
+
   class LogoutManager {
     constructor() {
       this._modal = null;
@@ -50,9 +68,9 @@
         const controller = new AbortController();
         const timer = setTimeout(() => controller.abort(), 10000);
         try {
-          return await fetch(LOGOUT_URL, {
+          return await fetch(apiUrl(LOGOUT_URL), {
             method: 'POST',
-            credentials: 'same-origin',
+            credentials: credentialsMode(),
             headers,
             body: '{}',
             signal: controller.signal,

@@ -31,6 +31,10 @@ class Mailer
             'MAIL_PASSWORD'
         )));
         $fromName = trim(self::firstEnv('ASDC_MAIL_FROM_NAME', 'MAIL_FROM_NAME')) ?: 'Aromin-Sison Dental Clinic';
+        $smtpHost = trim(self::firstEnv('ASDC_SMTP_HOST', 'SMTP_HOST', 'MAIL_HOST')) ?: 'smtp.gmail.com';
+        $smtpPort = (int) (trim(self::firstEnv('ASDC_SMTP_PORT', 'SMTP_PORT', 'MAIL_PORT')) ?: '587');
+        if ($smtpPort <= 0) $smtpPort = 587;
+        $smtpSecure = strtolower(trim(self::firstEnv('ASDC_SMTP_SECURE', 'SMTP_SECURE', 'MAIL_ENCRYPTION'))) ?: 'tls';
 
         if (!filter_var($to, FILTER_VALIDATE_EMAIL)) {
             return ['ok' => false, 'error' => 'Recipient email address is invalid.'];
@@ -55,10 +59,10 @@ class Mailer
         try {
             $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
             $mail->isSMTP();
-            $mail->Host       = 'smtp.gmail.com';
-            $mail->Port       = 587;
+            $mail->Host       = $smtpHost;
+            $mail->Port       = $smtpPort;
             $mail->SMTPAuth   = true;
-            $mail->SMTPSecure = \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
+            $mail->SMTPSecure = self::phpMailerEncryption($smtpSecure);
             $mail->Username   = $gmailAddress;
             $mail->Password   = $gmailAppPassword;
             $mail->CharSet    = 'UTF-8';
@@ -75,6 +79,7 @@ class Mailer
             $mail->send();
             return ['ok' => true];
         } catch (\Throwable $e) {
+            error_log('[MAILER] SMTP send failed via ' . $smtpHost . ':' . $smtpPort . ' - ' . $e->getMessage());
             return ['ok' => false, 'error' => self::safeError($e->getMessage())];
         }
     }
@@ -97,11 +102,16 @@ class Mailer
             'SMTP_PASSWORD',
             'MAIL_PASSWORD'
         )));
+        $smtpHost = trim(self::firstEnv('ASDC_SMTP_HOST', 'SMTP_HOST', 'MAIL_HOST')) ?: 'smtp.gmail.com';
+        $smtpPort = (int) (trim(self::firstEnv('ASDC_SMTP_PORT', 'SMTP_PORT', 'MAIL_PORT')) ?: '587');
+        if ($smtpPort <= 0) $smtpPort = 587;
         return [
             'address_configured' => filter_var($address, FILTER_VALIDATE_EMAIL) !== false,
             'password_configured' => $password !== '',
             'phpmailer_installed' => is_file(dirname(__DIR__, 2) . '/vendor/autoload.php'),
             'from_address' => filter_var($address, FILTER_VALIDATE_EMAIL) ? self::maskEmail($address) : null,
+            'smtp_host' => $smtpHost,
+            'smtp_port' => $smtpPort,
         ];
     }
 
@@ -122,6 +132,14 @@ class Mailer
         if ($domain === '') return 'configured';
         $prefix = substr($name, 0, 2);
         return $prefix . str_repeat('*', max(2, strlen($name) - 2)) . '@' . $domain;
+    }
+
+    private static function phpMailerEncryption(string $value): string
+    {
+        if (in_array($value, ['ssl', 'smtps'], true)) {
+            return \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_SMTPS;
+        }
+        return \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
     }
 
     private static function sendViaSmtp(

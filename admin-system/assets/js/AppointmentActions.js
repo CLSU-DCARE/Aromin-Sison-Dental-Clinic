@@ -127,6 +127,10 @@ window.AppointmentActions = class AppointmentActions {
     if (!appointment) return;
 
     const action = button.dataset.appointmentAction;
+    if (window.ASDCAuthUser?.role === 'dentist' && !['complete', 'no_show'].includes(action)) {
+      showToast('Dentists can only mark appointments complete or no-show.', 'error');
+      return;
+    }
 
     if (action === 'approve' && window.ASDC.approveAppointment) {
       if (window.ASDCAuthUser?.role === 'dentist') {

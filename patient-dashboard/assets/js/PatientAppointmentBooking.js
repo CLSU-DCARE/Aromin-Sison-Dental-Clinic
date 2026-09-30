@@ -164,65 +164,8 @@ window.PatientAppointmentBooking = class PatientAppointmentBooking {
   }
 
   async _api (method, body) {
-    if (this._usesProductionApi()) {
-      return this._productionApi(method, body);
-    }
     const options = { method };
     if (body) { options.headers = { 'Content-Type': 'application/json' }; options.body = JSON.stringify(body); }
     return apiFetch(this.endpoint, options);
-  }
-
-  _usesProductionApi () {
-    return location.hostname === 'arominsisondental.vercel.app';
-  }
-
-  _productionUrl (path) {
-    const base = window.ASDC?.API_BASE_URL || 'https://asdc-api-production.up.railway.app';
-    return base.replace(/\/+$/, '') + '/' + String(path).replace(/^\.\.\//, '');
-  }
-
-  async _productionJson (url, options = {}) {
-    const response = await fetch(url, {
-      credentials: 'include',
-      cache: 'no-store',
-      ...options,
-      headers: { Accept: 'application/json', ...(options.headers || {}) }
-    });
-    const text = await response.text();
-    let payload = null;
-    try {
-      payload = text ? JSON.parse(text) : {};
-    } catch (e) {
-      throw new Error('The clinic server did not return a valid booking response. Please refresh and try again.');
-    }
-    if (!response.ok || payload.success === false) {
-      const message = payload?.error?.message || payload?.message || 'Unable to book this appointment. Please try again.';
-      const error = new Error(message);
-      error.status = response.status;
-      throw error;
-    }
-    return payload.data || payload;
-  }
-
-  async _productionCsrfToken () {
-    try {
-      const data = await this._productionJson(this._productionUrl('../backend/api/auth/csrf-token.php'));
-      return data.csrf_token || '';
-    } catch (error) {
-      return '';
-    }
-  }
-
-  async _productionApi (method, body) {
-    const headers = { 'Content-Type': 'application/json' };
-    if (method !== 'GET') {
-      const token = await this._productionCsrfToken();
-      if (token) headers['X-CSRF-Token'] = token;
-    }
-    return this._productionJson(this._productionUrl(this.endpoint), {
-      method,
-      headers,
-      body: body ? JSON.stringify(body) : undefined
-    });
   }
 };

@@ -30,12 +30,21 @@ async function readJson(url, options = {}) {
 }
 
 async function checkFrontendBookingAsset() {
-  const url = `${VERCEL_URL}/patient-dashboard/assets/js/PatientAppointmentBooking.js?v=20260930-booking-fallback`;
+  const dashboardUrl = `${VERCEL_URL}/patient-dashboard/dashboard.html`;
+  const dashboard = await readText(dashboardUrl, { cache: 'no-store' });
+  assert.equal(dashboard.response.status, 200, `Patient dashboard should load from Vercel. Got ${dashboard.response.status}.`);
+  assert.match(
+    dashboard.text,
+    /PatientAppointmentBooking\.js\?v=20260930-shared-api/,
+    'Vercel is serving an old patient dashboard without the shared booking API cache-bust.'
+  );
+
+  const url = `${VERCEL_URL}/patient-dashboard/assets/js/PatientAppointmentBooking.js?v=20260930-shared-api`;
   const { response, text } = await readText(url, { cache: 'no-store' });
   assert.equal(response.status, 200, `Booking asset should load from Vercel. Got ${response.status}.`);
-  assert.match(text, /_productionApi/, 'Vercel is serving an old booking JS file without the production API fallback.');
-  assert.match(text, /asdc-api-production\.up\.railway\.app/, 'Booking JS does not point to the Railway production API fallback.');
-  console.log('PASS frontend booking asset is latest.');
+  assert.match(text, /apiFetch\(this\.endpoint, options\)/, 'Booking JS should use the shared API client on live host.');
+  assert.doesNotMatch(text, /_productionApi/, 'Vercel is serving an old booking JS file with the removed production-only client.');
+  console.log('PASS frontend booking asset uses the shared API client.');
 }
 
 async function checkPreflight(path, method = 'POST', headers = 'content-type') {

@@ -94,6 +94,9 @@ class NotificationSendService
                 }
                 $status = $r['ok'] ? 'sent' : 'failed';
                 $error  = $r['error'] ?? null;
+                if (!$r['ok']) {
+                    error_log('[NOTIFICATION MAIL FAILED] Patient ID ' . $patientId . ' to ' . $recipient . ': ' . ($error ?: 'Email delivery failed.'));
+                }
             }
 
             // Log

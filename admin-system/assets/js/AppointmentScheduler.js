@@ -140,12 +140,21 @@ window.AppointmentScheduler = class AppointmentScheduler {
   }
 
   _actionControls (item, compact = false) {
-    if (!['pending', 'confirmed'].includes(String(item.status).toLowerCase())) return '';
+    const status = String(item.status).toLowerCase();
+    if (!['pending', 'confirmed'].includes(status)) return '';
     const id   = Number(item.appointment_id);
     const size = compact ? ' appointment-card-actions' : ' appointment-request-actions';
+    if (window.ASDCAuthUser?.role === 'dentist') {
+      return status === 'confirmed'
+        ? `<div class="${size.trim()}">` +
+          `<button type="button" class="btn btn-sm btn-approve" data-appointment-action="complete" data-appointment-id="${id}">Complete</button>` +
+          `<button type="button" class="btn btn-sm btn-outline" data-appointment-action="no_show" data-appointment-id="${id}">No-show</button>` +
+          `</div>`
+        : '';
+    }
     return `<div class="${size.trim()}">` +
-      (item.status === 'pending' ? `<button type="button" class="btn btn-sm btn-approve" data-appointment-action="approve" data-appointment-id="${id}">Approve</button><button type="button" class="btn btn-sm btn-reject" data-appointment-action="reject" data-appointment-id="${id}">Reject</button>` : '') +
-      (item.status === 'confirmed' ? `<button type="button" class="btn btn-sm btn-approve" data-appointment-action="complete" data-appointment-id="${id}">Complete</button><button type="button" class="btn btn-sm btn-outline" data-appointment-action="no_show" data-appointment-id="${id}">No-show</button>` : '') +
+      (status === 'pending' ? `<button type="button" class="btn btn-sm btn-approve" data-appointment-action="approve" data-appointment-id="${id}">Approve</button><button type="button" class="btn btn-sm btn-reject" data-appointment-action="reject" data-appointment-id="${id}">Reject</button>` : '') +
+      (status === 'confirmed' ? `<button type="button" class="btn btn-sm btn-approve" data-appointment-action="complete" data-appointment-id="${id}">Complete</button><button type="button" class="btn btn-sm btn-outline" data-appointment-action="no_show" data-appointment-id="${id}">No-show</button>` : '') +
       `<button type="button" class="btn btn-sm btn-outline" data-appointment-action="reschedule" data-appointment-id="${id}">Reschedule</button>` +
       `<button type="button" class="btn btn-sm btn-reject" data-appointment-action="cancel" data-appointment-id="${id}">Cancel</button>` +
       `</div>`;

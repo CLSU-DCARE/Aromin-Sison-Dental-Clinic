@@ -155,10 +155,11 @@ class PatientAppointmentService
         $insert->execute([$patientId, $dentistId, $service, $date, $time, $notes]);
         $appointmentId = (int) $pdo->lastInsertId();
 
-        PortalEvent::appointment($appointmentId, 'requested');
         $pdo->commit();
         } catch (\Throwable $e) { if ($pdo->inTransaction()) $pdo->rollBack(); throw $e; }
         finally { AppointmentSlotManager::unlock($pdo, $lock); }
+
+        self::notifyAppointment($appointmentId, 'requested');
 
         return ['appointment_id' => $appointmentId, 'status' => 'pending'];
     }
@@ -235,13 +236,15 @@ class PatientAppointmentService
              WHERE appointment_id=? AND patient_id=?"
         )->execute([$date, $time, $appointmentId, $patientId]);
 
-        PortalEvent::appointment($appointmentId, 'reschedule requested', [
+        $previous = [
             'previous_date' => $row['scheduled_date'] ?? null,
             'previous_time' => $row['scheduled_time'] ?? null,
-        ]);
+        ];
         $pdo->commit();
         } catch (\Throwable $e) { if ($pdo->inTransaction()) $pdo->rollBack(); throw $e; }
         finally { AppointmentSlotManager::unlock($pdo, $lock); }
+
+        self::notifyAppointment($appointmentId, 'reschedule requested', $previous);
 
         return ['appointment_id' => $appointmentId, 'scheduled_date' => $date, 'scheduled_time' => $time];
     }
@@ -269,10 +272,19 @@ class PatientAppointmentService
             $stmt = $pdo->prepare("UPDATE appointments SET status='cancelled', notes=TRIM(CONCAT(COALESCE(notes, ''), IF(COALESCE(notes, '') = '', '', '\n\n'), ?)) WHERE appointment_id=? AND patient_id=? AND status IN ('pending','confirmed') AND TIMESTAMP(scheduled_date,scheduled_time)>NOW()");
             $stmt->execute(['Cancellation reason: ' . $reason, $id, $patientId]);
             if (!$stmt->rowCount()) { $pdo->rollBack(); ApiResponse::error(404, 'not_found', 'Appointment not found or no longer cancellable.'); }
-            PortalEvent::appointment($id, 'cancelled', ['reason' => $reason]);
             $pdo->commit();
+            self::notifyAppointment($id, 'cancelled', ['reason' => $reason]);
             return ['appointment_id' => $id, 'status' => 'cancelled'];
         } catch (\Throwable $e) { if ($pdo->inTransaction()) $pdo->rollBack(); throw $e; }
+    }
+
+    private static function notifyAppointment(int $appointmentId, string $action, array $context = []): void
+    {
+        try {
+            PortalEvent::appointment($appointmentId, $action, $context);
+        } catch (\Throwable $e) {
+            error_log('Patient appointment notification failed: ' . $e->getMessage());
+        }
     }
 
     private static function statusLabel(string $status): string

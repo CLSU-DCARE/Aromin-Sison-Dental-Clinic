@@ -719,13 +719,10 @@ if (inboxEmpty) inboxEmpty.textContent = 'Loading notifications...';
   DentistDashboard.prototype._dashboardAppointmentActions = function(item){
     var status = String(item.status || '').toLowerCase();
     var id = Number(item.appointment_id);
-    if (!id || !['pending', 'confirmed'].includes(status)) return '';
+    if (!id || status !== 'confirmed') return '';
     return '<div class="appointment-card-actions">' +
-      (status === 'pending'
-        ? '<button type="button" class="btn btn-sm btn-approve" data-appointment-action="approve" data-appointment-id="' + id + '">Approve</button><button type="button" class="btn btn-sm btn-reject" data-appointment-action="reject" data-appointment-id="' + id + '">Reject</button>'
-        : '<button type="button" class="btn btn-sm btn-approve" data-appointment-action="complete" data-appointment-id="' + id + '">Complete</button><button type="button" class="btn btn-sm btn-outline" data-appointment-action="no_show" data-appointment-id="' + id + '">No-show</button>') +
-      '<button type="button" class="btn btn-sm btn-outline" data-appointment-action="reschedule" data-appointment-id="' + id + '">Reschedule</button>' +
-      '<button type="button" class="btn btn-sm btn-reject" data-appointment-action="cancel" data-appointment-id="' + id + '">Cancel</button>' +
+      '<button type="button" class="btn btn-sm btn-approve" data-appointment-action="complete" data-appointment-id="' + id + '">Complete</button>' +
+      '<button type="button" class="btn btn-sm btn-outline" data-appointment-action="no_show" data-appointment-id="' + id + '">No-show</button>' +
       '</div>';
   };
 
