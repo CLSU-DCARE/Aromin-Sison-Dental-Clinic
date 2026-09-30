@@ -157,10 +157,11 @@ class AppointmentService
         [$date, $time] = InputValidator::slot(['scheduled_date' => $date, 'scheduled_time' => $time], 'scheduled_date', 'scheduled_time');
         $pdo  = Database::pdo();
         $scope = DataScope::current();
-        $lock = AppointmentSlotManager::lock($pdo, $date, $time);
+        $lock = null;
         $eventContext = [];
 
         try {
+            $lock = AppointmentSlotManager::lock($pdo, $date, $time);
             $pdo->beginTransaction();
 
             if ($type === 'request') {
@@ -222,10 +223,16 @@ class AppointmentService
             $pdo->commit();
         } catch (Throwable $e) {
             if ($pdo->inTransaction()) $pdo->rollBack();
-            error_log($e->getMessage());
+            error_log('Appointment reschedule failed: ' . $e->getMessage());
             ApiResponse::error(500, 'reschedule_failed', 'Unable to reschedule the appointment.');
         } finally {
-            AppointmentSlotManager::unlock($pdo, $lock);
+            if ($lock !== null) {
+                try {
+                    AppointmentSlotManager::unlock($pdo, $lock);
+                } catch (Throwable $e) {
+                    error_log('Appointment slot unlock failed: ' . $e->getMessage());
+                }
+            }
         }
 
         try {

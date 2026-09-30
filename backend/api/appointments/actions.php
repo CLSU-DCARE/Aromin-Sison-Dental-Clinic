@@ -11,25 +11,30 @@ require_role('receptionist', 'dentist');
 \ASDC\CsrfToken::requireValid();
 appointment_assert_method('POST', 'PATCH');
 
-$body   = appointment_body();
-$action = isset($body['action']) && is_string($body['action']) ? strtolower(trim($body['action'])) : '';
-$type   = ($body['resource_type'] ?? 'appointment') === 'request' ? 'request' : 'appointment';
-$key    = $type === 'request' ? 'request_id' : 'appointment_id';
-$id     = appointment_positive_id($body[$key] ?? null);
+try {
+    $body   = appointment_body();
+    $action = isset($body['action']) && is_string($body['action']) ? strtolower(trim($body['action'])) : '';
+    $type   = ($body['resource_type'] ?? 'appointment') === 'request' ? 'request' : 'appointment';
+    $key    = $type === 'request' ? 'request_id' : 'appointment_id';
+    $id     = appointment_positive_id($body[$key] ?? null);
 
-if (!in_array($action, ['approve', 'reschedule', 'cancel', 'reject', 'complete', 'no_show'], true) || !$id) {
-    appointment_error(422, 'validation_failed', 'A valid action and resource identifier are required.');
+    if (!in_array($action, ['approve', 'reschedule', 'cancel', 'reject', 'complete', 'no_show'], true) || !$id) {
+        appointment_error(422, 'validation_failed', 'A valid action and resource identifier are required.');
+    }
+
+    if (\ASDC\AuthMiddleware::role() === 'dentist' && ($type !== 'appointment' || !in_array($action, ['complete', 'no_show'], true))) {
+        appointment_error(403, 'FORBIDDEN', 'Dentists can only mark appointments complete or no-show.');
+    }
+
+    match ($action) {
+        'reject'     => \ASDC\AppointmentService::cancel($type, $id, 'rejected', $body['reject_reason'] ?? ''),
+        'complete'   => \ASDC\AppointmentService::cancel($type, $id, 'completed'),
+        'no_show'    => \ASDC\AppointmentService::cancel($type, $id, 'no_show'),
+        'cancel'     => \ASDC\AppointmentService::cancel($type, $id, 'cancelled', $body['cancel_reason'] ?? ''),
+        'reschedule' => \ASDC\AppointmentService::reschedule($type, $id, $body['scheduled_date'] ?? '', $body['scheduled_time'] ?? ''),
+        'approve'    => \ASDC\AppointmentService::approve($type, $id, \ASDC\InputValidator::positiveId($body['dentist_id'] ?? null)),
+    };
+} catch (Throwable $e) {
+    error_log('[APPOINTMENT ACTION FAILED] ' . $e->getMessage());
+    appointment_error(500, 'appointment_action_failed', 'Unable to process appointment action.');
 }
-
-if (\ASDC\AuthMiddleware::role() === 'dentist' && ($type !== 'appointment' || !in_array($action, ['complete', 'no_show'], true))) {
-    appointment_error(403, 'FORBIDDEN', 'Dentists can only mark appointments complete or no-show.');
-}
-
-match ($action) {
-    'reject'     => \ASDC\AppointmentService::cancel($type, $id, 'rejected', $body['reject_reason'] ?? ''),
-    'complete'   => \ASDC\AppointmentService::cancel($type, $id, 'completed'),
-    'no_show'    => \ASDC\AppointmentService::cancel($type, $id, 'no_show'),
-    'cancel'     => \ASDC\AppointmentService::cancel($type, $id, 'cancelled', $body['cancel_reason'] ?? ''),
-    'reschedule' => \ASDC\AppointmentService::reschedule($type, $id, $body['scheduled_date'] ?? '', $body['scheduled_time'] ?? ''),
-    'approve'    => \ASDC\AppointmentService::approve($type, $id, \ASDC\InputValidator::positiveId($body['dentist_id'] ?? null)),
-};
