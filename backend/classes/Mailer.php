@@ -15,15 +15,29 @@ class Mailer
     {
         Env::load();
 
-        $gmailAddress    = trim((string) getenv('ASDC_GMAIL_ADDRESS'));
-        $gmailAppPassword = preg_replace('/\s+/', '', trim((string) getenv('ASDC_GMAIL_APP_PASSWORD')));
-        $fromName        = trim((string) (getenv('ASDC_MAIL_FROM_NAME') ?: 'Aromin-Sison Dental Clinic'));
+        $gmailAddress = trim(self::firstEnv(
+            'ASDC_GMAIL_ADDRESS',
+            'GMAIL_ADDRESS',
+            'GMAIL_USER',
+            'SMTP_USERNAME',
+            'MAIL_USERNAME',
+            'MAIL_FROM_ADDRESS'
+        ));
+        $gmailAppPassword = preg_replace('/\s+/', '', trim(self::firstEnv(
+            'ASDC_GMAIL_APP_PASSWORD',
+            'GMAIL_APP_PASSWORD',
+            'GMAIL_PASSWORD',
+            'SMTP_PASSWORD',
+            'MAIL_PASSWORD'
+        )));
+        $fromName = trim(self::firstEnv('ASDC_MAIL_FROM_NAME', 'MAIL_FROM_NAME')) ?: 'Aromin-Sison Dental Clinic';
 
         if (!filter_var($to, FILTER_VALIDATE_EMAIL)) {
             return ['ok' => false, 'error' => 'Recipient email address is invalid.'];
         }
 
         if (!filter_var($gmailAddress, FILTER_VALIDATE_EMAIL) || $gmailAppPassword === '') {
+            error_log('[MAILER] Email delivery is not configured. Set ASDC_GMAIL_ADDRESS and ASDC_GMAIL_APP_PASSWORD on the backend service.');
             return ['ok' => false, 'error' => 'Email delivery is not configured.'];
         }
 
@@ -63,6 +77,51 @@ class Mailer
         } catch (\Throwable $e) {
             return ['ok' => false, 'error' => self::safeError($e->getMessage())];
         }
+    }
+
+    public static function diagnostics(): array
+    {
+        Env::load();
+        $address = trim(self::firstEnv(
+            'ASDC_GMAIL_ADDRESS',
+            'GMAIL_ADDRESS',
+            'GMAIL_USER',
+            'SMTP_USERNAME',
+            'MAIL_USERNAME',
+            'MAIL_FROM_ADDRESS'
+        ));
+        $password = preg_replace('/\s+/', '', trim(self::firstEnv(
+            'ASDC_GMAIL_APP_PASSWORD',
+            'GMAIL_APP_PASSWORD',
+            'GMAIL_PASSWORD',
+            'SMTP_PASSWORD',
+            'MAIL_PASSWORD'
+        )));
+        return [
+            'address_configured' => filter_var($address, FILTER_VALIDATE_EMAIL) !== false,
+            'password_configured' => $password !== '',
+            'phpmailer_installed' => is_file(dirname(__DIR__, 2) . '/vendor/autoload.php'),
+            'from_address' => filter_var($address, FILTER_VALIDATE_EMAIL) ? self::maskEmail($address) : null,
+        ];
+    }
+
+    private static function firstEnv(string ...$keys): string
+    {
+        foreach ($keys as $key) {
+            $value = getenv($key);
+            if ($value !== false && trim((string) $value) !== '') {
+                return (string) $value;
+            }
+        }
+        return '';
+    }
+
+    private static function maskEmail(string $email): string
+    {
+        [$name, $domain] = array_pad(explode('@', $email, 2), 2, '');
+        if ($domain === '') return 'configured';
+        $prefix = substr($name, 0, 2);
+        return $prefix . str_repeat('*', max(2, strlen($name) - 2)) . '@' . $domain;
     }
 
     private static function sendViaSmtp(

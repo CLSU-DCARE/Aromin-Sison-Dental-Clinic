@@ -25,4 +25,5 @@ if ($result['ok'] ?? false) {
 }
 
 fwrite(STDERR, 'FAIL: ' . ($result['error'] ?? 'Email delivery failed.') . "\n");
+fwrite(STDERR, 'DIAGNOSTICS: ' . json_encode(\ASDC\Mailer::diagnostics(), JSON_UNESCAPED_SLASHES) . "\n");
 exit(1);

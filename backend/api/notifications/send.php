@@ -21,6 +21,11 @@ if (!$check->fetchColumn()) \ASDC\ApiResponse::error(403, 'forbidden', 'Patient 
 $result = \ASDC\NotificationSendService::send($patientId, $input);
 
 if ($result['success']) {
+    $failed = array_values(array_filter($result['results'], fn($row) => ($row['status'] ?? '') !== 'sent'));
+    if ($failed && count($failed) === count($result['results'])) {
+        $message = $failed[0]['error'] ?? 'Email delivery failed.';
+        \ASDC\ApiResponse::error(502, 'mail_delivery_failed', $message);
+    }
     \ASDC\ApiResponse::ok([
         'patient_id' => $result['patient_id'],
         'results' => $result['results'],

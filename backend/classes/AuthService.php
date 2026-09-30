@@ -437,7 +437,11 @@ class AuthService
      */
     public static function resetBaseUrl(): ?string
     {
-        $configured = rtrim(trim((string) Env::get('ASDC_APP_URL', '')), '/');
+        $configured = rtrim(trim((string) (
+            Env::get('ASDC_APP_URL', '')
+            ?: Env::get('APP_URL', '')
+            ?: Env::get('PUBLIC_APP_URL', '')
+        )), '/');
         $host = strtolower((string) ($_SERVER['HTTP_HOST'] ?? ''));
         if ($configured !== '') {
             $parts = parse_url($configured);
@@ -449,6 +453,10 @@ class AuthService
                 return self::localRequestBaseUrl($host);
             }
             return $configured;
+        }
+
+        if (str_ends_with(preg_replace('/:\d+$/', '', $host), '.railway.app')) {
+            return 'https://arominsisondental.vercel.app';
         }
 
         return self::localRequestBaseUrl($host);
