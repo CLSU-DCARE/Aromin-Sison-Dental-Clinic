@@ -53,8 +53,17 @@ window.PatientRescheduleModal = class PatientRescheduleModal {
         dateEl.focus();
         return;
       }
+      if (!timeEl.value) {
+        noteEl.textContent = 'Please choose a new time.';
+        noteEl.classList.add('err');
+        noteEl.classList.remove('ok');
+        noteEl.hidden = false;
+        timeEl.focus();
+        return;
+      }
 
       saveBtn.classList.add('is-loading');
+      saveBtn.disabled = true;
       noteEl.hidden = true;
 
       try {
@@ -73,6 +82,7 @@ window.PatientRescheduleModal = class PatientRescheduleModal {
         noteEl.hidden = false;
       } finally {
         saveBtn.classList.remove('is-loading');
+        saveBtn.disabled = false;
       }
     });
 
@@ -88,7 +98,7 @@ window.PatientRescheduleModal = class PatientRescheduleModal {
 
       this._selectedAppointmentId = appointment.appointment_id;
       dateEl.value = '';
-      timeEl.value = appointment.time;
+      timeEl.value = this._timeValue(appointment);
       noteEl.hidden = true;
       this.modal.open(button);
     });
@@ -96,5 +106,21 @@ window.PatientRescheduleModal = class PatientRescheduleModal {
 
   async _api (method, body) {
     return apiFetch(this.endpoint, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  }
+
+  _timeValue (appointment) {
+    const raw = String(appointment.scheduled_time || '').slice(0, 5);
+    if (/^\d{2}:\d{2}$/.test(raw)) return raw;
+
+    const label = String(appointment.time || '').trim();
+    const match = label.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+    if (!match) return '';
+
+    let hours = Number(match[1]);
+    const minutes = match[2];
+    const meridiem = match[3].toUpperCase();
+    if (meridiem === 'PM' && hours < 12) hours += 12;
+    if (meridiem === 'AM' && hours === 12) hours = 0;
+    return String(hours).padStart(2, '0') + ':' + minutes;
   }
 };

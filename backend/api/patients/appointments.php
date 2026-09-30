@@ -26,10 +26,7 @@ if ($method === 'GET') {
 
 \ASDC\CsrfToken::requireValid();
 
-$input = json_decode(file_get_contents('php://input'), true);
-if (!is_array($input)) {
-    appointment_error(400, 'request_failed', 'A valid JSON request body is required.');
-}
+$input = appointment_body();
 
 if ($method === 'POST') {
     $result = \ASDC\PatientAppointmentService::create($patientId, $input);
