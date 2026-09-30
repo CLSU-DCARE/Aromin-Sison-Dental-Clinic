@@ -3,8 +3,8 @@ FROM php:8.3-apache-bookworm
 # PDO MySQL is required by the application; mbstring is used when validating
 # user-entered text. Apache serves the existing PHP endpoints directly.
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends libonig-dev unzip \
-    && docker-php-ext-install pdo_mysql mbstring \
+    && apt-get install -y --no-install-recommends libcurl4-openssl-dev libonig-dev unzip \
+    && docker-php-ext-install curl pdo_mysql mbstring \
     && a2enmod headers rewrite \
     && rm -rf /var/lib/apt/lists/*
 

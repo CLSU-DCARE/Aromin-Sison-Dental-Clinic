@@ -15,6 +15,8 @@ class Mailer
     {
         Env::load();
 
+        $resendApiKey = trim(self::firstEnv('RESEND_API_KEY', 'ASDC_RESEND_API_KEY'));
+        $resendFromAddress = trim(self::firstEnv('ASDC_MAIL_FROM_ADDRESS', 'RESEND_FROM_ADDRESS', 'MAIL_FROM_ADDRESS'));
         $gmailAddress = trim(self::firstEnv(
             'ASDC_GMAIL_ADDRESS',
             'GMAIL_ADDRESS',
@@ -38,6 +40,15 @@ class Mailer
 
         if (!filter_var($to, FILTER_VALIDATE_EMAIL)) {
             return ['ok' => false, 'error' => 'Recipient email address is invalid.'];
+        }
+
+        if ($resendApiKey !== '') {
+            $fromAddress = filter_var($resendFromAddress, FILTER_VALIDATE_EMAIL) ? $resendFromAddress : $gmailAddress;
+            if (!filter_var($fromAddress, FILTER_VALIDATE_EMAIL)) {
+                error_log('[MAILER] Resend is configured, but ASDC_MAIL_FROM_ADDRESS is missing or invalid.');
+                return ['ok' => false, 'error' => 'Email delivery is not configured.'];
+            }
+            return self::sendViaResend($resendApiKey, $fromAddress, $fromName, $to, $subject, $body);
         }
 
         if (!filter_var($gmailAddress, FILTER_VALIDATE_EMAIL) || $gmailAppPassword === '') {
@@ -105,9 +116,13 @@ class Mailer
         $smtpHost = trim(self::firstEnv('ASDC_SMTP_HOST', 'SMTP_HOST', 'MAIL_HOST')) ?: 'smtp.gmail.com';
         $smtpPort = (int) (trim(self::firstEnv('ASDC_SMTP_PORT', 'SMTP_PORT', 'MAIL_PORT')) ?: '587');
         if ($smtpPort <= 0) $smtpPort = 587;
+        $resendApiKey = trim(self::firstEnv('RESEND_API_KEY', 'ASDC_RESEND_API_KEY'));
+        $resendFromAddress = trim(self::firstEnv('ASDC_MAIL_FROM_ADDRESS', 'RESEND_FROM_ADDRESS', 'MAIL_FROM_ADDRESS'));
         return [
             'address_configured' => filter_var($address, FILTER_VALIDATE_EMAIL) !== false,
             'password_configured' => $password !== '',
+            'resend_configured' => $resendApiKey !== '',
+            'resend_from_address' => filter_var($resendFromAddress, FILTER_VALIDATE_EMAIL) ? self::maskEmail($resendFromAddress) : null,
             'phpmailer_installed' => is_file(dirname(__DIR__, 2) . '/vendor/autoload.php'),
             'from_address' => filter_var($address, FILTER_VALIDATE_EMAIL) ? self::maskEmail($address) : null,
             'smtp_host' => $smtpHost,
@@ -132,6 +147,63 @@ class Mailer
         if ($domain === '') return 'configured';
         $prefix = substr($name, 0, 2);
         return $prefix . str_repeat('*', max(2, strlen($name) - 2)) . '@' . $domain;
+    }
+
+    private static function sendViaResend(
+        string $apiKey,
+        string $fromAddress,
+        string $fromName,
+        string $to,
+        string $subject,
+        string $body
+    ): array {
+        $payload = json_encode([
+            'from' => self::formatAddress($fromAddress, $fromName),
+            'to' => [$to],
+            'subject' => $subject,
+            'text' => $body,
+        ], JSON_UNESCAPED_SLASHES);
+        if ($payload === false) {
+            return ['ok' => false, 'error' => 'Email delivery failed.'];
+        }
+
+        $ch = curl_init('https://api.resend.com/emails');
+        curl_setopt_array($ch, [
+            CURLOPT_POST => true,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_CONNECTTIMEOUT => 10,
+            CURLOPT_TIMEOUT => 20,
+            CURLOPT_HTTPHEADER => [
+                'Authorization: Bearer ' . $apiKey,
+                'Content-Type: application/json',
+                'Accept: application/json',
+            ],
+            CURLOPT_POSTFIELDS => $payload,
+        ]);
+        $response = curl_exec($ch);
+        $error = curl_error($ch);
+        $status = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+        curl_close($ch);
+
+        if ($response === false) {
+            error_log('[MAILER] Resend connection failed: ' . $error);
+            return ['ok' => false, 'error' => 'Email delivery failed: could not connect to Resend.'];
+        }
+
+        $data = json_decode((string) $response, true);
+        if ($status >= 200 && $status < 300) {
+            return ['ok' => true, 'provider' => 'resend', 'id' => $data['id'] ?? null];
+        }
+
+        $message = is_array($data) ? (string) ($data['message'] ?? $data['error'] ?? '') : '';
+        error_log('[MAILER] Resend send failed. HTTP ' . $status . ': ' . ($message ?: substr((string) $response, 0, 300)));
+        return ['ok' => false, 'error' => self::safeResendError($status, $message)];
+    }
+
+    private static function formatAddress(string $email, string $name): string
+    {
+        $safeName = trim(str_replace(['"', '<', '>'], '', $name));
+        return $safeName !== '' ? $safeName . ' <' . $email . '>' : $email;
     }
 
     private static function phpMailerEncryption(string $value): string
@@ -239,6 +311,24 @@ class Mailer
         }
         if (str_contains($message, '421') || str_contains($message, 'timed out') || str_contains($message, 'connect')) {
             return 'Email delivery failed: could not connect to Gmail SMTP.';
+        }
+        return 'Email delivery failed.';
+    }
+
+    private static function safeResendError(int $status, string $message): string
+    {
+        $lower = strtolower($message);
+        if ($status === 401 || str_contains($lower, 'api key')) {
+            return 'Email delivery failed: Resend API key was rejected.';
+        }
+        if ($status === 403 || str_contains($lower, 'domain') || str_contains($lower, 'sender')) {
+            return 'Email delivery failed: Resend sender/domain is not verified.';
+        }
+        if ($status === 422 || str_contains($lower, 'recipient') || str_contains($lower, 'email')) {
+            return 'Email delivery failed: email address was rejected.';
+        }
+        if ($status === 429) {
+            return 'Email delivery failed: Resend rate limit reached.';
         }
         return 'Email delivery failed.';
     }
