@@ -158,6 +158,7 @@ class AppointmentService
         $pdo  = Database::pdo();
         $scope = DataScope::current();
         $lock = AppointmentSlotManager::lock($pdo, $date, $time);
+        $eventContext = [];
 
         try {
             $pdo->beginTransaction();
@@ -212,13 +213,12 @@ class AppointmentService
                     "UPDATE appointments SET scheduled_date=?, scheduled_time=? WHERE appointment_id=?"
                 );
                 $stmt->execute([$date, $time, $id]);
+                $eventContext = [
+                    'previous_date' => $apptRow['scheduled_date'] ?? null,
+                    'previous_time' => $apptRow['scheduled_time'] ?? null,
+                ];
             }
 
-            if ($type === 'appointment') PortalEvent::appointment($id, 'rescheduled', [
-                'previous_date' => $apptRow['scheduled_date'] ?? null,
-                'previous_time' => $apptRow['scheduled_time'] ?? null,
-            ]);
-            else PortalEvent::appointmentRequest($id, 'rescheduled');
             $pdo->commit();
         } catch (Throwable $e) {
             if ($pdo->inTransaction()) $pdo->rollBack();
@@ -227,6 +227,14 @@ class AppointmentService
         } finally {
             AppointmentSlotManager::unlock($pdo, $lock);
         }
+
+        try {
+            if ($type === 'appointment') PortalEvent::appointment($id, 'rescheduled', $eventContext);
+            else PortalEvent::appointmentRequest($id, 'rescheduled');
+        } catch (Throwable $e) {
+            error_log('Appointment reschedule notification failed: ' . $e->getMessage());
+        }
+
         ApiResponse::ok(['id' => $id, 'scheduled_date' => $date, 'scheduled_time' => $time], 'Appointment rescheduled.');
     }
 
