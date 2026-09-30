@@ -209,13 +209,14 @@ class RememberToken
     public static function setCookie(string $token, int $days = self::DEFAULT_DAYS): void
     {
         $secure = AuthMiddleware::isHttps();
+        $sameSite = self::isCrossSiteRequest() && $secure ? 'None' : 'Lax';
         setcookie(self::COOKIE_NAME, $token, [
             'expires' => time() + $days * 86400,
             'path' => '/',
             'domain' => '',
             'secure' => $secure,
             'httponly' => true,
-            'samesite' => 'Lax',
+            'samesite' => $sameSite,
         ]);
     }
 
@@ -225,14 +226,26 @@ class RememberToken
     public static function clearCookie(): void
     {
         $secure = AuthMiddleware::isHttps();
+        $sameSite = self::isCrossSiteRequest() && $secure ? 'None' : 'Lax';
         setcookie(self::COOKIE_NAME, '', [
             'expires' => time() - 3600,
             'path' => '/',
             'domain' => '',
             'secure' => $secure,
             'httponly' => true,
-            'samesite' => 'Lax',
+            'samesite' => $sameSite,
         ]);
+    }
+
+    private static function isCrossSiteRequest(): bool
+    {
+        $origin = strtolower((string) ($_SERVER['HTTP_ORIGIN'] ?? ''));
+        $host = strtolower((string) ($_SERVER['HTTP_HOST'] ?? ''));
+        if ($origin === '' || $host === '') {
+            return false;
+        }
+        $originHost = parse_url($origin, PHP_URL_HOST);
+        return is_string($originHost) && $originHost !== preg_replace('/:\d+$/', '', $host);
     }
 
     /**

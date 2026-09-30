@@ -21,10 +21,28 @@
   var ME_URL = '../backend/api/auth/me.php';
   var AUTO_LOGIN_URL = '../backend/api/auth/auto-login.php';
 
+  function apiBaseUrl() {
+    var configured = (window.ASDC && window.ASDC.API_BASE_URL) || '';
+    if (configured) return configured.replace(/\/+$/, '');
+    if (location.hostname === 'arominsisondental.vercel.app') {
+      return 'https://asdc-api-production.up.railway.app';
+    }
+    return '';
+  }
+
+  function apiUrl(path) {
+    var base = apiBaseUrl();
+    return base ? base + '/' + String(path).replace(/^\.\.\//, '') : path;
+  }
+
+  function credentialsMode() {
+    return apiBaseUrl() ? 'include' : 'same-origin';
+  }
+
   async function fetchCsrfToken() {
     try {
-      var res = await fetch('../backend/api/auth/csrf-token.php', {
-        credentials: 'same-origin',
+      var res = await fetch(apiUrl('../backend/api/auth/csrf-token.php'), {
+        credentials: credentialsMode(),
         headers: { Accept: 'application/json' },
         cache: 'no-store'
       });
@@ -59,8 +77,8 @@
     recovering = withTabLock(async function () {
       try {
         // Another tab may have already restored the session while we waited for our turn.
-        var meRes = await fetch(ME_URL, {
-          credentials: 'same-origin',
+        var meRes = await fetch(apiUrl(ME_URL), {
+          credentials: credentialsMode(),
           headers: { Accept: 'application/json' },
           cache: 'no-store'
         });
@@ -74,9 +92,9 @@
           return { ok: false, error: true };
         }
 
-        var res = await fetch(AUTO_LOGIN_URL, {
+        var res = await fetch(apiUrl(AUTO_LOGIN_URL), {
           method: 'POST',
-          credentials: 'same-origin',
+          credentials: credentialsMode(),
           headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
           body: '{}',
           cache: 'no-store'
@@ -103,7 +121,7 @@
   async function api(url, options) {
     options = options || {};
     var passive = !!options.passive;
-    var defaults = { credentials: 'same-origin', headers: { Accept: 'application/json' } };
+    var defaults = { credentials: credentialsMode(), headers: { Accept: 'application/json' } };
     var merged = Object.assign({}, defaults, options);
     delete merged.passive;
     merged.headers = Object.assign({}, defaults.headers, options.headers || {});
@@ -122,7 +140,8 @@
       }
     }
 
-    var response = await fetch(url, merged);
+    var requestUrl = apiUrl(url);
+    var response = await fetch(requestUrl, merged);
 
     // Session ended: try one silent sign-in from "remember me", then repeat the request once.
     if (response.status === 401) {
@@ -131,7 +150,7 @@
         if (isWrite && csrfToken) {
           merged.headers['X-CSRF-Token'] = csrfToken;
         }
-        response = await fetch(url, merged);
+        response = await fetch(requestUrl, merged);
       }
     }
 
@@ -142,7 +161,7 @@
       await fetchCsrfToken();
       if (csrfToken) {
         merged.headers['X-CSRF-Token'] = csrfToken;
-        response = await fetch(url, merged);
+        response = await fetch(requestUrl, merged);
         payload = {};
         try { payload = await response.json(); } catch (e) { /* empty */ }
       }

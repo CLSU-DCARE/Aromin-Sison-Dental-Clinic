@@ -7,4 +7,7 @@
   if (!window.ASDC) {
     window.ASDC = {};
   }
+  if (!window.ASDC.API_BASE_URL && location.hostname === 'arominsisondental.vercel.app') {
+    window.ASDC.API_BASE_URL = 'https://asdc-api-production.up.railway.app';
+  }
 })();

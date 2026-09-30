@@ -7,8 +7,8 @@
  */
 
 require_once __DIR__ . '/../../autoload.php';
-require_once __DIR__ . '/../../config/auth.php';
 require_once __DIR__ . '/../../config/headers.php';
+require_once __DIR__ . '/../../config/auth.php';
 require_once __DIR__ . '/../../config/appointments.php';
 require_role('patient');
 

@@ -20,6 +20,24 @@
     sessionRevokeOthers: '../backend/api/auth/session-revoke-others.php',
   };
 
+  function apiBaseUrl() {
+    const configured = (window.ASDC && window.ASDC.API_BASE_URL) || '';
+    if (configured) return configured.replace(/\/+$/, '');
+    if (location.hostname === 'arominsisondental.vercel.app') {
+      return 'https://asdc-api-production.up.railway.app';
+    }
+    return '';
+  }
+
+  function apiUrl(path) {
+    const base = apiBaseUrl();
+    return base ? base + '/' + path.replace(/^\.\.\//, '') : path;
+  }
+
+  function credentialsMode() {
+    return apiBaseUrl() ? 'include' : 'same-origin';
+  }
+
   class AuthApiClient {
     static get endpoints() {
       return ENDPOINTS;
@@ -33,7 +51,7 @@
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
       try {
-        return await fetch(url, { ...options, signal: controller.signal });
+        return await fetch(apiUrl(url), { ...options, signal: controller.signal });
       } finally {
         clearTimeout(timeoutId);
       }
@@ -70,8 +88,8 @@
     static async csrfHeaders(extra = {}) {
       const headers = Object.assign({ 'Content-Type': 'application/json' }, extra);
       try {
-        const response = await fetch('../backend/api/auth/csrf-token.php', {
-          credentials: 'same-origin',
+        const response = await fetch(apiUrl('../backend/api/auth/csrf-token.php'), {
+          credentials: credentialsMode(),
           headers: { Accept: 'application/json' },
           cache: 'no-store',
         });
@@ -134,7 +152,7 @@
         ENDPOINTS.login,
         {
           method: 'POST',
-          credentials: 'same-origin',
+          credentials: credentialsMode(),
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ identifier, password, remember_me: rememberMe }),
         }
@@ -146,7 +164,7 @@
     static async me() {
       const response = await AuthApiClient.fetchWithTimeout(ENDPOINTS.me, {
         method: 'GET',
-        credentials: 'same-origin',
+        credentials: credentialsMode(),
         headers: { Accept: 'application/json' },
         cache: 'no-store',
       });
@@ -156,9 +174,9 @@
 
     static async logout() {
       try {
-        await fetch(ENDPOINTS.logout, {
+        await fetch(apiUrl(ENDPOINTS.logout), {
           method: 'POST',
-          credentials: 'same-origin',
+          credentials: credentialsMode(),
           headers: await AuthApiClient.csrfHeaders(),
           body: '{}',
         });
@@ -167,9 +185,9 @@
 
     static async refresh() {
       try {
-        const response = await fetch(ENDPOINTS.refresh, {
+        const response = await fetch(apiUrl(ENDPOINTS.refresh), {
           method: 'POST',
-          credentials: 'same-origin',
+          credentials: credentialsMode(),
           headers: await AuthApiClient.csrfHeaders(),
           body: '{}',
         });
@@ -183,9 +201,9 @@
     // HttpOnly "remember me" cookie instead (see auto-login.php).
     static async autoLogin() {
       try {
-        const response = await fetch(ENDPOINTS.autoLogin, {
+        const response = await fetch(apiUrl(ENDPOINTS.autoLogin), {
           method: 'POST',
-          credentials: 'same-origin',
+          credentials: credentialsMode(),
           headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
           body: '{}',
           cache: 'no-store',
@@ -199,7 +217,7 @@
     static async getSessions() {
       const response = await AuthApiClient.fetchWithTimeout(ENDPOINTS.sessions, {
         method: 'GET',
-        credentials: 'same-origin',
+        credentials: credentialsMode(),
         headers: { Accept: 'application/json' },
         cache: 'no-store',
       });
@@ -211,7 +229,7 @@
     static async revokeSession(sessionRef) {
       const response = await AuthApiClient.fetchWithTimeout(ENDPOINTS.sessionRevoke, {
         method: 'DELETE',
-        credentials: 'same-origin',
+        credentials: credentialsMode(),
         headers: await AuthApiClient.csrfHeaders(),
         body: JSON.stringify({ session_ref: sessionRef }),
       });
@@ -220,9 +238,9 @@
     }
 
     static async revokeOtherSessions() {
-      const response = await fetch(ENDPOINTS.sessionRevokeOthers, {
+      const response = await fetch(apiUrl(ENDPOINTS.sessionRevokeOthers), {
         method: 'POST',
-        credentials: 'same-origin',
+        credentials: credentialsMode(),
         headers: await AuthApiClient.csrfHeaders(),
         body: '{}',
       });
@@ -235,7 +253,7 @@
         ENDPOINTS.register,
         {
           method: 'POST',
-          credentials: 'same-origin',
+          credentials: credentialsMode(),
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(data),
         }
@@ -249,7 +267,7 @@
         ENDPOINTS.forgotPassword,
         {
           method: 'POST',
-          credentials: 'same-origin',
+          credentials: credentialsMode(),
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email }),
         },
@@ -264,7 +282,7 @@
         ENDPOINTS.resetPassword,
         {
           method: 'POST',
-          credentials: 'same-origin',
+          credentials: credentialsMode(),
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ token, password }),
         }
@@ -278,7 +296,7 @@
         ENDPOINTS.resetToken + '?token=' + encodeURIComponent(token),
         {
           method: 'GET',
-          credentials: 'same-origin',
+          credentials: credentialsMode(),
           headers: { 'Accept': 'application/json' },
         }
       );

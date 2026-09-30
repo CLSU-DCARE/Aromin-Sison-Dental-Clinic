@@ -51,6 +51,17 @@ class AuthMiddleware
         return in_array($remoteAddr, $trustedProxies, true);
     }
 
+    private static function isCrossSiteRequest(): bool
+    {
+        $origin = strtolower((string) ($_SERVER['HTTP_ORIGIN'] ?? ''));
+        $host = strtolower((string) ($_SERVER['HTTP_HOST'] ?? ''));
+        if ($origin === '' || $host === '') {
+            return false;
+        }
+        $originHost = parse_url($origin, PHP_URL_HOST);
+        return is_string($originHost) && $originHost !== preg_replace('/:\d+$/', '', $host);
+    }
+
     public static function secureSessionStart(): void
     {
         if (session_status() === PHP_SESSION_ACTIVE) {
@@ -65,6 +76,7 @@ class AuthMiddleware
         // PHP deletes session files older than this. It must be LONGER than our
         // 30-minute idle timeout, or a session could vanish before it "expires".
         ini_set('session.gc_maxlifetime', (string) (self::SESSION_TIMEOUT * 2));
+        $sameSite = self::isCrossSiteRequest() && self::isHttps() ? 'None' : 'Lax';
 
         session_set_cookie_params([
             'lifetime' => 0,
@@ -72,7 +84,7 @@ class AuthMiddleware
             'domain'   => '',
             'secure'   => self::isHttps(),
             'httponly' => true,
-            'samesite' => 'Lax',
+            'samesite' => $sameSite,
         ]);
         session_name(self::SESSION_NAME);
         session_start();
