@@ -38,7 +38,9 @@ class ReminderService
         $stmt->execute([$targetDate]);
 
         $sent = 0;
+        $failed = 0;
         $skipped = 0;
+        $errors = [];
         foreach ($stmt->fetchAll() as $row) {
             if (self::alreadyLogged('appointment_reminder_patient', (int) $row['patient_id'], (int) $row['appointment_id'])) {
                 $skipped++;
@@ -55,11 +57,17 @@ class ReminderService
                 'dentist_name' => $row['dentist_name'] ?: 'To be assigned',
                 'dentist' => $row['dentist_name'] ?: 'To be assigned',
             ];
-            NotificationSendService::send((int) $row['patient_id'], [
+            $result = NotificationSendService::send((int) $row['patient_id'], [
                 'template_key' => 'appointment_reminder_patient',
                 'replacements' => $replacements,
                 'appointment_id' => (int) $row['appointment_id'],
             ]);
+            if (self::hasSuccessfulEmail($result)) {
+                $sent++;
+            } else {
+                $failed++;
+                $errors[] = self::sendError($result, (int) $row['patient_id']);
+            }
             PortalEvent::patient(
                 (int) $row['patient_id'],
                 'Appointment Reminder',
@@ -73,10 +81,9 @@ class ReminderService
                 'appt',
                 true
             );
-            $sent++;
         }
 
-        return ['target_date' => $targetDate, 'sent' => $sent, 'skipped' => $skipped];
+        return ['target_date' => $targetDate, 'sent' => $sent, 'failed' => $failed, 'skipped' => $skipped, 'errors' => $errors];
     }
 
     private static function sendBalanceReminders(): array
@@ -95,7 +102,9 @@ class ReminderService
         );
 
         $sent = 0;
+        $failed = 0;
         $skipped = 0;
+        $errors = [];
         foreach ($stmt->fetchAll() as $row) {
             $due = self::contractDueDate($row);
             if ($due !== $targetDate) {
@@ -126,10 +135,16 @@ class ReminderService
                 'contact_number' => $row['contact_number'] ?: 'Not provided',
                 'email' => $row['email'] ?: 'Not provided',
             ];
-            NotificationSendService::send((int) $row['patient_id'], [
+            $result = NotificationSendService::send((int) $row['patient_id'], [
                 'template_key' => 'balance_due_reminder_patient',
                 'replacements' => $replacements,
             ]);
+            if (self::hasSuccessfulEmail($result)) {
+                $sent++;
+            } else {
+                $failed++;
+                $errors[] = self::sendError($result, (int) $row['patient_id']);
+            }
             PortalEvent::patient(
                 (int) $row['patient_id'],
                 'Balance Due Reminder',
@@ -143,10 +158,34 @@ class ReminderService
                 'pay',
                 true
             );
-            $sent++;
         }
 
-        return ['target_date' => $targetDate, 'sent' => $sent, 'skipped' => $skipped];
+        return ['target_date' => $targetDate, 'sent' => $sent, 'failed' => $failed, 'skipped' => $skipped, 'errors' => $errors];
+    }
+
+    private static function hasSuccessfulEmail(array $result): bool
+    {
+        foreach (($result['results'] ?? []) as $row) {
+            if (($row['channel'] ?? '') === 'email' && ($row['status'] ?? '') === 'sent') {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static function sendError(array $result, int $patientId): array
+    {
+        $error = $result['error'] ?? null;
+        foreach (($result['results'] ?? []) as $row) {
+            if (($row['channel'] ?? '') === 'email' && !empty($row['error'])) {
+                $error = $row['error'];
+                break;
+            }
+        }
+        return [
+            'patient_id' => $patientId,
+            'error' => $error ?: 'Email delivery failed.',
+        ];
     }
 
     private static function alreadyLogged(string $templateKey, int $patientId, ?int $appointmentId = null): bool
