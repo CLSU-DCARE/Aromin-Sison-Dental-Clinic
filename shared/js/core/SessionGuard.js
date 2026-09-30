@@ -183,17 +183,40 @@
       if (options && options.passive) headers['X-ASDC-Passive'] = '1';
 
       try {
-        const response = await fetch(ME_URL, {
+        const api = window.ASDC.ApiClient;
+        if (api && api.api) {
+          const payload = await this._withTimeout(
+            api.api(ME_URL, { method: 'GET', headers, cache: 'no-store', passive: Boolean(options && options.passive) }),
+            10000
+          );
+          const user = payload && (payload.user || payload);
+          if (user && user.role) return { state: 'ok', user };
+        } else {
+          const response = await this._withTimeout(fetch(ME_URL, {
+            method: 'GET',
+            credentials: 'same-origin',
+            headers,
+            cache: 'no-store',
+          }), 10000);
+          let payload = {};
+          try {
+            payload = await response.json();
+          } catch (e) {}
+          if (response.ok && payload.user) return { state: 'ok', user: payload.user };
+          if (response.status >= 500) return { state: 'error' };
+        }
+      } catch (e) {
+        if (e && e.status && e.status < 500) return { state: 'none' };
+        return { state: 'error' };
+      }
+
+      try {
+        const response = await this._withTimeout(fetch(ME_URL, {
           method: 'GET',
           credentials: 'same-origin',
           headers,
           cache: 'no-store',
-        });
-        let payload = {};
-        try {
-          payload = await response.json();
-        } catch (e) {}
-        if (response.ok && payload.user) return { state: 'ok', user: payload.user };
+        }), 10000);
         if (response.status >= 500) return { state: 'error' };
       } catch (e) {
         return { state: 'error' };
@@ -205,6 +228,22 @@
       const recovered = await api.recoverSession();
       if (recovered.ok) return { state: 'ok', user: recovered.user, restored: true };
       return { state: recovered.error ? 'error' : 'none' };
+    }
+
+    _withTimeout(promise, ms) {
+      return new Promise((resolve, reject) => {
+        const timer = setTimeout(() => reject(new Error('Request timed out.')), ms);
+        Promise.resolve(promise).then(
+          value => {
+            clearTimeout(timer);
+            resolve(value);
+          },
+          error => {
+            clearTimeout(timer);
+            reject(error);
+          }
+        );
+      });
     }
 
     /**

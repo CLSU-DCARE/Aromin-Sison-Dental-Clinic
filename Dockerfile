@@ -22,4 +22,4 @@ COPY docker/php-production.ini /usr/local/etc/php/conf.d/production.ini
 RUN chmod 755 /usr/local/bin/start-apache
 
 EXPOSE 8080
-CMD ["start-apache"]
+CMD ["/usr/local/bin/start-apache"]
