@@ -18,7 +18,7 @@ function context() {
   const elements = new Map(), messages = [];
   const get = id => { if (!elements.has(id)) elements.set(id, element()); return elements.get(id); };
   const ctx = {
-    ASDC: {}, console, Date, URLSearchParams, FormData, get, messages,
+    ASDC: {}, console, Date, URLSearchParams, FormData, get, messages, location: { hostname: 'localhost' },
     document: { getElementById: get, querySelector: () => null, querySelectorAll: () => [], addEventListener() {} },
     localStorage: { getItem() { throw Error('Legacy data must not be read'); }, setItem() { throw Error('Legacy data must not be written'); } },
     showToast: (message, kind) => messages.push({ message, kind }), announce: message => messages.push({ message }),
@@ -168,5 +168,11 @@ function load(ctx, file) { vm.runInContext(fs.readFileSync(path.join(root, file)
       assert.ok(fs.existsSync(path.resolve(root, dashboard, src.split('?')[0])), 'Missing script: ' + src);
     }
   }
+  const staffDashboardService = fs.readFileSync(path.join(root, 'backend/classes/StaffDashboardService.php'), 'utf8');
+  assert.match(
+    staffDashboardService,
+    /\$payments\s*=\s*\(\$scope->isReceptionist\(\)\s*\|\|\s*\$scope->isDentist\(\)\)\s*\?\s*PaymentApprovalService::listAll\(\)\s*:\s*\[\];/,
+    'Staff dashboard snapshots must include submitted payments for all roles allowed to view payment records.'
+  );
   console.log('PASS: API validation, scheduling, booking, rescheduling, payment submission/approval, notification failures, schedule mapping, and dashboard script references.');
 })().catch(error => { console.error(error); process.exitCode = 1; });
