@@ -295,7 +295,7 @@ class PaymentApprovalService
         }
         if (!$approve) self::notifyPatient((int) $row['contract_id'], 'payment_rejected', [
             'reason' => $reason,
-            'amount' => '₱' . number_format((float) $row['amount_paid'], 2),
+            'amount' => "\u{20B1}" . number_format((float) $row['amount_paid'], 2),
         ]);
         return self::present(self::findRaw($paymentId));
     }
@@ -388,7 +388,7 @@ class PaymentApprovalService
             );
         }
         if (!$approve) self::notifyPatientById((int) $bill['patient_id'], 'payment_rejected', [
-            'amount' => 'PHP ' . number_format((float) $row['amount_paid'], 2),
+            'amount' => "\u{20B1}" . number_format((float) $row['amount_paid'], 2),
             'reason' => $reason,
         ]);
         return self::presentTreatment(self::findTreatmentRaw($paymentId));
@@ -847,7 +847,7 @@ class PaymentApprovalService
             'contract_id' => (int) $row['contract_id'],
             'pid'        => isset($row['patient_id']) ? '#P-' . $row['patient_id'] : null,
             'patient'    => $name ?: null,
-            'amount'     => '₱' . number_format((float) $row['amount_paid'], 2),
+            'amount'     => "\u{20B1}" . number_format((float) $row['amount_paid'], 2),
             'method'     => ucwords(str_replace('_', ' ', $row['payment_method'])),
             'dueDate'    => $due['date'],
             'dueStatus'  => $due['status'],
@@ -876,7 +876,7 @@ class PaymentApprovalService
             'pid'         => isset($row['patient_id']) ? '#P-' . $row['patient_id'] : null,
             'patient'     => $name ?: null,
             'service'     => $row['service_treatment'] ?? 'Dental Treatment',
-            'amount'      => 'â‚±' . number_format((float) $row['amount_paid'], 2),
+            'amount'      => "\u{20B1}" . number_format((float) $row['amount_paid'], 2),
             'method'      => ucwords(str_replace('_', ' ', $row['payment_method'])),
             'dueDate'     => $dueDate,
             'dueStatus'   => $dueStatus,

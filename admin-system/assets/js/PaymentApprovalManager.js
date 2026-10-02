@@ -120,7 +120,7 @@ window.PaymentApprovalManager = class PaymentApprovalManager {
 
     const receiptImg = document.getElementById('receiptImg');
     const receiptStatus = document.getElementById('receiptImgStatus');
-    const receiptPath = s.receipt_url || (s.id ? `../backend/api/payments/receipt.php?payment_id=${encodeURIComponent(s.id)}` : '');
+    const receiptPath = s.id ? `../backend/api/payments/receipt.php?payment_id=${encodeURIComponent(s.id)}` : (s.receipt_url || '');
     const receiptUrl = receiptPath && window.ASDC?.ApiClient?.url
       ? window.ASDC.ApiClient.url(receiptPath)
       : receiptPath;
@@ -128,7 +128,9 @@ window.PaymentApprovalManager = class PaymentApprovalManager {
       this._clearReceiptObjectUrl();
       receiptImg.hidden = true;
       receiptImg.removeAttribute('src');
+      receiptImg.alt = '';
       receiptImg.onload = () => {
+        receiptImg.alt = 'Payment receipt';
         receiptImg.hidden = false;
         if (receiptStatus) receiptStatus.hidden = true;
       };
@@ -175,6 +177,7 @@ window.PaymentApprovalManager = class PaymentApprovalManager {
     } catch (error) {
       receiptImg.hidden = true;
       receiptImg.removeAttribute('src');
+      receiptImg.alt = '';
       if (receiptStatus) {
         receiptStatus.textContent = 'Receipt image could not be loaded. Please check that the uploaded file still exists.';
         receiptStatus.hidden = false;
