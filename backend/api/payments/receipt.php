@@ -19,12 +19,43 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'OPTIONS') {
     exit;
 }
 
-require_role('receptionist', 'dentist', 'patient');
-\ASDC\ApiResponse::method('GET');
 $rawId = is_string($_GET['payment_id'] ?? null) ? trim($_GET['payment_id']) : ($_GET['payment_id'] ?? null);
 $isTreatment = is_string($rawId) && preg_match('/^T-(\d+)$/i', $rawId, $match);
+$id = 0;
+$paymentRef = '';
 if ($isTreatment) {
     $id = (int) $match[1];
+    $paymentRef = 'T-' . $id;
+} else {
+    if (is_string($rawId) && preg_match('/^C-(\d+)$/i', $rawId, $match)) {
+        $id = (int) $match[1];
+    } else {
+        $id = \ASDC\InputValidator::positiveId($rawId) ?: 0;
+    }
+    $paymentRef = 'C-' . $id;
+}
+
+\ASDC\ApiResponse::method('GET');
+$token = is_string($_GET['token'] ?? null) ? trim($_GET['token']) : '';
+$relative = null;
+if ($id > 0 && $token !== '') {
+    if ($isTreatment) {
+        $stmt = \ASDC\Database::pdo()->prepare('SELECT receipt_path FROM treatment_payments WHERE payment_id = ?');
+    } else {
+        $stmt = \ASDC\Database::pdo()->prepare('SELECT receipt_path FROM contract_payments WHERE payment_id = ?');
+    }
+    $stmt->execute([$id]);
+    $candidate = $stmt->fetchColumn();
+    if (\ASDC\ReceiptAccess::validToken($paymentRef, $candidate ?: null, $token)) {
+        $relative = $candidate;
+    }
+}
+
+if (!$relative) {
+    require_role('receptionist', 'dentist', 'patient');
+}
+
+if (!$relative && $isTreatment) {
     [$where, $params] = \ASDC\DataScope::current()->patientFilter();
     $stmt = \ASDC\Database::pdo()->prepare(
         "SELECT tp.receipt_path
@@ -34,17 +65,13 @@ if ($isTreatment) {
          WHERE tp.payment_id = ? AND {$where}"
     );
     $stmt->execute(array_merge([$id], $params));
-} else {
-    if (is_string($rawId) && preg_match('/^C-(\d+)$/i', $rawId, $match)) {
-        $id = (int) $match[1];
-    } else {
-        $id = \ASDC\InputValidator::positiveId($rawId);
-    }
+    $relative = $stmt->fetchColumn();
+} elseif (!$relative) {
     [$where, $params] = \ASDC\DataScope::current()->contractFilter();
     $stmt = \ASDC\Database::pdo()->prepare("SELECT cp.receipt_path FROM contract_payments cp JOIN braces_contracts c ON c.contract_id=cp.contract_id WHERE cp.payment_id=? AND $where");
     $stmt->execute(array_merge([$id ?: 0], $params));
+    $relative = $stmt->fetchColumn();
 }
-$relative = $stmt->fetchColumn();
 $root = realpath(__DIR__ . '/../../uploads/receipts');
 $path = $relative ? realpath(__DIR__ . '/../../' . $relative) : false;
 if (!$root || !$path || !str_starts_with($path, $root . DIRECTORY_SEPARATOR) || !is_file($path)) \ASDC\ApiResponse::error(404, 'not_found', 'Receipt not found.');

@@ -174,5 +174,10 @@ function load(ctx, file) { vm.runInContext(fs.readFileSync(path.join(root, file)
     /\$payments\s*=\s*\(\$scope->isReceptionist\(\)\s*\|\|\s*\$scope->isDentist\(\)\)\s*\?\s*PaymentApprovalService::listAll\(\)\s*:\s*\[\];/,
     'Staff dashboard snapshots must include submitted payments for all roles allowed to view payment records.'
   );
+  const paymentApprovalService = fs.readFileSync(path.join(root, 'backend/classes/PaymentApprovalService.php'), 'utf8');
+  assert.match(paymentApprovalService, /ReceiptAccess::url\('C-'/, 'Contract payment receipt URLs must be signed for live image previews.');
+  assert.match(paymentApprovalService, /ReceiptAccess::url\('T-'/, 'Treatment payment receipt URLs must be signed for live image previews.');
+  const receiptEndpoint = fs.readFileSync(path.join(root, 'backend/api/payments/receipt.php'), 'utf8');
+  assert.match(receiptEndpoint, /ReceiptAccess::validToken/, 'Receipt endpoint must allow valid signed receipt URLs.');
   console.log('PASS: API validation, scheduling, booking, rescheduling, payment submission/approval, notification failures, schedule mapping, and dashboard script references.');
 })().catch(error => { console.error(error); process.exitCode = 1; });
