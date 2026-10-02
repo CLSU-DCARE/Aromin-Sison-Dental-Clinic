@@ -1,6 +1,24 @@
 <?php
 require_once __DIR__ . '/../../autoload.php';
 require_once __DIR__ . '/../../config/auth.php';
+
+$origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+$allowedOrigins = array_filter(array_map('trim', explode(',', (string) \ASDC\Env::get(
+    'ASDC_CORS_ORIGINS',
+    'https://arominsisondental.vercel.app'
+))));
+if ($origin !== '' && in_array($origin, $allowedOrigins, true)) {
+    header('Access-Control-Allow-Origin: ' . $origin);
+    header('Access-Control-Allow-Credentials: true');
+    header('Access-Control-Allow-Headers: Accept');
+    header('Access-Control-Allow-Methods: GET, OPTIONS');
+    header('Vary: Origin');
+}
+if (($_SERVER['REQUEST_METHOD'] ?? '') === 'OPTIONS') {
+    http_response_code(204);
+    exit;
+}
+
 require_role('receptionist', 'dentist', 'patient');
 \ASDC\ApiResponse::method('GET');
 $rawId = is_string($_GET['payment_id'] ?? null) ? trim($_GET['payment_id']) : ($_GET['payment_id'] ?? null);
@@ -35,6 +53,7 @@ if (!in_array($mime, ['image/png','image/jpeg','image/webp'], true)) \ASDC\ApiRe
 header('Content-Type: ' . $mime);
 header('X-Content-Type-Options: nosniff');
 header('Cache-Control: private, no-store');
+header('Cross-Origin-Resource-Policy: cross-origin');
 header('Content-Disposition: inline; filename="receipt.' . pathinfo($path, PATHINFO_EXTENSION) . '"');
 session_write_close();
 readfile($path);

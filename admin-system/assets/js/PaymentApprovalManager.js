@@ -13,6 +13,7 @@ window.PaymentApprovalManager = class PaymentApprovalManager {
     this._filter   = 'All';
     this._receiptModal = new Modal('receiptModal');
     this._receiptCurrent = null;
+    this._receiptObjectUrl = null;
     this._items = []; // Last server response, used by _findById.
 
     this.LABEL = { pending: 'Pending Confirmation', approved: 'Approved', rejected: 'Rejected' };
@@ -104,7 +105,7 @@ window.PaymentApprovalManager = class PaymentApprovalManager {
     });
   }
 
-  _openReceipt (s) {
+  async _openReceipt (s) {
     this._receiptCurrent = s;
     document.getElementById('rcPatient').textContent   = s.patient + ' · ' + s.pid;
     document.getElementById('rcAmount').textContent    = s.amount;
@@ -124,6 +125,7 @@ window.PaymentApprovalManager = class PaymentApprovalManager {
       ? window.ASDC.ApiClient.url(receiptPath)
       : receiptPath;
     if (receiptImg) {
+      this._clearReceiptObjectUrl();
       receiptImg.hidden = true;
       receiptImg.removeAttribute('src');
       receiptImg.onload = () => {
@@ -143,12 +145,41 @@ window.PaymentApprovalManager = class PaymentApprovalManager {
         receiptStatus.textContent = receiptUrl ? 'Loading receipt...' : 'No receipt image is attached to this payment.';
         receiptStatus.hidden = false;
       }
-      if (receiptUrl) receiptImg.src = receiptUrl;
+      if (receiptUrl) await this._loadReceiptImage(receiptUrl, receiptImg, receiptStatus);
     }
     const pending = s.status === 'pending';
     document.getElementById('approvePaymentBtn').hidden = !pending;
     document.getElementById('rejectPaymentBtn').hidden  = !pending;
     this._receiptModal.open(document.getElementById('receiptClose'));
+  }
+
+  _clearReceiptObjectUrl () {
+    if (!this._receiptObjectUrl) return;
+    URL.revokeObjectURL(this._receiptObjectUrl);
+    this._receiptObjectUrl = null;
+  }
+
+  async _loadReceiptImage (receiptUrl, receiptImg, receiptStatus) {
+    try {
+      const response = await fetch(receiptUrl, {
+        credentials: window.ASDC?.API_BASE_URL ? 'include' : 'same-origin',
+        headers: { Accept: 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8' },
+        cache: 'no-store'
+      });
+      if (!response.ok) throw new Error('Receipt request failed.');
+      const contentType = response.headers.get('content-type') || '';
+      if (!contentType.startsWith('image/')) throw new Error('Receipt response was not an image.');
+      const blob = await response.blob();
+      this._receiptObjectUrl = URL.createObjectURL(blob);
+      receiptImg.src = this._receiptObjectUrl;
+    } catch (error) {
+      receiptImg.hidden = true;
+      receiptImg.removeAttribute('src');
+      if (receiptStatus) {
+        receiptStatus.textContent = 'Receipt image could not be loaded. Please check that the uploaded file still exists.';
+        receiptStatus.hidden = false;
+      }
+    }
   }
 
   async _review (s, action, reason = '') {
