@@ -19,7 +19,8 @@ COPY docker/apache-vhost.conf /etc/apache2/sites-available/000-default.conf
 COPY docker/start-apache.sh /usr/local/bin/start-apache
 COPY docker/php-production.ini /usr/local/etc/php/conf.d/production.ini
 
-RUN chmod 755 /usr/local/bin/start-apache
+RUN sed -i 's/\r$//' /usr/local/bin/start-apache \
+    && chmod 755 /usr/local/bin/start-apache
 
 EXPOSE 8080
 CMD ["/usr/local/bin/start-apache"]
