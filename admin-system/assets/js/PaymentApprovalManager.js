@@ -119,7 +119,10 @@ window.PaymentApprovalManager = class PaymentApprovalManager {
 
     const receiptImg = document.getElementById('receiptImg');
     const receiptStatus = document.getElementById('receiptImgStatus');
-    const receiptUrl = s.receipt_url || (s.id ? `../backend/api/payments/receipt.php?payment_id=${encodeURIComponent(s.id)}` : '');
+    const receiptPath = s.receipt_url || (s.id ? `../backend/api/payments/receipt.php?payment_id=${encodeURIComponent(s.id)}` : '');
+    const receiptUrl = receiptPath && window.ASDC?.ApiClient?.url
+      ? window.ASDC.ApiClient.url(receiptPath)
+      : receiptPath;
     if (receiptImg) {
       receiptImg.hidden = true;
       receiptImg.removeAttribute('src');

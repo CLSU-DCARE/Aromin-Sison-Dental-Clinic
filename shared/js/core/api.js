@@ -183,6 +183,6 @@
     return payload.data || payload;
   }
 
-  window.ASDC.ApiClient = { api: api, refreshCsrf: fetchCsrfToken, recoverSession: recoverSession };
+  window.ASDC.ApiClient = { api: api, url: apiUrl, refreshCsrf: fetchCsrfToken, recoverSession: recoverSession };
   window.apiFetch = api;
 })();
