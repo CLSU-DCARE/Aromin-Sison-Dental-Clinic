@@ -117,7 +117,31 @@ window.PaymentApprovalManager = class PaymentApprovalManager {
     const noteEl    = document.getElementById('rcNote');
     if (noteField && noteEl) { noteField.hidden = !s.note; noteEl.textContent = s.note || ''; }
 
-    document.getElementById('receiptImg').src = s.receipt_url || '';
+    const receiptImg = document.getElementById('receiptImg');
+    const receiptStatus = document.getElementById('receiptImgStatus');
+    const receiptUrl = s.receipt_url || (s.id ? `../backend/api/payments/receipt.php?payment_id=${encodeURIComponent(s.id)}` : '');
+    if (receiptImg) {
+      receiptImg.hidden = true;
+      receiptImg.removeAttribute('src');
+      receiptImg.onload = () => {
+        receiptImg.hidden = false;
+        if (receiptStatus) receiptStatus.hidden = true;
+      };
+      receiptImg.onerror = () => {
+        receiptImg.hidden = true;
+        if (receiptStatus) {
+          receiptStatus.textContent = receiptUrl
+            ? 'Receipt image could not be loaded. Please check that the uploaded file still exists.'
+            : 'No receipt image is attached to this payment.';
+          receiptStatus.hidden = false;
+        }
+      };
+      if (receiptStatus) {
+        receiptStatus.textContent = receiptUrl ? 'Loading receipt...' : 'No receipt image is attached to this payment.';
+        receiptStatus.hidden = false;
+      }
+      if (receiptUrl) receiptImg.src = receiptUrl;
+    }
     const pending = s.status === 'pending';
     document.getElementById('approvePaymentBtn').hidden = !pending;
     document.getElementById('rejectPaymentBtn').hidden  = !pending;

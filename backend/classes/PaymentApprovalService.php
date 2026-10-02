@@ -852,7 +852,7 @@ class PaymentApprovalService
             'dueDate'    => $due['date'],
             'dueStatus'  => $due['status'],
             'note'       => $row['note'] ?? '',
-            'receipt_url' => $row['receipt_path'] ? '../backend/api/payments/receipt.php?payment_id=' . (int) $row['payment_id'] : null,
+            'receipt_url' => $row['receipt_path'] ? '../backend/api/payments/receipt.php?payment_id=C-' . (int) $row['payment_id'] : null,
             'status'     => $row['status'],
             'submittedAt' => self::fmtDateTime($row['created_at']),
             'reviewedAt'  => $row['reviewed_at'] ? self::fmtDateTime($row['reviewed_at']) : null,
