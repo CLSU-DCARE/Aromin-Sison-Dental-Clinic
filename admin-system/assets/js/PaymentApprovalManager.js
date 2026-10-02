@@ -118,36 +118,22 @@ window.PaymentApprovalManager = class PaymentApprovalManager {
     const noteEl    = document.getElementById('rcNote');
     if (noteField && noteEl) { noteField.hidden = !s.note; noteEl.textContent = s.note || ''; }
 
-    const receiptImg = document.getElementById('receiptImg');
+    const receiptPreview = document.getElementById('receiptImg');
     const receiptStatus = document.getElementById('receiptImgStatus');
     const receiptPath = s.id ? `../backend/api/payments/receipt.php?payment_id=${encodeURIComponent(s.id)}` : (s.receipt_url || '');
     const receiptUrl = receiptPath && window.ASDC?.ApiClient?.url
       ? window.ASDC.ApiClient.url(receiptPath)
       : receiptPath;
-    if (receiptImg) {
+    if (receiptPreview) {
       this._clearReceiptObjectUrl();
-      receiptImg.hidden = true;
-      receiptImg.removeAttribute('src');
-      receiptImg.alt = '';
-      receiptImg.onload = () => {
-        receiptImg.alt = 'Payment receipt';
-        receiptImg.hidden = false;
-        if (receiptStatus) receiptStatus.hidden = true;
-      };
-      receiptImg.onerror = () => {
-        receiptImg.hidden = true;
-        if (receiptStatus) {
-          receiptStatus.textContent = receiptUrl
-            ? 'Receipt image could not be loaded. Please check that the uploaded file still exists.'
-            : 'No receipt image is attached to this payment.';
-          receiptStatus.hidden = false;
-        }
-      };
+      receiptPreview.hidden = true;
+      receiptPreview.style.backgroundImage = '';
+      receiptPreview.setAttribute('aria-label', '');
       if (receiptStatus) {
         receiptStatus.textContent = receiptUrl ? 'Loading receipt...' : 'No receipt image is attached to this payment.';
         receiptStatus.hidden = false;
       }
-      if (receiptUrl) await this._loadReceiptImage(receiptUrl, receiptImg, receiptStatus);
+      if (receiptUrl) await this._loadReceiptImage(receiptUrl, receiptPreview, receiptStatus);
     }
     const pending = s.status === 'pending';
     document.getElementById('approvePaymentBtn').hidden = !pending;
@@ -161,7 +147,7 @@ window.PaymentApprovalManager = class PaymentApprovalManager {
     this._receiptObjectUrl = null;
   }
 
-  async _loadReceiptImage (receiptUrl, receiptImg, receiptStatus) {
+  async _loadReceiptImage (receiptUrl, receiptPreview, receiptStatus) {
     try {
       const response = await fetch(receiptUrl, {
         credentials: window.ASDC?.API_BASE_URL ? 'include' : 'same-origin',
@@ -173,11 +159,14 @@ window.PaymentApprovalManager = class PaymentApprovalManager {
       if (!contentType.startsWith('image/')) throw new Error('Receipt response was not an image.');
       const blob = await response.blob();
       this._receiptObjectUrl = URL.createObjectURL(blob);
-      receiptImg.src = this._receiptObjectUrl;
+      receiptPreview.style.backgroundImage = `url("${this._receiptObjectUrl}")`;
+      receiptPreview.setAttribute('aria-label', 'Payment receipt');
+      receiptPreview.hidden = false;
+      if (receiptStatus) receiptStatus.hidden = true;
     } catch (error) {
-      receiptImg.hidden = true;
-      receiptImg.removeAttribute('src');
-      receiptImg.alt = '';
+      receiptPreview.hidden = true;
+      receiptPreview.style.backgroundImage = '';
+      receiptPreview.setAttribute('aria-label', '');
       if (receiptStatus) {
         receiptStatus.textContent = 'Receipt image could not be loaded. Please check that the uploaded file still exists.';
         receiptStatus.hidden = false;
