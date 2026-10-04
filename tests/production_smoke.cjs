@@ -47,6 +47,30 @@ async function checkFrontendBookingAsset() {
   console.log('PASS frontend booking asset uses the shared API client.');
 }
 
+async function checkReceptionPromotionEditAsset() {
+  const dashboardUrl = `${VERCEL_URL}/admin-system/dashboard.html`;
+  const dashboard = await readText(dashboardUrl, { cache: 'no-store' });
+  assert.equal(dashboard.response.status, 200, `Receptionist dashboard should load from Vercel. Got ${dashboard.response.status}.`);
+  assert.match(
+    dashboard.text,
+    /assets\/js\/admin\.js\?v=20261004-promo-edit/,
+    'Vercel is serving an old receptionist dashboard without the promotion edit asset version.'
+  );
+  assert.match(
+    dashboard.text,
+    /id="promoDetailEdit"/,
+    'Receptionist promotion detail modal should include the Edit button on live host.'
+  );
+
+  const url = `${VERCEL_URL}/admin-system/assets/js/admin.js?v=20261004-promo-edit`;
+  const { response, text } = await readText(url, { cache: 'no-store' });
+  assert.equal(response.status, 200, `Receptionist admin asset should load from Vercel. Got ${response.status}.`);
+  assert.match(text, /data-action="edit-promo"/, 'Promotion cards should render an Edit button on live host.');
+  assert.match(text, /openPromotionEditor/, 'Receptionist admin JS should wire promotion editing on live host.');
+  assert.match(text, /promo_id/, 'Promotion edits should submit the existing promo_id on live host.');
+  console.log('PASS receptionist promotion edit asset is deployed.');
+}
+
 async function checkPreflight(path, method = 'POST', headers = 'content-type') {
   const url = `${RAILWAY_URL}${path}`;
   const { response, text } = await readText(url, {
@@ -82,6 +106,7 @@ async function main() {
   console.log(`Checking Vercel:  ${VERCEL_URL}`);
   console.log(`Checking Railway: ${RAILWAY_URL}`);
   await checkFrontendBookingAsset();
+  await checkReceptionPromotionEditAsset();
   await checkPreflight('/backend/api/patients/appointments.php', 'POST', 'content-type,x-csrf-token');
   await checkPreflight('/backend/api/auth/forgot-password.php', 'POST', 'content-type');
   await checkForgotPasswordJson();
