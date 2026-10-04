@@ -47,6 +47,7 @@ if ($method === 'DELETE') {
 $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
 $isMultipart = stripos($contentType, 'multipart/form-data') !== false;
 $body = $isMultipart ? $_POST : \ASDC\ApiResponse::requireJson();
+$promoId = \ASDC\InputValidator::positiveId($body['promo_id'] ?? $body['id'] ?? null);
 $title = trim((string) ($body['title'] ?? ''));
 $description = trim((string) ($body['description'] ?? ''));
 $statusInput = strtolower(trim((string) ($body['status'] ?? 'live')));
@@ -67,6 +68,41 @@ if ($fields) \ASDC\ApiResponse::error(422, 'validation_failed', 'Please correct 
 $imagePath = \ASDC\PromotionImageUploader::store($_FILES['image'] ?? null);
 $startDate = $startDate !== '' ? $startDate : ($status === 'live' ? date('Y-m-d') : null);
 $endDate = $endDate !== '' ? $endDate : ($status === 'expired' ? date('Y-m-d') : null);
+
+if ($promoId) {
+    $stmt = $pdo->prepare('SELECT image_path FROM promotions WHERE promo_id = ?');
+    $stmt->execute([$promoId]);
+    $existing = $stmt->fetch();
+    if (!$existing) {
+        \ASDC\ApiResponse::error(404, 'not_found', 'Promotion not found.');
+    }
+
+    $finalImagePath = $imagePath ?: ($existing['image_path'] ?? null);
+    $stmt = $pdo->prepare(
+        'UPDATE promotions SET title = ?, description = ?, image_path = ?, status = ?, start_date = ?, end_date = ? WHERE promo_id = ?'
+    );
+    $stmt->execute([$title, $description, $finalImagePath, $status, $startDate, $endDate, $promoId]);
+
+    if ($imagePath && !empty($existing['image_path']) && $existing['image_path'] !== $imagePath) {
+        $path = realpath(dirname(__DIR__, 2) . '/' . $existing['image_path']);
+        $uploadRoot = realpath(dirname(__DIR__, 2) . '/uploads/promotions');
+        if ($path && $uploadRoot && strpos($path, $uploadRoot) === 0 && is_file($path)) {
+            @unlink($path);
+        }
+    }
+
+    \ASDC\ApiResponse::ok([
+        'promotion' => [
+            'id' => $promoId,
+            'title' => $title,
+            'desc' => $description,
+            'image_path' => $finalImagePath,
+            'status' => $status,
+            'start_date' => $startDate,
+            'end_date' => $endDate,
+        ],
+    ], 'Promotion updated.');
+}
 
 $stmt = $pdo->prepare(
     'INSERT INTO promotions(title,description,image_path,status,start_date,end_date) VALUES(?,?,?,?,?,?)'

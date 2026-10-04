@@ -515,10 +515,12 @@ const promoFormModal = new Modal('promoFormModal');
 const promoDetailModal = new Modal('promoDetailModal');
 const promoDeleteModal = new Modal('promoDeleteModal');
 let deletingPromotion = null;
+let editingPromotion = null;
 if (promoFormModal.modal){
   const addPromoBtn = document.getElementById('addPromoBtn');
   const promoNote = document.getElementById('promoFormNote');
   const promoSaveBtn = document.getElementById('promoFormSave');
+  const promoFormTitle = document.getElementById('promoFormTitle');
   const promoTitle = document.getElementById('pf2Title');
   const promoDesc = document.getElementById('pf2Desc');
   const promoImage = document.getElementById('pf2Image');
@@ -529,17 +531,24 @@ if (promoFormModal.modal){
   promoFormModal.registerClose(document.getElementById('promoFormClose'));
   promoFormModal.registerClose(document.getElementById('promoFormCancel'));
 
-  addPromoBtn?.addEventListener('click', () => {
-    promoTitle.value = '';
-    promoDesc.value = '';
+  function setPromoFormMode(promo, trigger){
+    editingPromotion = promo || null;
+    promoFormTitle.textContent = editingPromotion ? 'Edit Promotion' : 'New Promotion';
+    promoSaveBtn.querySelector('.btn-label').textContent = editingPromotion ? 'Save Changes' : 'Save Promotion';
+    promoTitle.value = editingPromotion?.title || '';
+    promoDesc.value = editingPromotion?.desc || '';
     promoImage.value = '';
-    promoStart.value = '';
-    promoEnd.value = '';
-    promoStatus.value = 'Live';
+    promoStart.value = editingPromotion?.start_date || '';
+    promoEnd.value = editingPromotion?.end_date || '';
+    promoStatus.value = editingPromotion ? (editingPromotion.status === 'expired' ? 'Ended' : editingPromotion.status.charAt(0).toUpperCase() + editingPromotion.status.slice(1)) : 'Live';
     promoNote.hidden = true;
     promoSaveBtn.classList.remove('loading');
     promoSaveBtn.disabled = false;
-    promoFormModal.open(addPromoBtn);
+    promoFormModal.open(trigger || addPromoBtn);
+  }
+
+  addPromoBtn?.addEventListener('click', () => {
+    setPromoFormMode(null, addPromoBtn);
   });
 
   promoSaveBtn?.addEventListener('click', async () => {
@@ -568,6 +577,7 @@ if (promoFormModal.modal){
       formData.append('title', title);
       formData.append('description', description);
       formData.append('status', status);
+      if (editingPromotion) formData.append('promo_id', Number(editingPromotion.id));
       if (startDate) formData.append('start_date', startDate);
       if (endDate) formData.append('end_date', endDate);
       if (promoImage.files[0]) formData.append('image', promoImage.files[0]);
@@ -576,7 +586,8 @@ if (promoFormModal.modal){
         body: formData
       });
       promoFormModal.close();
-      showToast('Promotion saved');
+      showToast(editingPromotion ? 'Promotion updated' : 'Promotion saved');
+      editingPromotion = null;
       if (window.staffLiveSync) await window.staffLiveSync.refetch();
     } catch (error) {
       promoNote.textContent = error.message;
@@ -587,6 +598,11 @@ if (promoFormModal.modal){
       promoSaveBtn.disabled = false;
     }
   });
+
+  window.openPromotionEditor = function (id, trigger) {
+    const promo = AdminState.promotions.find(item => String(item.id) === String(id));
+    if (promo) setPromoFormMode(promo, trigger);
+  };
 }
 
 if (promoDetailModal.modal){
@@ -664,6 +680,12 @@ function openPromotionDetail(id, trigger){
 }
 
 document.getElementById('promoGrid')?.addEventListener('click', event => {
+  const editBtn = event.target.closest('[data-action="edit-promo"]');
+  if (editBtn) {
+    event.stopPropagation();
+    window.openPromotionEditor?.(editBtn.dataset.promoId, editBtn);
+    return;
+  }
   const deleteBtn = event.target.closest('[data-action="delete-promo"]');
   if (deleteBtn) {
     event.stopPropagation();
@@ -892,7 +914,10 @@ function renderPromotions(promotions){
         <p>${escapeHtml(p.desc)}</p>
         <div class="promo-date">${escapeHtml(formatPromoRange(p))}</div>
         <span class="promo-view">View details</span>
-        <button type="button" class="promo-delete-btn" data-action="delete-promo" data-promo-id="${Number(p.id)}">Delete</button>
+        <div class="promo-actions">
+          <button type="button" class="btn btn-outline btn-sm" data-action="edit-promo" data-promo-id="${Number(p.id)}">Edit</button>
+          <button type="button" class="promo-delete-btn" data-action="delete-promo" data-promo-id="${Number(p.id)}">Delete</button>
+        </div>
       </div>
     </div>`
   ).join('');
@@ -900,7 +925,7 @@ function renderPromotions(promotions){
 
 document.getElementById('promoGrid')?.addEventListener('keydown', event => {
   if (!['Enter', ' '].includes(event.key)) return;
-  if (event.target.closest('[data-action="delete-promo"]')) return;
+  if (event.target.closest('[data-action]')) return;
   const card = event.target.closest('[data-promo-id]');
   if (!card) return;
   event.preventDefault();
