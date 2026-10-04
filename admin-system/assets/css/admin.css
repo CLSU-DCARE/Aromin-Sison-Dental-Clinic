@@ -796,6 +796,7 @@ background:var(--ivory-2);color:rgba(27,27,25,0.65);padding:13px 10px;min-height
 .promo-viewer-content h3{font-size:28px;line-height:1.15;}
 .promo-viewer-content p{font-size:15px;color:rgba(27,27,25,0.72);white-space:pre-line;}
 .promo-viewer .modal-close{background:rgba(255,255,255,0.88);z-index:2;box-shadow:var(--shadow-xs);}
+.promo-detail-edit{position:absolute;top:18px;left:18px;z-index:3;box-shadow:var(--shadow-xs);}
 .promo-viewer-media[hidden]{display:none;}
 
 /* inventory */
