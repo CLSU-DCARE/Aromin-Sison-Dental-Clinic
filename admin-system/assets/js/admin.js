@@ -516,7 +516,6 @@ const promoDetailModal = new Modal('promoDetailModal');
 const promoDeleteModal = new Modal('promoDeleteModal');
 let deletingPromotion = null;
 let editingPromotion = null;
-let viewedPromotionId = null;
 if (promoFormModal.modal){
   const addPromoBtn = document.getElementById('addPromoBtn');
   const promoNote = document.getElementById('promoFormNote');
@@ -609,11 +608,6 @@ if (promoFormModal.modal){
 if (promoDetailModal.modal){
   promoDetailModal.registerClose(document.getElementById('promoDetailClose'));
   promoDetailModal.registerClose(document.getElementById('promoDetailCancel'));
-  document.getElementById('promoDetailEdit')?.addEventListener('click', event => {
-    if (!viewedPromotionId) return;
-    promoDetailModal.close();
-    window.openPromotionEditor?.(viewedPromotionId, event.currentTarget);
-  });
 }
 
 if (promoDeleteModal.modal){
@@ -666,7 +660,6 @@ function formatPromoRange(promo){
 function openPromotionDetail(id, trigger){
   const promo = AdminState.promotions.find(item => String(item.id) === String(id));
   if (!promo || !promoDetailModal.modal) return;
-  viewedPromotionId = promo.id;
   const img = document.getElementById('promoDetailImg');
   const media = document.getElementById('promoDetailMedia');
   document.getElementById('promoDetailTitle').textContent = promo.title;
@@ -920,8 +913,8 @@ function renderPromotions(promotions){
         <h4>${escapeHtml(p.title)}</h4>
         <p>${escapeHtml(p.desc)}</p>
         <div class="promo-date">${escapeHtml(formatPromoRange(p))}</div>
-        <span class="promo-view">View details</span>
         <div class="promo-actions">
+          <span class="promo-view">View details</span>
           <button type="button" class="btn btn-outline btn-sm" data-action="edit-promo" data-promo-id="${Number(p.id)}">Edit</button>
           <button type="button" class="promo-delete-btn" data-action="delete-promo" data-promo-id="${Number(p.id)}">Delete</button>
         </div>

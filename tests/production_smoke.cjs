@@ -53,16 +53,16 @@ async function checkReceptionPromotionEditAsset() {
   assert.equal(dashboard.response.status, 200, `Receptionist dashboard should load from Vercel. Got ${dashboard.response.status}.`);
   assert.match(
     dashboard.text,
-    /assets\/js\/admin\.js\?v=20261004-promo-edit/,
-    'Vercel is serving an old receptionist dashboard without the promotion edit asset version.'
+    /assets\/js\/admin\.js\?v=20261007-promo-actions/,
+    'Vercel is serving an old receptionist dashboard without the promotion action asset version.'
   );
-  assert.match(
+  assert.doesNotMatch(
     dashboard.text,
     /id="promoDetailEdit"/,
-    'Receptionist promotion detail modal should include the Edit button on live host.'
+    'Receptionist promotion detail modal should not include the Edit button on live host.'
   );
 
-  const url = `${VERCEL_URL}/admin-system/assets/js/admin.js?v=20261004-promo-edit`;
+  const url = `${VERCEL_URL}/admin-system/assets/js/admin.js?v=20261007-promo-actions`;
   const { response, text } = await readText(url, { cache: 'no-store' });
   assert.equal(response.status, 200, `Receptionist admin asset should load from Vercel. Got ${response.status}.`);
   assert.match(text, /data-action="edit-promo"/, 'Promotion cards should render an Edit button on live host.');
