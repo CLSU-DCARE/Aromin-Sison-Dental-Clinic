@@ -28,7 +28,7 @@ if (array_key_exists('is_active', $body)) {
     if ($_SESSION['role'] !== 'receptionist' || !in_array((string) $body['is_active'], ['0', '1'], true)) \ASDC\ApiResponse::error(422, 'validation_failed', 'Choose a valid patient status.');
     $activeStatus = (int) $body['is_active'];
 }
-if (!$patientId || mb_strlen($name) < 2 || mb_strlen($name) > 100 || ($contact !== '' && !preg_match('/^[+0-9() -]{7,20}$/', $contact))) \ASDC\ApiResponse::error(422, 'validation_failed', 'Enter a name and valid contact number.');
+if (!$patientId || mb_strlen($name) < 2 || mb_strlen($name) > 100 || !preg_match('/^[+0-9() .-]{7,20}$/', $contact)) \ASDC\ApiResponse::error(422, 'validation_failed', 'Enter a name and valid contact number.');
 // Email changes are outside this demographic update.
 $parts = preg_split('/\s+/', $name, 2);
 if ($billingBalance !== null) \ASDC\PaymentApprovalService::ensureGeneralTreatmentBillingTables();

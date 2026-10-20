@@ -139,6 +139,12 @@ window.AppointmentScheduler = class AppointmentScheduler {
     return `<span class="tag tag-${color}">${escapeHtml(label)}</span>`;
   }
 
+  _phoneLink (number) {
+    const phone = String(number || '').trim();
+    if (!phone) return '<span aria-label="No phone number">-</span>';
+    return `<a class="phone-link" href="tel:${escapeHtml(phone.replace(/[^+0-9]/g, ''))}">${escapeHtml(phone)}</a>`;
+  }
+
   _actionControls (item, compact = false) {
     const status = String(item.status).toLowerCase();
     if (!['pending', 'confirmed'].includes(status)) return '';
@@ -186,11 +192,12 @@ window.AppointmentScheduler = class AppointmentScheduler {
           `<tr><td>${escapeHtml(this._dateLabel(item.scheduled_date, { weekday: 'short', month: 'short', day: 'numeric' }))}</td>` +
           `<td>${escapeHtml(this._timeLabel(item.scheduled_time))}</td>` +
           `<td>${escapeHtml(item.patient_name)}</td>` +
+          `<td>${this._phoneLink(item.contact_number)}</td>` +
           `<td>${escapeHtml(item.service_type)}</td>` +
           `<td>${this._statusTag(item.status)}</td>` +
           `<td>${this._actionControls(item)}</td></tr>`
         ).join('')
-        : '<tr><td colspan="6" class="empty-cell">No appointments scheduled for this week.</td></tr>';
+        : '<tr><td colspan="7" class="empty-cell">No appointments scheduled for this week.</td></tr>';
       return;
     }
 
@@ -226,6 +233,7 @@ window.AppointmentScheduler = class AppointmentScheduler {
         return items.length
           ? '<div class="cell">' + items.map(item => `<div class="appt-block${String(item.status).toLowerCase() === 'completed' ? ' appt-completed' : ''}"><strong>${escapeHtml(item.patient_name)}</strong>` +
             `<span class="t">${escapeHtml(item.service_type)} · ${escapeHtml(item.status)}</span>` +
+            `<span class="t">${this._phoneLink(item.contact_number)}</span>` +
             `${String(item.status).toLowerCase() === 'completed' ? '<span class="appt-status">Completed</span>' : ''}` +
             `${this._actionControls(item, true)}</div>`).join('') + '</div>'
           : '<div class="cell"></div>';
@@ -247,11 +255,11 @@ window.AppointmentScheduler = class AppointmentScheduler {
       ? this.state.requests.map(request => {
         const initials = String(request.patient_name).split(/\s+/).map(p => p[0]).slice(0, 2).join('').toUpperCase();
         return `<tr>` +
-          `<td>${nameCell(initials, request.patient_name, request.email || '')}</td>` +
+          `<td>${nameCell(initials, request.patient_name, request.email ? `Email: ${request.email}` : 'Email: optional / not provided')}</td>` +
+          `<td>${this._phoneLink(request.contact_number)}</td>` +
           `<td>${escapeHtml(request.service_type)}</td>` +
           `<td><strong>${escapeHtml(this._dateLabel(request.scheduled_date))}</strong>` +
           `<div class="request-time">${escapeHtml(this._timeLabel(request.scheduled_time))}</div></td>` +
-          `<td>${escapeHtml(request.contact_number || '-')}</td>` +
           `<td>${this._statusTag(request.status)}</td>` +
           `<td><div class="appointment-request-actions">` +
           `<button type="button" class="btn btn-sm btn-approve" data-request-action="approve" data-request-id="${Number(request.request_id)}">Approve</button>` +
@@ -262,7 +270,7 @@ window.AppointmentScheduler = class AppointmentScheduler {
       }).join('')
       : '<tr><td colspan="6" class="empty-cell">No pending booking requests.</td></tr>';
     if (this.state.pending?.length) {
-      const rows = this.state.pending.map(a => `<tr><td>${escapeHtml(a.patient_name)}</td><td>${escapeHtml(a.service_type)}</td><td>${escapeHtml(this._dateLabel(a.scheduled_date))} ${escapeHtml(String(a.scheduled_time).slice(0,5))}</td><td>Patient portal</td><td>${this._statusTag(a.status)}</td><td>${this._actionControls(a)}</td></tr>`).join('');
+      const rows = this.state.pending.map(a => `<tr><td>${escapeHtml(a.patient_name)}</td><td>${this._phoneLink(a.contact_number)}</td><td>${escapeHtml(a.service_type)}</td><td>${escapeHtml(this._dateLabel(a.scheduled_date))} ${escapeHtml(String(a.scheduled_time).slice(0,5))}</td><td>${this._statusTag(a.status)}</td><td>${this._actionControls(a)}</td></tr>`).join('');
       tbody.innerHTML = (this.state.requests.length ? tbody.innerHTML : '') + rows;
     }
   }

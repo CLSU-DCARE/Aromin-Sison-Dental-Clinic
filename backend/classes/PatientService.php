@@ -32,8 +32,8 @@ class PatientService
         if (mb_strlen($name) < 2 || mb_strlen($name) > 150) {
             $fields['name'] = 'Enter the patient full name.';
         }
-        if ($contact !== '' && (strlen($contact) > 20 || !preg_match('/^[+0-9() .-]{7,20}$/', $contact))) {
-            $fields['contact_number'] = 'Enter a valid contact number.';
+        if ($contact === '' || strlen($contact) > 20 || !preg_match('/^[+0-9() .-]{7,20}$/', $contact)) {
+            $fields['contact_number'] = 'A valid contact number is required.';
         }
         if ($email !== '' && (strlen($email) > 150 || !filter_var($email, FILTER_VALIDATE_EMAIL))) {
             $fields['email'] = 'Enter a valid email address.';

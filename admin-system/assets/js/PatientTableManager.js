@@ -201,7 +201,7 @@ window.PatientTableManager = class PatientTableManager {
     tbody.innerHTML = patients.map(p =>
       `<tr>
         <td>${nameCell(p.initials, p.name, p.id)}</td>
-        <td>${escapeHtml(p.contact)}</td>
+        <td>${p.contact === '-' ? '-' : `<a class="phone-link" href="tel:${escapeHtml(p.contact.replace(/[^+0-9]/g, ''))}">${escapeHtml(p.contact)}</a>`}</td>
         <td>${escapeHtml(p.lastVisit)}</td>
         <td>${statusTag(p)}</td>
         <td><div class="row-actions">
@@ -244,7 +244,7 @@ window.PatientTableManager = class PatientTableManager {
     if (!this._detailModal.modal) return;
     document.getElementById('detailTitle').textContent = 'Patient Details';
     document.getElementById('detailRows').innerHTML = [
-      ['Patient ID', p.id], ['Contract', p.contract || '-'], ['Contact', escapeHtml(p.contact)],
+      ['Patient ID', p.id], ['Contract', p.contract || '-'], ['Phone', p.contact === '-' ? '-' : `<a class="phone-link" href="tel:${escapeHtml(p.contact.replace(/[^+0-9]/g, ''))}">${escapeHtml(p.contact)}</a>`],
       ['Last Visit', p.lastVisit],
       ['Status', `<span class="tag tag-${p.tag}">${p.status}</span>`]
     ].map(([label, value]) => `<div class="row"><span>${label}</span><span>${value}</span></div>`).join('');
@@ -295,6 +295,11 @@ window.PatientTableManager = class PatientTableManager {
     if (name.length < 2) {
       this._showFormNote('Enter the patient full name.', true);
       document.getElementById('pfName').focus();
+      return;
+    }
+    if (!/^[+0-9() .-]{7,20}$/.test(contact)) {
+      this._showFormNote('Enter a valid contact number.', true);
+      document.getElementById('pfContact').focus();
       return;
     }
 

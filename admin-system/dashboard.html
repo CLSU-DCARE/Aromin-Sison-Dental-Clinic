@@ -311,7 +311,7 @@
           </div>
           <div class="table-scroll">
             <table class="appointment-request-table">
-              <thead><tr><th>Patient</th><th>Service</th><th>Requested Schedule</th><th>Contact Number</th><th>Status</th><th>Actions</th></tr></thead>
+              <thead><tr><th>Patient</th><th>Phone</th><th>Service</th><th>Requested Schedule</th><th>Status</th><th>Actions</th></tr></thead>
               <tbody id="appointmentRequestsBody"><tr><td colspan="6" class="empty-cell">Loading booking requests…</td></tr></tbody>
             </table>
           </div>
@@ -336,7 +336,7 @@
           </div>
           <div class="table-scroll" id="apptListView" hidden>
             <table>
-              <thead><tr><th>Day</th><th>Time</th><th>Patient</th><th>Service</th><th>Status</th><th>Actions</th></tr></thead>
+              <thead><tr><th>Day</th><th>Time</th><th>Patient</th><th>Phone</th><th>Service</th><th>Status</th><th>Actions</th></tr></thead>
               <tbody id="apptListBody"></tbody>
             </table>
           </div>
@@ -657,11 +657,11 @@
     </div>
     <div class="form-group">
       <label for="pfContact">Contact Number</label>
-      <input type="tel" id="pfContact" autocomplete="off">
+      <input type="tel" id="pfContact" maxlength="20" autocomplete="tel" required>
     </div>
     <div class="form-group">
-      <label for="pfEmail">Email Address</label>
-      <input type="email" id="pfEmail" autocomplete="off">
+      <label for="pfEmail">Email Address (optional)</label>
+      <input type="email" id="pfEmail" autocomplete="email">
     </div>
     <div class="form-group">
       <label for="pfLastVisit">Last Visit</label>
@@ -1000,7 +1000,7 @@
 <script src="../shared/js/state/admin.js?v=20260916-integration" defer></script>
 <script src="../shared/js/core/ContractFormat.js?v=20260916-integration" defer></script>
 <script src="assets/js/NotificationManager.js?v=20260926-resend-failed" defer></script>
-<script src="assets/js/AppointmentScheduler.js?v=20260930-dentist-actions" defer></script>
+<script src="assets/js/AppointmentScheduler.js?v=20261020-phone-first" defer></script>
 <script src="assets/js/AppointmentActions.js?v=20260930-dentist-actions" defer></script>
 <script src="assets/js/PaymentApprovalManager.js?v=20261002-live-receipt-auth" defer></script>
 <script src="assets/js/PatientTableManager.js?v=20260928-inactive-archive-only" defer></script>
