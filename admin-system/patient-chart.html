@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<title>Patient Chart | Aromin-Sison Dental Clinic</title>
+<link rel="icon" type="image/png" href="../shared/images/favicon/asdc-wordmark-favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;1,9..144,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<link rel="stylesheet" href="../shared/css/variables.css?v=4">
+<link rel="stylesheet" href="../shared/css/buttons.css?v=5">
+<link rel="stylesheet" href="../shared/css/panels.css?v=4">
+<link rel="stylesheet" href="assets/css/admin.css?v=20261020-patient-chart">
+<link rel="stylesheet" href="assets/css/patient-chart.css?v=20261020-patient-chart">
+</head>
+<body class="patient-chart-page">
+<main class="chart-shell">
+  <a class="btn btn-secondary btn-sm chart-back" href="dashboard.html"><i class="bi bi-arrow-left" aria-hidden="true"></i> Back to Patient Management</a>
+
+  <header class="chart-heading">
+    <p class="eyebrow"><span id="chartPortalRole">PORTAL</span> · PATIENT RECORDS</p>
+    <h1>Patient Chart</h1>
+    <p>Clinical and appointment history for clinic staff.</p>
+  </header>
+
+  <section class="panel chart-profile" aria-labelledby="patientName">
+    <div class="chart-profile-main">
+      <div class="chart-avatar" id="patientInitials" aria-hidden="true">…</div>
+      <div>
+        <div class="chart-name-line"><h2 id="patientName">Loading patient…</h2><span id="patientStatus"></span></div>
+        <p id="patientIdentifier" class="chart-muted"></p>
+      </div>
+    </div>
+    <div class="chart-contact-grid" id="patientContact"></div>
+  </section>
+
+  <div class="chart-stats" aria-label="Record totals">
+    <div class="chart-stat"><span id="recordCount">—</span><small>Clinical records</small></div>
+    <div class="chart-stat"><span id="appointmentCount">—</span><small>Appointments</small></div>
+  </div>
+
+  <div id="chartMessage" class="chart-message" role="status">Loading patient chart…</div>
+
+  <section class="panel chart-history" aria-labelledby="recordsHeading">
+    <div class="chart-section-heading">
+      <div><p class="eyebrow">CARE HISTORY</p><h2 id="recordsHeading">Clinical Treatment Records</h2></div>
+      <label class="chart-search"><i class="bi bi-search" aria-hidden="true"></i><input id="recordsSearch" type="search" placeholder="Search records" aria-label="Search clinical records"></label>
+    </div>
+    <div id="recordsList" class="chart-entry-list"></div>
+  </section>
+
+  <section class="panel chart-history" aria-labelledby="appointmentsHeading">
+    <div class="chart-section-heading">
+      <div><p class="eyebrow">SCHEDULING HISTORY</p><h2 id="appointmentsHeading">Appointments</h2></div>
+      <label class="chart-search"><i class="bi bi-search" aria-hidden="true"></i><input id="appointmentsSearch" type="search" placeholder="Search appointments" aria-label="Search appointment history"></label>
+    </div>
+    <div id="appointmentsList" class="chart-entry-list"></div>
+  </section>
+</main>
+<div class="app-toast" id="appToast" role="status" aria-live="polite"></div>
+
+<script src="../shared/js/core/namespace.js?v=20260930-production-api" defer></script>
+<script src="../shared/js/core/api.js?v=20261002-receipt-url" defer></script>
+<script src="../shared/js/core/routing.js?v=20261020-shared-staff-workspace" defer></script>
+<script src="../shared/js/core/SessionGuard.js?v=20261020-shared-staff-workspace" defer></script>
+<script src="../shared/js/core/HtmlHelpers.js?v=20260921-avatar-fallback" defer></script>
+<script src="assets/js/patient-chart.js?v=20261020-patient-chart-role" defer></script>
+</body>
+</html>

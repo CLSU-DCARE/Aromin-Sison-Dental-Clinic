@@ -146,6 +146,50 @@ class PatientService
         return $stmt->fetchAll();
     }
 
+    /** Return one active patient's chart and history for authorized staff. */
+    public static function activeDetails(int $patientId): array
+    {
+        if ($patientId < 1) {
+            ApiResponse::error(422, 'validation_failed', 'Choose a valid patient.');
+        }
+
+        $pdo = Database::pdo();
+        $scope = DataScope::current();
+        [$where, $params] = $scope->patientFilter();
+        $patientStmt = $pdo->prepare(
+            "SELECT p.patient_id, p.first_name, p.last_name, p.contact_number, p.email,
+                    p.registered_at, p.is_active
+             FROM patients p
+             WHERE p.patient_id=? AND {$where}"
+        );
+        $patientStmt->execute(array_merge([$patientId], $params));
+        $patient = $patientStmt->fetch();
+        if (!$patient) {
+            ApiResponse::error(404, 'not_found', 'Active patient not found.');
+        }
+
+        $appointments = $pdo->prepare(
+            "SELECT a.appointment_id, a.service_type, a.scheduled_date, a.scheduled_time,
+                    a.status, d.full_name AS dentist_name
+             FROM appointments a
+             LEFT JOIN dentists d ON d.dentist_id=a.dentist_id
+             WHERE a.patient_id=?
+             ORDER BY a.scheduled_date DESC, a.scheduled_time DESC, a.appointment_id DESC"
+        );
+        $appointments->execute([$patientId]);
+        $records = $pdo->prepare(
+            "SELECT r.record_id, r.diagnosis, r.treatment_given, r.treatment_protocol,
+                    r.date_recorded, d.full_name AS dentist_name
+             FROM treatment_records r
+             LEFT JOIN dentists d ON d.dentist_id=r.dentist_id
+             WHERE r.patient_id=?
+             ORDER BY r.date_recorded DESC, r.record_id DESC"
+        );
+        $records->execute([$patientId]);
+
+        return ['patient' => $patient, 'appointments' => $appointments->fetchAll(), 'records' => $records->fetchAll()];
+    }
+
     public static function listArchived(): array
     {
         $scope = DataScope::current();

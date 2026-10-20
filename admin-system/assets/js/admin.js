@@ -282,6 +282,22 @@ document.addEventListener('keydown', event => {
 const recordMgr = new RecordTableManager({ state: AdminState });
 recordMgr.init();
 
+const addTreatmentRecordBtn = document.getElementById('addTreatmentRecordBtn');
+function syncTreatmentRecordPermission(user = window.ASDCAuthUser) {
+  if (addTreatmentRecordBtn) addTreatmentRecordBtn.hidden = user?.role !== 'dentist';
+}
+syncTreatmentRecordPermission();
+window.addEventListener('asdc:authenticated', event => syncTreatmentRecordPermission(event.detail));
+addTreatmentRecordBtn?.addEventListener('click', () => {
+  if (window.ASDCAuthUser?.role !== 'dentist') return;
+  const snapshot = window.staffSnapshot;
+  if (!snapshot || !Array.isArray(snapshot.patients)) {
+    showToast('Patient information is still loading. Please try again shortly.', 'error');
+    return;
+  }
+  ASDC.openClinicalForm(snapshot);
+});
+
 // ---------- Inventory and automatic usage rules ----------
 const inventoryMgr = new InventoryTableManager({ state: AdminState });
 inventoryMgr.init();

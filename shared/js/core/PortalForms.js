@@ -145,6 +145,10 @@
   };
 
   ASDC.openClinicalForm = (snapshot, record = null) => {
+    if (window.ASDCAuthUser?.role !== 'dentist') {
+      ASDC._toast.show('Only a dentist can record or edit clinical treatment records.', 'error');
+      return;
+    }
     const patients = record ? snapshot.patients.filter(p => Number(p.patient_id) === Number(record.patient_id)) : snapshot.patients;
     const patientOptions = patients.map(p => `<option value="${Number(p.patient_id)}">${esc(p.first_name + ' ' + p.last_name)}</option>`).join('');
     if (!patients.length) { ASDC._toast.show('No assigned patients are available.'); return; }
@@ -154,7 +158,10 @@
       field('Diagnosis', `<input name="diagnosis" maxlength="255" value="${esc(record?.diagnosis)}">`) +
       field('Treatment', treatmentSelect(record?.treatment_given)) +
       field('Dentist notes / protocol (shared with patient)', `<textarea name="treatment_protocol" maxlength="10000">${esc(record?.treatment_protocol)}</textarea>`),
-      values => write('patients/records.php', { ...values, ...(record ? { record_id: record.record_id, appointment_id: record.appointment_id } : {}) }, record ? 'PATCH' : 'POST'));
+      async values => {
+        await write('patients/records.php', { ...values, ...(record ? { record_id: record.record_id, appointment_id: record.appointment_id } : {}) }, record ? 'PATCH' : 'POST');
+        await refreshStaffSnapshot();
+      });
   };
 
   ASDC.approveAppointment = async appointment => {

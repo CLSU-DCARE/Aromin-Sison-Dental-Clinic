@@ -138,7 +138,6 @@ class AppointmentService
             $stmt->execute($params);
             if (!$stmt->rowCount()) { $pdo->rollBack(); ApiResponse::error(409, 'state_changed', 'This appointment no longer permits that action.'); }
             if ($type === 'appointment') {
-                if ($status === 'completed') ClinicalRecordService::recordCompletedAppointment($pdo, $id);
                 PortalEvent::appointment($id, $status, $reason !== '' ? ['reason' => $reason] : []);
             } else {
                 PortalEvent::appointmentRequest($id, $status);

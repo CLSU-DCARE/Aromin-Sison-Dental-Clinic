@@ -87,6 +87,17 @@ class ClinicalRecordService
                     $lookup->execute([$appointmentId, $patientId]);
                     $dentistId = $lookup->fetchColumn() ?: null;
                 }
+                if (!$dentistId && isset($_SESSION['user_id'])) {
+                    $lookup = $pdo->prepare(
+                        "SELECT d.dentist_id
+                           FROM dentists d
+                           JOIN users u ON u.full_name=d.full_name
+                          WHERE u.user_id=? AND u.role='dentist' AND d.is_active=1
+                          LIMIT 1"
+                    );
+                    $lookup->execute([(int) $_SESSION['user_id']]);
+                    $dentistId = $lookup->fetchColumn() ?: null;
+                }
                 $pdo->prepare('INSERT INTO treatment_records(patient_id,dentist_id,diagnosis,treatment_given,treatment_protocol,date_recorded,appointment_id) VALUES(?,?,?,?,?,?,?)')->execute([$patientId, $dentistId, ...array_values($texts), $date, $appointmentId]);
                 $recordId = (int) $pdo->lastInsertId();
                 InventoryUsageService::consumeForTreatment($pdo, $recordId, $texts['treatment_given']);
@@ -95,42 +106,6 @@ class ClinicalRecordService
             $pdo->commit();
             return ['record_id' => $recordId];
         } catch (\Throwable $e) { if ($pdo->inTransaction()) $pdo->rollBack(); throw $e; }
-    }
-
-    public static function recordCompletedAppointment(\PDO $pdo, int $appointmentId): ?int
-    {
-        $stmt = $pdo->prepare(
-            "SELECT a.appointment_id, a.patient_id, a.dentist_id, a.service_type, a.scheduled_date
-             FROM appointments a
-             WHERE a.appointment_id=? AND a.status='completed'"
-        );
-        $stmt->execute([$appointmentId]);
-        $appointment = $stmt->fetch();
-        if (!$appointment) return null;
-
-        $stmt = $pdo->prepare('SELECT record_id FROM treatment_records WHERE appointment_id=? LIMIT 1');
-        $stmt->execute([$appointmentId]);
-        $recordId = $stmt->fetchColumn();
-        if ($recordId) return (int) $recordId;
-
-        $protocol = 'Completed visit recorded from appointment #' . $appointmentId . '.';
-        $stmt = $pdo->prepare(
-            'INSERT INTO treatment_records(patient_id,dentist_id,diagnosis,treatment_given,treatment_protocol,date_recorded,appointment_id)
-             VALUES(?,?,?,?,?,?,?)'
-        );
-        $stmt->execute([
-            (int) $appointment['patient_id'],
-            $appointment['dentist_id'] ? (int) $appointment['dentist_id'] : null,
-            null,
-            $appointment['service_type'] ?: 'Completed treatment',
-            $protocol,
-            $appointment['scheduled_date'] ?: date('Y-m-d'),
-            $appointmentId,
-        ]);
-
-        $recordId = (int) $pdo->lastInsertId();
-        InventoryUsageService::consumeForTreatment($pdo, $recordId, (string) $appointment['service_type']);
-        return $recordId;
     }
 
     public static function recordBracesProgress(\PDO $pdo, array $contract, string $stage, int $percent, ?string $note, ?string $nextNote): ?int
