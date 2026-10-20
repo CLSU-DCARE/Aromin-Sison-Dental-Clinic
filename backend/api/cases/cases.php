@@ -17,12 +17,7 @@ $select = "SELECT case_id AS id,title,treatment_category AS category,short_descr
                   created_by,reviewed_at,created_at,updated_at
            FROM promotional_cases";
 if ($method === 'GET') {
-    if ($role === 'dentist') {
-        $stmt = $pdo->prepare($select . ' WHERE created_by=? ORDER BY updated_at DESC,case_id DESC');
-        $stmt->execute([$userId]);
-    } else {
-        $stmt = $pdo->query($select . ' ORDER BY updated_at DESC,case_id DESC');
-    }
+    $stmt = $pdo->query($select . ' ORDER BY updated_at DESC,case_id DESC');
     \ASDC\ApiResponse::ok(['cases' => $stmt->fetchAll()]);
 }
 
@@ -33,7 +28,6 @@ $body = $multipart ? $_POST : \ASDC\ApiResponse::requireJson();
 $action = trim((string) ($body['action'] ?? 'save'));
 
 if ($action !== 'save') {
-    if ($role !== 'receptionist') \ASDC\ApiResponse::error(403, 'FORBIDDEN', 'Only reception staff can review and publish cases.');
     $caseId = \ASDC\InputValidator::positiveId($body['case_id'] ?? null);
     if (!$caseId) \ASDC\ApiResponse::error(422, 'validation_failed', 'Choose a valid case.');
     $stmt = $pdo->prepare('SELECT status,collage_image_path,before_image_path,after_image_path FROM promotional_cases WHERE case_id=?');
@@ -101,9 +95,6 @@ if ($caseId) {
     $existing = $stmt->fetch();
     if (!$existing) \ASDC\ApiResponse::error(404, 'not_found', 'Promotional case not found.');
     if ($existing['status'] === 'archived') \ASDC\ApiResponse::error(409, 'invalid_transition', 'Archived cases are read-only.');
-    if ($role === 'dentist' && ((int) $existing['created_by'] !== $userId || !in_array($existing['status'], ['draft','pending_review'], true))) {
-        \ASDC\ApiResponse::error(403, 'FORBIDDEN', 'You can only revise your own case before staff approval.');
-    }
 } elseif ($role !== 'dentist' && $role !== 'receptionist') {
     \ASDC\ApiResponse::error(403, 'FORBIDDEN', 'You cannot submit promotional cases.');
 }
@@ -112,16 +103,16 @@ $collageUpload = \ASDC\PromotionalCaseImageUploader::store($multipart ? ($_FILES
 $collagePath = $collageUpload ?: ($existing['collage_image_path'] ?? null);
 $beforePath = $existing['before_image_path'] ?? null;
 $afterPath = $existing['after_image_path'] ?? null;
-$status = $role === 'dentist' ? 'pending_review' : 'draft';
+$status = 'draft';
 
 if ($existing) {
     $stmt = $pdo->prepare("UPDATE promotional_cases SET title=?,treatment_category=?,short_description=?,collage_image_path=?,before_image_path=?,after_image_path=?,case_date=?,status=?,is_featured=0,consent_confirmed=0,consent_verified_by=NULL,consent_verified_at=NULL,publication_date=NULL,reviewed_by=NULL,reviewed_at=NULL WHERE case_id=?");
     $stmt->execute([$title,$category,$description,$collagePath,$beforePath,$afterPath,$caseDate !== '' ? $caseDate : null,$status,$caseId]);
     if ($collageUpload) \ASDC\PromotionalCaseImageUploader::delete($existing['collage_image_path']);
-    \ASDC\ApiResponse::ok(['case_id' => $caseId, 'status' => $status], $role === 'dentist' ? 'Case sent to reception for review.' : 'Case saved as a draft.');
+    \ASDC\ApiResponse::ok(['case_id' => $caseId, 'status' => $status], 'Case saved as a draft.');
 }
 
 $stmt = $pdo->prepare('INSERT INTO promotional_cases(title,treatment_category,short_description,collage_image_path,before_image_path,after_image_path,case_date,status,created_by) VALUES(?,?,?,?,?,?,?,?,?)');
 $stmt->execute([$title,$category,$description,$collagePath,$beforePath,$afterPath,$caseDate !== '' ? $caseDate : null,$status,$userId]);
 $newId = (int) $pdo->lastInsertId();
-\ASDC\ApiResponse::ok(['case_id' => $newId, 'status' => $status], $role === 'dentist' ? 'Case sent to reception for review.' : 'Case saved as a draft.', 201);
+\ASDC\ApiResponse::ok(['case_id' => $newId, 'status' => $status], 'Case saved as a draft.', 201);

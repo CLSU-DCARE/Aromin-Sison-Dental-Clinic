@@ -268,9 +268,8 @@ class AppointmentService
         $pdo = Database::pdo();
         $scope = DataScope::current();
 
-        if ($dentistId !== null) {
-            if (!$scope->isReceptionist()) ApiResponse::error(403, 'forbidden', 'Only receptionists can assign dentists.');
-            if (!self::isActiveDentist($pdo, $dentistId)) ApiResponse::error(422, 'validation_failed', 'Choose an active dentist.');
+        if ($dentistId !== null && !self::isActiveDentist($pdo, $dentistId)) {
+            ApiResponse::error(422, 'validation_failed', 'Choose an active dentist.');
         }
 
         $stmt = $pdo->prepare(
@@ -333,9 +332,8 @@ class AppointmentService
         $pdo = Database::pdo();
         $scope = DataScope::current();
 
-        if ($dentistId !== null) {
-            if (!$scope->isReceptionist()) ApiResponse::error(403, 'forbidden', 'Only receptionists can assign dentists.');
-            if (!self::isActiveDentist($pdo, $dentistId)) ApiResponse::error(422, 'validation_failed', 'Choose an active dentist.');
+        if ($dentistId !== null && !self::isActiveDentist($pdo, $dentistId)) {
+            ApiResponse::error(422, 'validation_failed', 'Choose an active dentist.');
         }
 
         $stmt = $pdo->prepare(

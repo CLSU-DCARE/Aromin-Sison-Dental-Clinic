@@ -4,7 +4,7 @@ window.ASDC.PromotionalCaseManager = class PromotionalCaseManager {
   constructor () {
     this.cases = [];
     this.current = null;
-    this.isReception = window.ASDCAuthUser?.role === 'receptionist';
+    this.isReception = ['receptionist', 'dentist'].includes(window.ASDCAuthUser?.role);
     this.formModal = new Modal('caseFormModal');
     this.publishModal = new Modal('casePublishModal');
   }
@@ -20,7 +20,7 @@ window.ASDC.PromotionalCaseManager = class PromotionalCaseManager {
     document.getElementById('casePublishConfirm')?.addEventListener('click', () => this.publish());
     document.getElementById('promotionalCasesGrid')?.addEventListener('click', event => this.onGridClick(event));
     const start = () => {
-      this.isReception = window.ASDCAuthUser?.role === 'receptionist';
+      this.isReception = ['receptionist', 'dentist'].includes(window.ASDCAuthUser?.role);
       const addButton = document.getElementById('caseAddBtn');
       if (addButton && !this.isReception) addButton.textContent = 'Submit Case';
       this.load();

@@ -22,10 +22,6 @@ try {
         appointment_error(422, 'validation_failed', 'A valid action and resource identifier are required.');
     }
 
-    if (\ASDC\AuthMiddleware::role() === 'dentist' && ($type !== 'appointment' || !in_array($action, ['complete', 'no_show'], true))) {
-        appointment_error(403, 'FORBIDDEN', 'Dentists can only mark appointments complete or no-show.');
-    }
-
     match ($action) {
         'reject'     => \ASDC\AppointmentService::cancel($type, $id, 'rejected', $body['reject_reason'] ?? ''),
         'complete'   => \ASDC\AppointmentService::cancel($type, $id, 'completed'),

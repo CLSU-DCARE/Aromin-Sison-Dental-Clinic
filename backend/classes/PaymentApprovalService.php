@@ -57,7 +57,7 @@ class PaymentApprovalService
         return self::sortPayments(array_merge($contractPayments, $treatmentPayments));
     }
 
-    /** All pending submissions clinic-wide, for the receptionist's
+    /** All pending submissions clinic-wide, for staff payment review
      *  Payment Approvals table. */
     public static function listPending(): array
     {

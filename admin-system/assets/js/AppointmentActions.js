@@ -127,18 +127,7 @@ window.AppointmentActions = class AppointmentActions {
     if (!appointment) return;
 
     const action = button.dataset.appointmentAction;
-    if (window.ASDCAuthUser?.role === 'dentist' && !['complete', 'no_show'].includes(action)) {
-      showToast('Dentists can only mark appointments complete or no-show.', 'error');
-      return;
-    }
-
     if (action === 'approve' && window.ASDC.approveAppointment) {
-      if (window.ASDCAuthUser?.role === 'dentist') {
-        this.run('approve', 'appointment', appointmentId)
-          .then(() => showToast('Appointment approved and added to the schedule', 'success'))
-          .catch(error => showToast(error.message, 'error'));
-        return;
-      }
       window.ASDC.approveAppointment(appointment)
         .then(() => this.scheduler.loadWeek())
         .then(() => showToast('Appointment approved and added to the schedule', 'success'))

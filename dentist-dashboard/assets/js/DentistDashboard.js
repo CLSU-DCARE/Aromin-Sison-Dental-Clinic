@@ -520,9 +520,6 @@ if (inboxEmpty) inboxEmpty.textContent = 'Loading notifications...';
   DentistDashboard.prototype._renderQueue = function(queue){
     var tbody = document.getElementById('dashQueueBody');
     if (!tbody) return;
-    var inClinic = queue.length;
-    var tag = document.getElementById('dashQueueTag');
-    if (tag) tag.textContent = inClinic + ' today';
     if (!queue.length){
       tbody.innerHTML = '<tr><td colspan="3" class="empty-cell">No patients in the queue right now.</td></tr>';
       return;

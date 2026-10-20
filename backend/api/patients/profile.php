@@ -2,16 +2,16 @@
 require_once __DIR__ . '/../../autoload.php';
 require_once __DIR__ . '/../../config/headers.php';
 require_once __DIR__ . '/../../config/auth.php';
-require_role('receptionist');
+require_role('receptionist', 'dentist');
 $method = \ASDC\ApiResponse::method('PATCH', 'POST', 'DELETE');
 \ASDC\CsrfToken::requireValid();
 $body = \ASDC\ApiResponse::requireJson();
 if ($method === 'POST') {
-    require_role('receptionist');
+    require_role('receptionist', 'dentist');
     \ASDC\ApiResponse::ok(\ASDC\PatientService::create($body), 'Patient created.', 201);
 }
 if ($method === 'DELETE') {
-    require_role('receptionist');
+    require_role('receptionist', 'dentist');
     $patientId = \ASDC\InputValidator::positiveId($body['patient_id'] ?? null);
     if (!$patientId) \ASDC\ApiResponse::error(422, 'validation_failed', 'Choose a valid patient.');
     \ASDC\ApiResponse::ok(\ASDC\PatientService::delete($patientId), 'Patient archived.');
@@ -21,11 +21,11 @@ $patientId = \ASDC\InputValidator::positiveId($body['patient_id'] ?? null);
 $name = is_string($body['name'] ?? null) ? trim($body['name']) : '';
 $contact = is_string($body['contact_number'] ?? null) ? trim($body['contact_number']) : '';
 $billingBalance = array_key_exists('billing_balance', $body) && $body['billing_balance'] !== '' ? filter_var($body['billing_balance'], FILTER_VALIDATE_FLOAT) : null;
-if ($_SESSION['role'] !== 'receptionist') $billingBalance = null;
+if (!in_array($_SESSION['role'] ?? '', ['receptionist', 'dentist'], true)) $billingBalance = null;
 if ($billingBalance !== null && ($billingBalance === false || $billingBalance < 0 || $billingBalance > 99999999.99)) \ASDC\ApiResponse::error(422, 'validation_failed', 'Enter a valid balance.');
 $activeStatus = null;
 if (array_key_exists('is_active', $body)) {
-    if ($_SESSION['role'] !== 'receptionist' || !in_array((string) $body['is_active'], ['0', '1'], true)) \ASDC\ApiResponse::error(422, 'validation_failed', 'Choose a valid patient status.');
+    if (!in_array($_SESSION['role'] ?? '', ['receptionist', 'dentist'], true) || !in_array((string) $body['is_active'], ['0', '1'], true)) \ASDC\ApiResponse::error(422, 'validation_failed', 'Choose a valid patient status.');
     $activeStatus = (int) $body['is_active'];
 }
 if (!$patientId || mb_strlen($name) < 2 || mb_strlen($name) > 100 || !preg_match('/^[+0-9() .-]{7,20}$/', $contact)) \ASDC\ApiResponse::error(422, 'validation_failed', 'Enter a name and valid contact number.');

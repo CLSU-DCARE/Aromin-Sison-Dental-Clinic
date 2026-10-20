@@ -60,7 +60,7 @@ class DataScope
 
     public function hasFullAccess(): bool
     {
-        return in_array($this->role, ['receptionist', 'admin'], true);
+        return in_array($this->role, ['receptionist', 'dentist', 'admin'], true);
     }
 
     public function getUserId(): ?int

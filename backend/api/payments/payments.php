@@ -1,6 +1,6 @@
 <?php
 /**
- * Payment approval endpoint (receptionist-only).
+ * Payment approval endpoint (shared staff workflow).
  * Delegates to ASDC\PaymentApprovalService.
  *
  * GET  /backend/api/payments/payments.php?status=pending   -> list (default: all)

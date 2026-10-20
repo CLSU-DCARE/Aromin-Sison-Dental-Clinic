@@ -5,9 +5,9 @@
  *
  * GET    /backend/api/contracts/contracts.php
  *   -> both shared staff roles see clinic-wide contracts.
- * POST   /backend/api/contracts/contracts.php   (receptionist only)
+ * POST   /backend/api/contracts/contracts.php   (receptionist or dentist)
  *   Body: { patient_id, dentist_id?, total_amount, downpayment?, monthly_payment, duration_months, start_date?, status? }
- * PATCH  /backend/api/contracts/contracts.php   (receptionist only)
+ * PATCH  /backend/api/contracts/contracts.php   (receptionist or dentist)
  *   Body: { contract_id, dentist_id?, total_amount, monthly_payment, duration_months, status? }
  */
 require_once __DIR__ . '/../../autoload.php';
@@ -27,7 +27,7 @@ if ($method === 'GET') {
     }
 }
 
-require_role('receptionist');
+require_role('receptionist', 'dentist');
 \ASDC\CsrfToken::requireValid();
 $body = \ASDC\ApiResponse::requireJson();
 // Validate foreign keys and money before any write; never accept a patient account as a dentist.

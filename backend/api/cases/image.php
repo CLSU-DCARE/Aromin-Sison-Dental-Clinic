@@ -14,7 +14,7 @@ $case = $stmt->fetch();
 if (!$case) { http_response_code(404); exit; }
 
 $public = $case['status'] === 'published' && (int) $case['is_featured'] === 1 && (int) $case['consent_confirmed'] === 1;
-$allowedStaff = $isStaff && (($_SESSION['role'] ?? '') === 'receptionist' || (int) $case['created_by'] === (int) ($_SESSION['user_id'] ?? 0));
+$allowedStaff = $isStaff;
 if (!$public && !$allowedStaff) { http_response_code(404); exit; }
 
 $filename = $kind === 'case' ? $case['collage_image_path'] : $case[$kind . '_image_path'];

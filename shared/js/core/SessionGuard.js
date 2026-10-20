@@ -119,7 +119,7 @@
       if (routing && routing.getRoleFromPath) return routing.getRoleFromPath(location.pathname);
       if (location.pathname.includes('/patient-dashboard/')) return 'patient';
       if (location.pathname.includes('/dentist-dashboard/')) return 'dentist';
-      if (location.pathname.includes('/admin-system/')) return 'receptionist';
+      if (location.pathname.includes('/admin-system/')) return 'staff';
       return null;
     }
 
@@ -127,6 +127,11 @@
       const routing = window.ASDC.Routing;
       return (routing && routing.ROLE_DESTINATIONS && routing.ROLE_DESTINATIONS[role]) ||
         this._roleDestinations[role] || this._loginUrl;
+    }
+
+    _isRoleAllowed(pageRole, userRole) {
+      if (pageRole === 'staff') return ['dentist', 'receptionist'].includes(userRole);
+      return !pageRole || userRole === pageRole;
     }
 
     // ---------- Page guard ----------
@@ -157,7 +162,7 @@
 
     _accept(user) {
       const pageRole = this._pageRole();
-      if (pageRole && user.role !== pageRole) {
+      if (!this._isRoleAllowed(pageRole, user.role)) {
         // Signed in, but this is the wrong dashboard for the role.
         this._redirectTo(this._destinationFor(user.role));
         return;
@@ -267,7 +272,7 @@
 
           const user = result.user;
           const pageRole = this._pageRole();
-          if (pageRole && user.role !== pageRole) {
+          if (!this._isRoleAllowed(pageRole, user.role)) {
             this._redirectTo(this._destinationFor(user.role));
             return;
           }
@@ -328,6 +333,9 @@
         set(id, user.full_name)
       );
       ['sideFootRole', 'menuRole'].forEach((id) => set(id, roleLabel));
+      set('portalRoleLabel', roleLabel + ' Portal');
+      const documentTitle = document.getElementById('documentTitle');
+      if (documentTitle && !isPatient) documentTitle.textContent = roleLabel + ' Dashboard | Aromin-Sison Dental Clinic';
 
       if (!isPatient)
         set(
@@ -433,7 +441,7 @@
 
   // Role destinations used when the shared router is not available
   SessionGuard.prototype._roleDestinations = {
-    dentist: '../dentist-dashboard/dashboard.html',
+    dentist: '../admin-system/dashboard.html',
     receptionist: '../admin-system/dashboard.html',
   };
 

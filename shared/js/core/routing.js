@@ -7,12 +7,12 @@
   'use strict';
 
   const ROLE_DESTINATIONS = {
-    dentist: '../dentist-dashboard/dashboard.html',
+    dentist: '../admin-system/dashboard.html',
     receptionist: '../admin-system/dashboard.html',
   };
 
   const ROLE_PATH_PREFIXES = {
-    dentist: '/dentist-dashboard/',
+    dentist: '/admin-system/',
     receptionist: '/admin-system/',
   };
 
@@ -43,11 +43,12 @@
     getRoleFromPath(pathname) {
       if (pathname.includes('/patient-dashboard/')) return 'patient';
       if (pathname.includes('/dentist-dashboard/')) return 'dentist';
-      if (pathname.includes('/admin-system/')) return 'receptionist';
+      if (pathname.includes('/admin-system/')) return 'staff';
       return null;
     },
 
     isCorrectDashboardForRole(pathname, role) {
+      if (pathname.includes('/admin-system/') && ['dentist', 'receptionist'].includes(role)) return true;
       const expectedPrefix = this.getPrefixForRole(role);
       return expectedPrefix && pathname.includes(expectedPrefix);
     },

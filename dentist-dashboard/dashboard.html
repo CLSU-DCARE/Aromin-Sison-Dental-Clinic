@@ -6,6 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
+<script>window.location.replace('../admin-system/dashboard.html');</script>
 <title>Dentist Dashboard | Aromin-Sison Dental Clinic</title>
 <link rel="icon" type="image/png" href="../shared/images/favicon/asdc-wordmark-favicon.png">
 <link rel="apple-touch-icon" href="../shared/images/favicon/asdc-wordmark-favicon.png">
@@ -137,7 +138,7 @@
       <section class="view active" id="view-dashboard">
         <div class="welcome-banner">
           <div>
-            <div class="eyebrow" id="greetingSubtext">Loading... - Dentist</div>
+            <div class="eyebrow" id="greetingSubtext">Loading… · Dentist</div>
             <h2 id="greetingText">A blessed day!</h2>
             <p>Here's how the clinic is looking today.</p>
           </div>
@@ -160,7 +161,7 @@
           <div class="panel">
             <div class="panel-head">
               <h3>Today's Queue</h3>
-              <span class="tag tag-green" id="dashQueueTag">0 in clinic</span>
+              <span class="tag tag-green" id="dashQueueTag">Today</span>
             </div>
             <div class="table-scroll">
               <table>
@@ -398,9 +399,24 @@
         <div class="page-head">
           <div>
             <div class="eyebrow">Scheduling</div>
-            <p>Weekly appointment schedule.</p>
+            <p>Review public booking requests and help manage the clinic's weekly appointment schedule.</p>
           </div>
           <button class="btn btn-secondary" id="refreshAppointmentsBtn">Refresh Schedule</button>
+        </div>
+        <div class="panel appointment-request-panel">
+          <div class="panel-head">
+            <div>
+              <h3>Pending Booking Requests</h3>
+              <p>Requests submitted through the public website for the selected week.</p>
+            </div>
+            <span class="tag tag-amber" id="appointmentRequestCount">Loading…</span>
+          </div>
+          <div class="table-scroll">
+            <table class="appointment-request-table">
+              <thead><tr><th>Patient</th><th>Phone</th><th>Service</th><th>Requested Schedule</th><th>Status</th><th>Actions</th></tr></thead>
+              <tbody id="appointmentRequestsBody"><tr><td colspan="6" class="empty-cell">Loading booking requests…</td></tr></tbody>
+            </table>
+          </div>
         </div>
         <div class="panel">
           <div class="toolbar appointment-toolbar">
@@ -594,13 +610,13 @@
 <script src="../shared/js/core/api.js?v=20260930-production-api" defer></script>
 <script src="../shared/js/core/ViewRouter.js?v=20260916-integration" defer></script>
 <script src="../shared/js/core/FilterChipGroup.js?v=20260916-integration" defer></script>
-<script src="../shared/js/core/SessionGuard.js?v=20261001-live-session" defer></script>
+<script src="../shared/js/core/SessionGuard.js?v=20261020-shared-staff-workspace" defer></script>
 <script src="../shared/js/core/NotificationPanel.js?v=20260916-integration" defer></script>
 <script src="../shared/js/core/LogoutManager.js?v=20260930-live-logout" defer></script>
 <script src="../shared/js/core/FullscreenToggle.js?v=20260916-integration" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
 <script src="../shared/js/core/ReportExporter.js?v=20260926-a4-pdf-download" defer></script>
-<script src="../shared/js/core/routing.js?v=20260921-session-content-fix" defer></script>
+<script src="../shared/js/core/routing.js?v=20261020-shared-staff-workspace" defer></script>
 <script src="../shared/js/core/SessionRefreshManager.js?v=20260921-sessionfix" defer></script>
 <script src="../shared/js/dashboard-core.js?v=20260921-sessionfix" defer></script>
 <script src="../shared/js/state/admin.js?v=20260916-integration" defer></script>
@@ -609,7 +625,7 @@
 <script src="../shared/js/core/PortalSync.js?v=20260921-sessionfix" defer></script>
 <script src="../shared/js/core/PortalForms.js?v=20260928-payment-reject-reason" defer></script>
 <script src="../admin-system/assets/js/AppointmentScheduler.js?v=20261020-phone-first" defer></script>
-<script src="../admin-system/assets/js/AppointmentActions.js?v=20260930-dentist-actions" defer></script>
+<script src="../admin-system/assets/js/AppointmentActions.js?v=20261020-shared-staff-appointment-actions" defer></script>
 <script src="../shared/js/core/PromotionalCaseManager.js?v=20261020-case-actions-spacing" defer></script>
 <script src="assets/js/DentistDashboard.js?v=20260930-dentist-actions" defer></script>
 <script src="assets/js/dentist.js?v=20260916-integration" defer></script>

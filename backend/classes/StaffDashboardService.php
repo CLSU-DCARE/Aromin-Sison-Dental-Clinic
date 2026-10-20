@@ -27,8 +27,8 @@ class StaffDashboardService
             $stmt->execute($contractParams); $collections = (float) $stmt->fetchColumn();
             $metrics = [$weekActiveCount, count(array_unique(array_column(array_filter($contracts, fn($c) => $c['status_code'] === 'active'), 'patient_id'))), $collections, count(array_filter($contracts, fn($c) => $c['status_code'] === 'defaulted'))];
             $payments = ($scope->isReceptionist() || $scope->isDentist()) ? PaymentApprovalService::listAll() : [];
-            $logs = $scope->isReceptionist() ? NotificationLogService::list()['logs'] : [];
-            $inventory = $scope->isReceptionist() ? $pdo->query('SELECT item_id AS id,item_name AS item,category,stock_quantity AS qty,unit,reorder_level,last_restocked FROM inventory_items ORDER BY item_name')->fetchAll() : [];
+            $logs = NotificationLogService::list()['logs'];
+            $inventory = $pdo->query('SELECT item_id AS id,item_name AS item,category,stock_quantity AS qty,unit,reorder_level,last_restocked FROM inventory_items ORDER BY item_name')->fetchAll();
             $reports = self::attendanceReports($pdo, $scope);
             $pdo->commit();
             return compact('week', 'pending', 'patients', 'contracts', 'records', 'notifications', 'metrics', 'payments', 'inventory', 'logs', 'reports');

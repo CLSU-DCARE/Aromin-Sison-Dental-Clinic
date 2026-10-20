@@ -3,7 +3,7 @@ require_once __DIR__ . '/../../autoload.php';
 require_once __DIR__ . '/../../config/headers.php';
 require_once __DIR__ . '/../../config/auth.php';
 
-require_role('receptionist');
+require_role('receptionist', 'dentist');
 
 $method = \ASDC\ApiResponse::method('GET', 'POST', 'PATCH', 'DELETE');
 $pdo = \ASDC\Database::pdo();

@@ -565,6 +565,7 @@ initLogout('../auth/login.html');
 
 function renderUser(user){
   const set = (id, value) => { const el = document.getElementById(id); if (el) el.textContent = value; };
+  const roleLabel = String(user.role || window.ASDCAuthUser?.role || 'receptionist').replace(/^./, c => c.toUpperCase());
   const currentUser = {
     name: user.name,
     full_name: user.name,
@@ -575,11 +576,14 @@ function renderUser(user){
     ASDC.HtmlHelpers.setAvatarElement(document.getElementById(id), currentUser);
   });
   set('sideFootName', user.name);
-  set('sideFootRole', 'Receptionist');
+  set('sideFootRole', roleLabel);
   set('menuName', user.name);
-  set('menuRole', 'Receptionist');
+  set('menuRole', roleLabel);
   set('greetingText', user.greeting);
-  set('greetingSubtext', user.name + ' · Receptionist');
+  set('greetingSubtext', user.name + ' · ' + roleLabel);
+  set('portalRoleLabel', roleLabel + ' Portal');
+  const title = document.getElementById('documentTitle');
+  if (title) title.textContent = roleLabel + ' Dashboard | Aromin-Sison Dental Clinic';
 }
 
 function renderDashboardStats(stats){

@@ -8,7 +8,7 @@ $method = \ASDC\ApiResponse::method('GET', 'POST');
 if ($method === 'GET') {
     require_role('receptionist', 'dentist');
 } else {
-    require_role('receptionist');
+    require_role('receptionist', 'dentist');
 }
 
 if ($method === 'GET') {
