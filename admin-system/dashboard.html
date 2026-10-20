@@ -76,6 +76,10 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg>
         <span class="nav-label">Billing History</span>
       </button>
+      <button class="nav-item" data-view="inventory" data-tooltip="Inventory">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4a2 2 0 0 0 2-1.73Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+        <span class="nav-label">Inventory</span>
+      </button>
       <button class="nav-item" data-view="reports" data-tooltip="Reports">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
         <span class="nav-label">Attendance Reports</span>
@@ -483,6 +487,47 @@
             <table class="attendance-table">
               <thead><tr><th>Patient</th><th>Service</th><th>Schedule</th><th>Dentist</th><th>Attendance</th></tr></thead>
               <tbody id="attendanceReportBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== INVENTORY ===== -->
+      <section class="view" id="view-inventory">
+        <div class="page-head">
+          <div>
+            <div class="eyebrow">Operations</div>
+            <p>Supplies, stock levels, and reorder points.</p>
+          </div>
+          <button class="btn btn-gold" id="addInventoryBtn">+ Add Supply</button>
+        </div>
+        <div class="stat-grid stat-grid-3" id="inventoryStats"></div>
+        <div class="panel">
+          <div class="toolbar">
+            <div class="toolbar-left" role="group" aria-label="Filter inventory">
+              <button class="filter-chip active" aria-pressed="true">All</button>
+              <button class="filter-chip" aria-pressed="false">Low stock</button>
+              <button class="filter-chip" aria-pressed="false">Consumables</button>
+              <button class="filter-chip" aria-pressed="false">Equipment</button>
+            </div>
+            <button class="btn btn-outline btn-sm" id="exportInventoryBtn">Export</button>
+          </div>
+          <div class="table-scroll">
+            <table>
+              <thead><tr><th>Item</th><th>Category</th><th>Stock</th><th>Unit</th><th>Last Restocked</th><th>Status</th><th>Actions</th></tr></thead>
+              <tbody id="inventoryBody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="panel panel-gap">
+          <div class="panel-head">
+            <div><h3>Automatic Usage Rules</h3><p class="panel-subtext">Supplies deducted when a matching treatment is completed.</p></div>
+            <button class="btn btn-outline btn-sm" id="addUsageRuleBtn">+ Add Rule</button>
+          </div>
+          <div class="table-scroll">
+            <table>
+              <thead><tr><th>Service</th><th>Supply</th><th>Quantity Used</th><th></th></tr></thead>
+              <tbody id="usageRulesBody"></tbody>
             </table>
           </div>
         </div>
@@ -956,6 +1001,7 @@
 <script src="assets/js/PaymentApprovalManager.js?v=20261002-live-receipt-auth" defer></script>
 <script src="assets/js/PatientTableManager.js?v=20260928-inactive-archive-only" defer></script>
 <script src="assets/js/RecordTableManager.js?v=20260927-readonly-records-layout" defer></script>
+<script src="assets/js/InventoryTableManager.js?v=20261020-restored-inventory" defer></script>
 <script src="../shared/js/core/ClinicLiveSync.js?v=20261020-staff-sync" defer></script>
 <script src="../shared/js/core/PortalSync.js?v=20260921-sessionfix" defer></script>
 <script src="../shared/js/core/PortalForms.js?v=20260928-payment-reject-reason" defer></script>

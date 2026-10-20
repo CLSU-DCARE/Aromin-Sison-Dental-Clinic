@@ -28,6 +28,7 @@ const views = {
   appointments: { title: 'Appointment Scheduling', crumb: 'Scheduling' },
   braces: { title: 'Braces Contracts', crumb: 'Scheduling' },
   payments: { title: 'Billing History', crumb: 'Billing' },
+  inventory: { title: 'Inventory', crumb: 'Operations' },
   cases: { title: 'Successful Cases', crumb: 'Marketing' },
   reports: { title: 'Attendance Reports', crumb: 'Operations' },
   notifications: { title: 'Notifications', crumb: 'Operations' }
@@ -280,6 +281,23 @@ document.addEventListener('keydown', event => {
 // =====================================================================
 const recordMgr = new RecordTableManager({ state: AdminState });
 recordMgr.init();
+
+// ---------- Inventory and automatic usage rules ----------
+const inventoryMgr = new InventoryTableManager({ state: AdminState });
+inventoryMgr.init();
+
+document.getElementById('exportInventoryBtn')?.addEventListener('click', () => {
+  exportTablePDF({
+    title: 'Inventory Report',
+    columns: [
+      { label: 'Item', value: item => item.item },
+      { label: 'Category', value: item => item.category },
+      { label: 'Stock', value: item => item.stock },
+      { label: 'Status', value: item => item.status }
+    ],
+    rows: inventoryMgr.getFilteredList()
+  });
+});
 
 // =====================================================================
 // BRACES CONTRACTS TABLE: status filter
@@ -826,6 +844,8 @@ window.staffLiveSync = ASDC.startPortalSync({
     appointmentScheduler.applySnapshot(data);
     patientMgr.load(data);
     AdminState.records = data.records; recordMgr.apply();
+    AdminState.inventory = data.inventory.map(item => inventoryMgr.normalize(item));
+    inventoryMgr.apply();
     applyBraces(data); paymentMgr.render(data);
     inbox.setItems(data.notifications);
     notificationManager.renderLog(data);
