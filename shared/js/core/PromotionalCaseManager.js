@@ -60,15 +60,18 @@ window.ASDC.PromotionalCaseManager = class PromotionalCaseManager {
         : `<div class="case-images">${image('before', item.has_before_image)}${image('after', item.has_after_image)}</div>`;
       let actions = '';
       if (this.isReception) {
-        actions = `<div class="case-actions">` +
+        const primaryActions = `<div class="case-actions">` +
           (status !== 'archived' ? `<button type="button" class="btn btn-outline btn-sm" data-case-action="edit" data-case-id="${id}">Edit</button>` : '') +
+          (status !== 'archived' ? `<button type="button" class="btn btn-outline btn-sm" data-case-action="archive" data-case-id="${id}">Archive</button>` : '') +
+          `<button type="button" class="btn btn-danger btn-sm" data-case-action="delete" data-case-id="${id}">Delete</button>` +
+          `</div>`;
+        const secondaryActions = `<div class="case-actions">` +
           (status === 'published'
             ? `<button type="button" class="btn btn-outline btn-sm" data-case-action="unpublish" data-case-id="${id}">Unpublish</button>`
             : status !== 'archived' ? `<button type="button" class="btn btn-gold btn-sm" data-case-action="publish" data-case-id="${id}">Review &amp; publish</button>` : '') +
           (status === 'published' ? `<button type="button" class="btn btn-outline btn-sm" data-case-action="${Number(item.is_featured) ? 'unfeature' : 'feature'}" data-case-id="${id}">${Number(item.is_featured) ? 'Remove from public section' : 'Feature publicly'}</button>` : '') +
-          (status !== 'archived' ? `<button type="button" class="btn btn-outline btn-sm" data-case-action="archive" data-case-id="${id}">Archive</button>` : '') +
-          `<button type="button" class="btn btn-danger btn-sm" data-case-action="delete" data-case-id="${id}">Delete</button>` +
           `</div>`;
+        actions = `<div class="case-action-groups">${primaryActions}${secondaryActions}</div>`;
       } else if (['draft','pending_review'].includes(status)) {
         actions = `<div class="case-actions"><button type="button" class="btn btn-outline btn-sm" data-case-action="edit" data-case-id="${id}">Revise submission</button></div>`;
       }
