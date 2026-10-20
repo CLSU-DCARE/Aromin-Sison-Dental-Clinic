@@ -249,6 +249,33 @@ CREATE TABLE promotions (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE promotional_cases (
+    case_id INT AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(150) NOT NULL,
+    treatment_category VARCHAR(80) NOT NULL,
+    short_description VARCHAR(1200) NOT NULL,
+    collage_image_path VARCHAR(255) NULL,
+    before_image_path VARCHAR(255) NULL,
+    after_image_path VARCHAR(255) NULL,
+    case_date DATE NULL,
+    publication_date DATE NULL,
+    status ENUM('draft','pending_review','published','unpublished','archived') NOT NULL DEFAULT 'draft',
+    is_featured TINYINT(1) NOT NULL DEFAULT 0,
+    consent_confirmed TINYINT(1) NOT NULL DEFAULT 0,
+    consent_verified_by INT NULL,
+    consent_verified_at DATETIME NULL,
+    created_by INT NULL,
+    reviewed_by INT NULL,
+    reviewed_at DATETIME NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_promotional_cases_public (status, is_featured, publication_date),
+    INDEX idx_promotional_cases_creator (created_by, status),
+    CONSTRAINT fk_promotional_case_consent_user FOREIGN KEY (consent_verified_by) REFERENCES users(user_id) ON DELETE SET NULL,
+    CONSTRAINT fk_promotional_case_creator FOREIGN KEY (created_by) REFERENCES users(user_id) ON DELETE SET NULL,
+    CONSTRAINT fk_promotional_case_reviewer FOREIGN KEY (reviewed_by) REFERENCES users(user_id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 -- ---------- INVENTORY ----------
 CREATE TABLE inventory_items (
     item_id INT AUTO_INCREMENT PRIMARY KEY,

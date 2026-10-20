@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -15,7 +15,7 @@
 <link rel="stylesheet" href="../shared/css/variables.css?v=4">
 <link rel="stylesheet" href="../shared/css/buttons.css?v=5">
 <link rel="stylesheet" href="../shared/css/panels.css?v=4">
-<link rel="stylesheet" href="../admin-system/assets/css/admin.css?v=20260928-holiday-header-type">
+<link rel="stylesheet" href="../admin-system/assets/css/admin.css?v=20261020-case-image-fill">
 <link rel="stylesheet" href="assets/css/dentist-records.css?v=20260926-records-columns">
 <link rel="stylesheet" href="../shared/css/dashboard-system.css?v=20260924-unified-dashboard-shell">
 </head>
@@ -69,6 +69,12 @@
       <button class="nav-item" data-view="appointments" data-tooltip="Appointments">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
         <span class="nav-label">Appointments</span>
+      </button>
+
+      <div class="nav-group-label">Marketing</div>
+      <button class="nav-item" data-view="cases" data-tooltip="Successful Cases">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M3 12h18"/><circle cx="12" cy="12" r="9"/></svg>
+        <span class="nav-label">Submit a Case</span>
       </button>
 
       <div class="nav-group-label">Reports</div>
@@ -423,10 +429,42 @@
         </div>
       </section>
 
+      <section class="view" id="view-cases">
+        <div class="page-head"><div><div class="eyebrow">Marketing</div><p>Submit de-identified treatment cases to reception for review. Submissions are private until staff approval and publication.</p></div><button class="btn btn-gold" id="caseAddBtn" type="button">Submit Case</button></div>
+        <div class="case-grid" id="promotionalCasesGrid"></div>
+      </section>
+
     </main>
   </div>
 </div>
 
+<!-- ===== PROMOTIONAL CASE EDITOR ===== -->
+<div class="modal-overlay" id="caseFormModal" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="caseFormTitle">
+    <button class="modal-close" id="caseFormClose" aria-label="Close dialog"><span aria-hidden="true">×</span></button>
+    <h3 id="caseFormTitle">New Case</h3>
+    <p class="case-privacy-note">Do not enter a patient's name, contact details, record number, or other identifying information. Keep promotional content separate from the clinical chart.</p>
+    <div class="form-group"><label for="caseTitle">Case title</label><input id="caseTitle" maxlength="150" autocomplete="off" placeholder="e.g. Restoring a confident smile"></div>
+    <div class="form-group"><label for="caseCategory">Treatment category</label><select id="caseCategory"><option value="">Choose a category</option><option>General Dentistry</option><option>Orthodontics</option><option>Cosmetic Dentistry</option><option>Restorative Dentistry</option><option>Oral Surgery</option><option>Other</option></select></div>
+    <div class="form-group"><label for="caseDescription">Short description</label><textarea id="caseDescription" rows="4" maxlength="1200" placeholder="Describe the treatment outcome without including patient identifiers."></textarea></div>
+    <div class="form-group"><label for="caseImage">Before-and-after collage (one image, optional)</label><input type="file" id="caseImage" accept="image/jpeg,image/png,image/webp"><small id="caseImageHelp">Upload one image file with the before and after panels arranged together.</small></div>
+    <div class="form-group"><label for="caseDate">Case date (optional)</label><input type="date" id="caseDate"></div>
+    <p class="form-note" id="caseFormNote" role="status" hidden></p>
+    <div class="modal-actions"><button type="button" class="btn btn-secondary" id="caseFormCancel">Cancel</button><button type="button" class="btn btn-gold" id="caseFormSave"><span id="caseFormSaveLabel">Save Draft</span></button></div>
+  </div>
+</div>
+
+<!-- ===== CONSENT AND PUBLICATION REVIEW ===== -->
+<div class="modal-overlay" id="casePublishModal" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="casePublishTitle">
+    <button class="modal-close" id="casePublishClose" aria-label="Close dialog"><span aria-hidden="true">×</span></button>
+    <h3 id="casePublishTitle">Review before publishing</h3>
+    <p>Publishing makes this case and its selected images public. Confirm that clinic approval is complete, written patient permission is documented for any identifiable information or photographs, and no unnecessary identifiers or clinical-record details are included.</p>
+    <label class="case-consent-check"><input type="checkbox" id="casePublishConsent"> I reviewed this exact case and verified the required documented permission.</label>
+    <p class="form-note" id="casePublishNote" role="status" hidden></p>
+    <div class="modal-actions"><button type="button" class="btn btn-secondary" id="casePublishCancel">Cancel</button><button type="button" class="btn btn-gold" id="casePublishConfirm">Approve and Publish</button></div>
+  </div>
+</div>
 <!-- ===== LOGOUT MODAL ===== -->
 <div class="modal-overlay" id="logoutModal" hidden>
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="logoutTitle">
@@ -572,6 +610,7 @@
 <script src="../shared/js/core/PortalForms.js?v=20260928-payment-reject-reason" defer></script>
 <script src="../admin-system/assets/js/AppointmentScheduler.js?v=20261020-phone-first" defer></script>
 <script src="../admin-system/assets/js/AppointmentActions.js?v=20260930-dentist-actions" defer></script>
+<script src="../shared/js/core/PromotionalCaseManager.js?v=20261020-single-case-image" defer></script>
 <script src="assets/js/DentistDashboard.js?v=20260930-dentist-actions" defer></script>
 <script src="assets/js/dentist.js?v=20260916-integration" defer></script>
 

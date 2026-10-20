@@ -15,7 +15,7 @@
 <link rel="stylesheet" href="../shared/css/variables.css?v=4">
 <link rel="stylesheet" href="../shared/css/buttons.css?v=5">
 <link rel="stylesheet" href="../shared/css/panels.css?v=4">
-<link rel="stylesheet" href="assets/css/admin.css?v=20261007-promo-actions">
+<link rel="stylesheet" href="assets/css/admin.css?v=20261020-case-image-fill">
 </head>
 <body>
 
@@ -66,9 +66,9 @@
       </button>
 
       <div class="nav-group-label">Marketing</div>
-      <button class="nav-item" data-view="promotions" data-tooltip="Promotions">
+      <button class="nav-item" data-view="cases" data-tooltip="Successful Cases">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7"/><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4"/></svg>
-        <span class="nav-label">Promotions</span>
+        <span class="nav-label">Successful Cases</span>
       </button>
 
       <div class="nav-group-label">Operations</div>
@@ -383,16 +383,16 @@
         </div>
       </section>
 
-      <!-- ===== PROMOTIONS ===== -->
-      <section class="view" id="view-promotions">
+      <!-- ===== PROMOTIONAL CASES ===== -->
+      <section class="view" id="view-cases">
         <div class="page-head">
           <div>
             <div class="eyebrow">Marketing</div>
-            <p>Live campaigns and featured offers.</p>
+            <p>Review treatment stories separately from clinical records. Only approved cases with documented permission can be published.</p>
           </div>
-          <button class="btn btn-gold" id="addPromoBtn" type="button">New Promotion</button>
+          <button class="btn btn-gold" id="caseAddBtn" type="button">New Case</button>
         </div>
-        <div class="promo-grid" id="promoGrid"></div>
+        <div class="case-grid" id="promotionalCasesGrid"></div>
       </section>
 
       <!-- ===== PAYMENT & BILLING ===== -->
@@ -766,82 +766,33 @@
   </div>
 </div>
 
-<!-- ===== NEW PROMOTION MODAL ===== -->
-<div class="modal-overlay" id="promoFormModal" hidden>
-  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="promoFormTitle">
-    <button class="modal-close" id="promoFormClose" aria-label="Close dialog">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-    </button>
-    <h3 id="promoFormTitle">New Promotion</h3>
-    <div class="form-group">
-      <label for="pf2Title">Title</label>
-      <input type="text" id="pf2Title" autocomplete="off" placeholder="e.g. Back-to-School Smile">
-    </div>
-    <div class="form-group">
-      <label for="pf2Desc">Description</label>
-      <textarea id="pf2Desc" rows="4" autocomplete="off" placeholder="Full promotion details"></textarea>
-    </div>
-    <div class="form-group">
-      <label for="pf2Image">Picture (optional)</label>
-      <input type="file" id="pf2Image" accept="image/jpeg,image/png,image/webp">
-    </div>
-    <div class="form-grid-2">
-      <div class="form-group">
-        <label for="pf2Start">Start Date (optional)</label>
-        <input type="date" id="pf2Start">
-      </div>
-      <div class="form-group">
-        <label for="pf2End">End Date (optional)</label>
-        <input type="date" id="pf2End">
-      </div>
-    </div>
-    <div class="form-group">
-      <label for="pf2Status">Status</label>
-      <select id="pf2Status"><option>Live</option><option>Scheduled</option><option>Ended</option></select>
-    </div>
-    <p class="form-note" id="promoFormNote" role="status" hidden></p>
-    <div class="modal-actions">
-      <button type="button" class="btn btn-secondary" id="promoFormCancel">Cancel</button>
-      <button type="button" class="btn btn-gold" id="promoFormSave">
-        <span class="btn-spinner" aria-hidden="true"></span>
-        <span class="btn-label">Save Promotion</span>
-      </button>
-    </div>
+<!-- ===== PROMOTIONAL CASE EDITOR ===== -->
+<div class="modal-overlay" id="caseFormModal" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="caseFormTitle">
+    <button class="modal-close" id="caseFormClose" aria-label="Close dialog"><span aria-hidden="true">×</span></button>
+    <h3 id="caseFormTitle">New Case</h3>
+    <p class="case-privacy-note">Do not enter a patient's name, contact details, record number, or other identifying information. Keep promotional content separate from the clinical chart.</p>
+    <div class="form-group"><label for="caseTitle">Case title</label><input id="caseTitle" maxlength="150" autocomplete="off" placeholder="e.g. Restoring a confident smile"></div>
+    <div class="form-group"><label for="caseCategory">Treatment category</label><select id="caseCategory"><option value="">Choose a category</option><option>General Dentistry</option><option>Orthodontics</option><option>Cosmetic Dentistry</option><option>Restorative Dentistry</option><option>Oral Surgery</option><option>Other</option></select></div>
+    <div class="form-group"><label for="caseDescription">Short description</label><textarea id="caseDescription" rows="4" maxlength="1200" placeholder="Describe the treatment outcome without including patient identifiers."></textarea></div>
+    <div class="form-group"><label for="caseImage">Before-and-after collage (one image, optional)</label><input type="file" id="caseImage" accept="image/jpeg,image/png,image/webp"><small id="caseImageHelp">Upload one image file with the before and after panels arranged together.</small></div>
+    <div class="form-group"><label for="caseDate">Case date (optional)</label><input type="date" id="caseDate"></div>
+    <p class="form-note" id="caseFormNote" role="status" hidden></p>
+    <div class="modal-actions"><button type="button" class="btn btn-secondary" id="caseFormCancel">Cancel</button><button type="button" class="btn btn-gold" id="caseFormSave"><span id="caseFormSaveLabel">Save Draft</span></button></div>
   </div>
 </div>
 
-<!-- ===== PROMOTION DETAILS MODAL ===== -->
-<div class="modal-overlay" id="promoDetailModal" hidden>
-  <div class="modal promo-viewer" role="dialog" aria-modal="true" aria-labelledby="promoDetailTitle">
-    <button class="modal-close" id="promoDetailClose" aria-label="Close dialog">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-    </button>
-    <div class="promo-viewer-media" id="promoDetailMedia" hidden>
-      <img class="promo-detail-img" id="promoDetailImg" alt="" hidden>
-    </div>
-    <div class="promo-viewer-content">
-      <div class="eyebrow" id="promoDetailDates"></div>
-      <h3 id="promoDetailTitle">Promotion</h3>
-      <p id="promoDetailText"></p>
-    </div>
+<!-- ===== CONSENT AND PUBLICATION REVIEW ===== -->
+<div class="modal-overlay" id="casePublishModal" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="casePublishTitle">
+    <button class="modal-close" id="casePublishClose" aria-label="Close dialog"><span aria-hidden="true">×</span></button>
+    <h3 id="casePublishTitle">Review before publishing</h3>
+    <p>Publishing makes this case and its selected images public. Confirm that clinic approval is complete, written patient permission is documented for any identifiable information or photographs, and no unnecessary identifiers or clinical-record details are included.</p>
+    <label class="case-consent-check"><input type="checkbox" id="casePublishConsent"> I reviewed this exact case and verified the required documented permission.</label>
+    <p class="form-note" id="casePublishNote" role="status" hidden></p>
+    <div class="modal-actions"><button type="button" class="btn btn-secondary" id="casePublishCancel">Cancel</button><button type="button" class="btn btn-gold" id="casePublishConfirm">Approve and Publish</button></div>
   </div>
 </div>
-
-<!-- ===== DELETE PROMOTION CONFIRM ===== -->
-<div class="modal-overlay" id="promoDeleteModal" hidden>
-  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="promoDeleteTitle">
-    <button class="modal-close" id="promoDeleteClose" aria-label="Close dialog">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-    </button>
-    <h3 id="promoDeleteTitle">Delete Promotion</h3>
-    <p>Are you sure you want to delete <strong id="promoDeleteName"></strong>? This cannot be undone.</p>
-    <div class="modal-actions">
-      <button type="button" class="btn btn-secondary" id="promoDeleteCancel">Cancel</button>
-      <button type="button" class="btn btn-danger" id="promoDeleteConfirm">Delete</button>
-    </div>
-  </div>
-</div>
-
 <!-- ===== NEW INVENTORY ITEM MODAL ===== -->
 <div class="modal-overlay" id="inventoryFormModal" hidden>
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="inventoryFormTitle">
@@ -1008,7 +959,8 @@
 <script src="../shared/js/core/ClinicLiveSync.js?v=20261020-staff-sync" defer></script>
 <script src="../shared/js/core/PortalSync.js?v=20260921-sessionfix" defer></script>
 <script src="../shared/js/core/PortalForms.js?v=20260928-payment-reject-reason" defer></script>
-<script src="assets/js/admin.js?v=20261007-promo-actions" defer></script>
+<script src="../shared/js/core/PromotionalCaseManager.js?v=20261020-single-case-image" defer></script>
+<script src="assets/js/admin.js?v=20261020-promotional-cases" defer></script>
 
 </body>
 </html>

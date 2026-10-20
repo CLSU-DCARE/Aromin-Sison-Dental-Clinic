@@ -58,7 +58,6 @@ const AdminState = {
   "patients": [],
   "records": [],
   "braces": [],
-  "promotions": [],
   "reports": {
     "stats": [],
     "bars": []

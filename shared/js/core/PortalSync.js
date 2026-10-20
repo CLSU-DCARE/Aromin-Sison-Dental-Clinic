@@ -5,7 +5,7 @@ window.ASDC.startPortalSync = function ({ start = () => '', apply }) {
   label.textContent = 'Loading clinic records…'; document.body.appendChild(label);
   const sync = new ClinicLiveSync({
     validate: data => data && Array.isArray(data.week?.appointments) && Array.isArray(data.week?.requests) &&
-      ['pending','patients','contracts','records','notifications','metrics','payments','inventory','promotions'].every(key => Array.isArray(data[key])) &&
+      ['pending','patients','contracts','records','notifications','metrics','payments','inventory'].every(key => Array.isArray(data[key])) &&
       data.reports && typeof data.reports === 'object' &&
       ['this_week','last_week','this_month'].every(key => data.reports[key] && Array.isArray(data.reports[key].rows) && Array.isArray(data.reports[key].bars)),
     fetchSnapshot: async () => {

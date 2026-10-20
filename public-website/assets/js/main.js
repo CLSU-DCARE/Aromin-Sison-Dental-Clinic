@@ -35,26 +35,29 @@
     });
   }
 
-  var promoSection = document.getElementById('promotions');
-  var promoGrid = document.getElementById('publicPromoGrid');
-  if (promoSection && promoGrid && window.fetch){
-    fetch('../backend/api/public/promotions.php', { cache: 'no-store' })
+  var casesSection = document.getElementById('successful-cases');
+  var casesGrid = document.getElementById('publicCasesGrid');
+  if (casesSection && casesGrid && window.fetch){
+    fetch('../backend/api/public/cases.php', { cache: 'no-store' })
       .then(function(response){ return response.ok ? response.json() : null; })
       .then(function(payload){
-        var promotions = payload && payload.success && payload.data && Array.isArray(payload.data.promotions)
-          ? payload.data.promotions
+        var cases = payload && payload.success && payload.data && Array.isArray(payload.data.cases)
+          ? payload.data.cases
           : [];
-        if (!promotions.length) return;
-        promoGrid.innerHTML = promotions.map(function(promo){
-          var image = promo.image_path
-            ? '<img src="../backend/' + escapeHtml(promo.image_path) + '" alt="' + escapeHtml(promo.title) + '">'
-            : '';
-          var dates = promo.end_date ? 'Until ' + escapeHtml(promo.end_date) : escapeHtml(promo.status || 'Live');
-          return '<article class="public-promo-card">' + image +
-            '<div class="public-promo-body"><span>' + dates + '</span><h3>' + escapeHtml(promo.title) + '</h3><p>' +
-            escapeHtml(promo.desc || '') + '</p></div></article>';
+        if (!cases.length) return;
+        casesGrid.innerHTML = cases.map(function(item){
+          var collage = Number(item.has_case_image)
+            ? '<div class="public-case-images public-case-collage"><img src="../backend/api/cases/image.php?id=' + Number(item.id) + '&image=case" alt="Before-and-after collage"></div>' : '';
+          var before = Number(item.has_before_image)
+            ? '<figure><img src="../backend/api/cases/image.php?id=' + Number(item.id) + '&image=before" alt="Before treatment"><figcaption>Before</figcaption></figure>' : '';
+          var after = Number(item.has_after_image)
+            ? '<figure><img src="../backend/api/cases/image.php?id=' + Number(item.id) + '&image=after" alt="After treatment"><figcaption>After</figcaption></figure>' : '';
+          var date = item.case_date ? escapeHtml(item.case_date) : '';
+          return '<article class="public-promo-card public-case-card">' + (collage || '<div class="public-case-images">' + before + after + '</div>') +
+            '<div class="public-promo-body"><span>' + escapeHtml(item.category) + (date ? ' · ' + date : '') + '</span><h3>' + escapeHtml(item.title) + '</h3><p>' +
+            escapeHtml(item.description || '') + '</p></div></article>';
         }).join('');
-        promoSection.hidden = false;
+        casesSection.hidden = false;
       })
       .catch(function(){});
   }

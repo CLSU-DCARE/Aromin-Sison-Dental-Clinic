@@ -17,7 +17,8 @@ if (typeof window !== 'undefined') !window.ASDC && (window.ASDC = {});
     records:      { title: 'Treatment Records',  crumb: 'Records' },
     archived:     { title: 'Archived Patients',  crumb: 'Patients' },
     reports:      { title: 'Attendance Reports', crumb: 'Reports' },
-    appointments: { title: 'Appointments',       crumb: 'Scheduling' }
+    appointments: { title: 'Appointments',       crumb: 'Scheduling' },
+    cases:        { title: 'Submit a Case',      crumb: 'Marketing' }
   };
 
   function DentistDashboard(){

@@ -28,7 +28,7 @@ const views = {
   appointments: { title: 'Appointment Scheduling', crumb: 'Scheduling' },
   braces: { title: 'Braces Contracts', crumb: 'Scheduling' },
   payments: { title: 'Billing History', crumb: 'Billing' },
-  promotions: { title: 'Promotions', crumb: 'Marketing' },
+  cases: { title: 'Successful Cases', crumb: 'Marketing' },
   reports: { title: 'Attendance Reports', crumb: 'Operations' },
   notifications: { title: 'Notifications', crumb: 'Operations' }
 };
@@ -509,196 +509,6 @@ if (contractFormModal.modal){
   });
 }
 
-// =====================================================================
-// PROMOTIONS: create live/scheduled clinic announcements
-const promoFormModal = new Modal('promoFormModal');
-const promoDetailModal = new Modal('promoDetailModal');
-const promoDeleteModal = new Modal('promoDeleteModal');
-let deletingPromotion = null;
-let editingPromotion = null;
-if (promoFormModal.modal){
-  const addPromoBtn = document.getElementById('addPromoBtn');
-  const promoNote = document.getElementById('promoFormNote');
-  const promoSaveBtn = document.getElementById('promoFormSave');
-  const promoFormTitle = document.getElementById('promoFormTitle');
-  const promoTitle = document.getElementById('pf2Title');
-  const promoDesc = document.getElementById('pf2Desc');
-  const promoImage = document.getElementById('pf2Image');
-  const promoStart = document.getElementById('pf2Start');
-  const promoEnd = document.getElementById('pf2End');
-  const promoStatus = document.getElementById('pf2Status');
-
-  promoFormModal.registerClose(document.getElementById('promoFormClose'));
-  promoFormModal.registerClose(document.getElementById('promoFormCancel'));
-
-  function setPromoFormMode(promo, trigger){
-    editingPromotion = promo || null;
-    promoFormTitle.textContent = editingPromotion ? 'Edit Promotion' : 'New Promotion';
-    promoSaveBtn.querySelector('.btn-label').textContent = editingPromotion ? 'Save Changes' : 'Save Promotion';
-    promoTitle.value = editingPromotion?.title || '';
-    promoDesc.value = editingPromotion?.desc || '';
-    promoImage.value = '';
-    promoStart.value = editingPromotion?.start_date || '';
-    promoEnd.value = editingPromotion?.end_date || '';
-    promoStatus.value = editingPromotion ? (editingPromotion.status === 'expired' ? 'Ended' : editingPromotion.status.charAt(0).toUpperCase() + editingPromotion.status.slice(1)) : 'Live';
-    promoNote.hidden = true;
-    promoSaveBtn.classList.remove('loading');
-    promoSaveBtn.disabled = false;
-    promoFormModal.open(trigger || addPromoBtn);
-  }
-
-  addPromoBtn?.addEventListener('click', () => {
-    setPromoFormMode(null, addPromoBtn);
-  });
-
-  promoSaveBtn?.addEventListener('click', async () => {
-    const title = promoTitle.value.trim();
-    const description = promoDesc.value.trim();
-    const status = promoStatus.value.toLowerCase();
-    const startDate = promoStart.value;
-    const endDate = promoEnd.value;
-    if (!title || !description){
-      promoNote.textContent = 'Enter a title and description.';
-      promoNote.classList.add('err'); promoNote.classList.remove('ok');
-      promoNote.hidden = false;
-      return;
-    }
-    if (startDate && endDate && endDate < startDate){
-      promoNote.textContent = 'End date must be after the start date.';
-      promoNote.classList.add('err'); promoNote.classList.remove('ok');
-      promoNote.hidden = false;
-      return;
-    }
-
-    promoSaveBtn.classList.add('loading');
-    promoSaveBtn.disabled = true;
-    try {
-      const formData = new FormData();
-      formData.append('title', title);
-      formData.append('description', description);
-      formData.append('status', status);
-      if (editingPromotion) formData.append('promo_id', Number(editingPromotion.id));
-      if (startDate) formData.append('start_date', startDate);
-      if (endDate) formData.append('end_date', endDate);
-      if (promoImage.files[0]) formData.append('image', promoImage.files[0]);
-      await apiFetch('../backend/api/promotions/promotions.php', {
-        method: 'POST',
-        body: formData
-      });
-      promoFormModal.close();
-      showToast(editingPromotion ? 'Promotion updated' : 'Promotion saved');
-      editingPromotion = null;
-      if (window.staffLiveSync) await window.staffLiveSync.refetch();
-    } catch (error) {
-      promoNote.textContent = error.message;
-      promoNote.classList.add('err'); promoNote.classList.remove('ok');
-      promoNote.hidden = false;
-    } finally {
-      promoSaveBtn.classList.remove('loading');
-      promoSaveBtn.disabled = false;
-    }
-  });
-
-  window.openPromotionEditor = function (id, trigger) {
-    const promo = AdminState.promotions.find(item => String(item.id) === String(id));
-    if (promo) setPromoFormMode(promo, trigger);
-  };
-}
-
-if (promoDetailModal.modal){
-  promoDetailModal.registerClose(document.getElementById('promoDetailClose'));
-  promoDetailModal.registerClose(document.getElementById('promoDetailCancel'));
-}
-
-if (promoDeleteModal.modal){
-  promoDeleteModal.registerClose(document.getElementById('promoDeleteClose'));
-  promoDeleteModal.registerClose(document.getElementById('promoDeleteCancel'));
-  document.getElementById('promoDeleteConfirm')?.addEventListener('click', async () => {
-    if (!deletingPromotion) return;
-    const button = document.getElementById('promoDeleteConfirm');
-    button.disabled = true;
-    button.classList.add('loading');
-    try {
-      await apiFetch('../backend/api/promotions/promotions.php', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ promo_id: Number(deletingPromotion.id) })
-      });
-      promoDeleteModal.close();
-      deletingPromotion = null;
-      showToast('Promotion deleted');
-      if (window.staffLiveSync) await window.staffLiveSync.refetch();
-    } catch (error) {
-      showToast(error.message, 'error');
-    } finally {
-      button.disabled = false;
-      button.classList.remove('loading');
-    }
-  });
-}
-
-function formatPromoDate(value){
-  if (!value) return '';
-  const date = new Date(String(value) + 'T00:00:00');
-  if (Number.isNaN(date.getTime())) return String(value);
-  return date.toLocaleDateString('en-US', {
-    month: 'long',
-    day: 'numeric',
-    year: 'numeric'
-  });
-}
-
-function formatPromoRange(promo){
-  const start = formatPromoDate(promo.start_date);
-  const end = formatPromoDate(promo.end_date);
-  if (start && end) return start + ' - ' + end;
-  if (start) return 'Starts ' + start;
-  if (end) return 'Until ' + end;
-  return 'No date range set';
-}
-
-function openPromotionDetail(id, trigger){
-  const promo = AdminState.promotions.find(item => String(item.id) === String(id));
-  if (!promo || !promoDetailModal.modal) return;
-  const img = document.getElementById('promoDetailImg');
-  const media = document.getElementById('promoDetailMedia');
-  document.getElementById('promoDetailTitle').textContent = promo.title;
-  document.getElementById('promoDetailText').textContent = promo.desc || '';
-  document.getElementById('promoDetailDates').textContent = formatPromoRange(promo);
-  if (promo.image_path){
-    img.src = '../backend/' + promo.image_path;
-    img.alt = promo.title;
-    img.hidden = false;
-    media.hidden = false;
-  } else {
-    img.removeAttribute('src');
-    img.alt = '';
-    img.hidden = true;
-    media.hidden = true;
-  }
-  promoDetailModal.open(trigger);
-}
-
-document.getElementById('promoGrid')?.addEventListener('click', event => {
-  const editBtn = event.target.closest('[data-action="edit-promo"]');
-  if (editBtn) {
-    event.stopPropagation();
-    window.openPromotionEditor?.(editBtn.dataset.promoId, editBtn);
-    return;
-  }
-  const deleteBtn = event.target.closest('[data-action="delete-promo"]');
-  if (deleteBtn) {
-    event.stopPropagation();
-    deletingPromotion = AdminState.promotions.find(item => String(item.id) === String(deleteBtn.dataset.promoId));
-    if (!deletingPromotion || !promoDeleteModal.modal) return;
-    document.getElementById('promoDeleteName').textContent = deletingPromotion.title;
-    promoDeleteModal.open(deleteBtn);
-    return;
-  }
-  const card = event.target.closest('[data-promo-id]');
-  if (card) openPromotionDetail(card.dataset.promoId, card);
-});
-
 // ---------- Appointment actions initialized above via AppointmentActions class ----------
 
 // =====================================================================
@@ -899,39 +709,6 @@ function dueTag(item){
   return `<span class="tag tag-${tag}">${escapeHtml(item.dueDate || 'Not set')}</span>`;
 }
 
-function renderPromotions(promotions){
-  const grid = document.getElementById('promoGrid');
-  if (!grid) return;
-  if (!promotions.length){
-    grid.innerHTML = '<p class="empty-cell">No promotions on file.</p>';
-    return;
-  }
-  grid.innerHTML = promotions.map((p, i) =>
-    `<div class="promo-card promo-card-btn" role="button" tabindex="0" data-promo-id="${Number(p.id)}" aria-label="View promotion details for ${escapeHtml(p.title)}">
-      ${p.image_path ? `<img class="promo-img-real" src="../backend/${escapeHtml(p.image_path)}" alt="${escapeHtml(p.title)}">` : ''}
-      <div class="promo-body">
-        <h4>${escapeHtml(p.title)}</h4>
-        <p>${escapeHtml(p.desc)}</p>
-        <div class="promo-date">${escapeHtml(formatPromoRange(p))}</div>
-        <div class="promo-actions">
-          <span class="promo-view">View details</span>
-          <button type="button" class="btn btn-outline btn-sm" data-action="edit-promo" data-promo-id="${Number(p.id)}">Edit</button>
-          <button type="button" class="promo-delete-btn" data-action="delete-promo" data-promo-id="${Number(p.id)}">Delete</button>
-        </div>
-      </div>
-    </div>`
-  ).join('');
-}
-
-document.getElementById('promoGrid')?.addEventListener('keydown', event => {
-  if (!['Enter', ' '].includes(event.key)) return;
-  if (event.target.closest('[data-action]')) return;
-  const card = event.target.closest('[data-promo-id]');
-  if (!card) return;
-  event.preventDefault();
-  openPromotionDetail(card.dataset.promoId, card);
-});
-
 function renderReports(reports){
   const grid = document.getElementById('reportStats');
   if (!grid) return;
@@ -1034,7 +811,6 @@ renderWeekGrid('dashWeekGrid', AdminState.dashboard.week);
 // leftover call was not removed, and it crashed the whole script (so
 // every render call after it, like renderQueue/applyBraces/etc., never ran).
 renderQueue(AdminState.dashboard.queue);
-renderPromotions(AdminState.promotions);
 renderReports(AdminState.reports);
 notificationManager.init();
 paymentMgr.init();
@@ -1053,8 +829,6 @@ window.staffLiveSync = ASDC.startPortalSync({
     renderReports(AdminState.reports);
     AdminState.dashboard.stats.forEach((stat, index) => { stat.num = index === 2 ? ContractFormat.peso(data.metrics[index]) : String(data.metrics[index]); });
     renderDashboardStats(AdminState.dashboard.stats);
-    AdminState.promotions = data.promotions.map(p => ({ ...p, tag: p.status === 'live' ? 'green' : 'amber' }));
-    renderPromotions(AdminState.promotions);
     if (document.getElementById('view-archived')?.classList.contains('active')) loadArchivedPatients();
   }
 });

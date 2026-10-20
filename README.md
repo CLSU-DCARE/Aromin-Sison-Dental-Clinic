@@ -7,7 +7,7 @@ asdc_v2/
 │
 ├── index.html                Root redirect → public-website/index.html
 │
-├── public-website/           Public-facing site (Home, About, Dentists, Gallery, Services, Promotions, Contact, Book Appointment)
+├── public-website/           Public-facing site (Home, About, Dentists, Gallery, Services, Successful Cases, Contact, Book Appointment)
 │   ├── index.html
 │   ├── about.html
 │   ├── dentist.html
@@ -117,7 +117,7 @@ add a variant to `shared/css/buttons.css` instead.
 
 Yes: this project needs one. See `database/schema.sql` for a starting schema covering:
 `users`, `patients`, `appointments`, `treatment_records`, `braces_contracts`,
-`contract_payments`, `promotions`, `inventory_items`, `notification_templates`,
+`contract_payments`, legacy `promotions`, `promotional_cases`, `inventory_items`, `notification_templates`,
 `notification_logs`.
 
 **Stack: PHP + MySQL (XAMPP)**: chosen because it's the standard for BSIT capstones in
@@ -295,9 +295,9 @@ variables may not be visible to the service.
 
 ## Dashboard data
 
-Appointments, contracts, patients, payments, promotions, treatment records, inventory, attendance reports, profile editing, notifications, and patient dashboard sync use PHP endpoints backed by MySQL. Request failures are shown as errors; browser-only demo data is not used to fabricate successful actions or records.
+Appointments, contracts, patients, payments, promotional cases, treatment records, inventory, attendance reports, profile editing, notifications, and dashboard sync use PHP endpoints backed by MySQL. Request failures are shown as errors; browser-only demo data is not used to fabricate successful actions or records.
 
-Promotions can be managed by receptionists from the admin dashboard and are displayed in the patient portal and public homepage. Uploaded promotion images are stored under `backend/uploads/promotions`; scripts and directory listings are blocked while image reads remain web-viewable.
+Receptionists manage promotional cases and approve publication; dentists can submit cases for review. Case photographs are stored privately and served only to authorized staff or from an approved, featured public case. Publication requires a staff confirmation that clinic approval and documented consent have been checked. Existing discount promotions remain in the legacy table for historical reference and are no longer shown publicly. Apply `database/migrations/031_promotional_cases.sql` using `php database/migrate.php` before using the new module.
 
 ## Next steps
 
@@ -328,4 +328,4 @@ It defaults to `http://127.0.0.1/asdc_v2`; set `ASDC_TEST_BASE_URL` when the pro
 
 1. Install XAMPP, import `database/schema.sql`, run `php database/migrate.php`, and confirm `backend/api/patients/list.php` returns JSON.
 2. Configure email delivery and create the receptionist bootstrap account.
-3. Put all group members on one shared MySQL database if appointments and promotions must appear on every device.
+3. Put all group members on one shared MySQL database if appointments and promotional cases must appear on every device.

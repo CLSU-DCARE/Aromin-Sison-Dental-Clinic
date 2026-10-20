@@ -2,18 +2,17 @@
 
 Version: 1.0  
 Prepared for: Aromin-Sison Dental Clinic  
-System modules: Public Website, Patient Portal, Receptionist Portal, Dentist Portal
+System modules: Public Website, Receptionist Portal, Dentist Portal
 
 ## 1. Introduction
 
-The Aromin-Sison Dental Clinic system is a web-based clinic management platform for handling patient accounts, appointment booking, treatment records, braces contracts, billing, payment verification, notifications, promotions, and attendance reports.
+The Aromin-Sison Dental Clinic system is a web-based clinic management platform for handling staff-managed patient records, appointment booking, treatment records, braces contracts, billing history, notifications, promotional case submissions, and attendance reports.
 
 The system has four main user areas:
 
-- Public Website: for visitors and patients who want to view clinic information, services, dentists, gallery photos, promotions, and booking forms.
-- Patient Portal: for registered patients who need to manage appointments, view treatment details, upload payment proof, and read clinic announcements.
-- Receptionist Portal: for clinic staff who manage patients, booking requests, appointments, promotions, billing, notifications, inventory, and reports.
-- Dentist Portal: for dentists who review assigned patients, update treatment records, track braces progress, monitor appointments, and view reports.
+- Public Website: for visitors who want to view clinic information, services, dentists, gallery photos, approved successful cases, and booking forms.
+- Receptionist Portal: for clinic staff who manage patients, booking requests, appointments, promotional cases, billing history, notifications, inventory, and reports.
+- Dentist Portal: for dentists who review assigned patients, update treatment records, track braces progress, submit promotional cases for staff review, monitor appointments, and view reports.
 
 ## 2. System Access
 
@@ -60,7 +59,7 @@ Patients can:
 - View braces contract and progress when applicable.
 - Submit proof of payment.
 - Track submitted payment status.
-- View promotions and announcements.
+- View approved successful cases on the public website.
 - Read notifications.
 
 ### 3.3 Receptionist
@@ -73,7 +72,7 @@ Receptionists can:
 - Confirm, reschedule, cancel, and manage appointments.
 - Create and monitor braces contracts.
 - Review and approve or reject payment submissions.
-- Manage promotions shown to patients and public visitors.
+- Review dentist case submissions; create, edit, publish, unpublish, feature, and archive promotional cases.
 - Manage inventory items.
 - Send notifications to patients.
 - View and download patient, contract, billing, and attendance reports.
@@ -90,6 +89,7 @@ Dentists can:
 - Update braces treatment progress.
 - Monitor payment and billing records.
 - Manage or review appointments.
+- Submit de-identified promotional cases for receptionist approval. Dentists cannot publish cases.
 - View attendance reports.
 
 ## 4. Public Website Manual
@@ -130,7 +130,7 @@ The dashboard shows:
 
 - Welcome message.
 - Upcoming appointments.
-- Clinic announcements and promotions.
+- Clinic announcements and approved successful cases.
 - Quick access to booking and schedule pages.
 - Sync status with the clinic server.
 
@@ -201,8 +201,8 @@ The dashboard shows:
 ### 5.12 Reading Announcements
 
 1. Click Announcements.
-2. Browse current clinic promotions and updates.
-3. Select a promotion card to view more details when available.
+2. Browse the clinic's public updates and approved successful treatment cases.
+3. Select a case card to view its treatment category and de-identified outcome details.
 
 ### 5.13 Logging Out
 
@@ -301,15 +301,17 @@ To monitor contracts:
 2. Review monthly amount, amount paid, balance, due status, and progress.
 3. Download reports when needed.
 
-### 6.9 Managing Promotions
+### 6.9 Managing Successful Cases
 
-1. Click Promotions.
-2. Click New Promotion.
-3. Enter title and description.
-4. Upload an optional promotion image.
-5. Select start date, end date, and status.
-6. Click Save Promotion.
-7. Confirm that the promotion appears in the patient portal or public site when live.
+1. Click Successful Cases.
+2. Review dentist submissions or click New Case to create a staff-managed case.
+3. Enter a case title, treatment category, short de-identified description, and optional case date.
+4. Upload one optional collage image containing both the before and after panels. Do not include patient names, contact details, record numbers, or unnecessary clinical details.
+5. Save the case as a draft. It remains private.
+6. To publish, review the exact content, confirm clinic approval and any required documented patient permission, then approve and publish.
+7. Use Feature publicly to select which published cases appear in the public Successful Cases section. Unpublish or archive cases when they should no longer be used.
+
+Dentists can submit cases and revise their own submissions before staff approval. Only receptionists can publish, feature, unpublish, or archive cases. Existing discount promotion records remain in the database for historical reference and are no longer displayed on the public website.
 
 ### 6.10 Reviewing Payments
 
