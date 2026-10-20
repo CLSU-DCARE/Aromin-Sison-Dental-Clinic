@@ -19,7 +19,7 @@ use Throwable;
 class AppointmentService
 {
     /**
-     * Fetch a full week of appointments and pending requests.
+     * Fetch the selected week of appointments and all outstanding public requests.
      *
      * @return array{week_start: string, week_end: string, appointments: array, requests: array}
      */
@@ -61,12 +61,11 @@ class AppointmentService
                     r.requested_time scheduled_time, r.status, r.notes
              FROM appointment_requests r
              LEFT JOIN dentists d ON d.dentist_id=r.preferred_dentist_id
-             WHERE r.requested_date BETWEEN ? AND ?
-               AND r.status IN ('pending','rescheduled')
+             WHERE r.status IN ('pending','rescheduled')
                AND {$reqWhere}
              ORDER BY r.requested_date, r.requested_time"
         );
-        $reqStmt->execute(array_merge([$start, $end], $reqParams));
+        $reqStmt->execute($reqParams);
 
         return [
             'week_start'  => $start,

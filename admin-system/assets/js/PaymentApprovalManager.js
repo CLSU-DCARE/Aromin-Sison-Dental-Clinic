@@ -71,10 +71,7 @@ window.PaymentApprovalManager = class PaymentApprovalManager {
 
     tbody.innerHTML = list.map(s => {
       const initials = String(s.patient || '').split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase();
-      const actions = s.status === 'pending'
-        ? `<button class="btn btn-sm btn-approve" data-pay-action="approve" data-pay-id="${escapeHtml(s.id)}">Approve</button>` +
-          `<button class="btn btn-sm btn-reject" data-pay-action="reject" data-pay-id="${escapeHtml(s.id)}">Reject</button>`
-        : '';
+      const actions = '';
       return `<tr>
         <td>${nameCell(initials, s.patient, s.pid)}</td>
         <td>${escapeHtml(s.amount)}</td>
@@ -135,9 +132,6 @@ window.PaymentApprovalManager = class PaymentApprovalManager {
       }
       if (receiptUrl) await this._loadReceiptImage(receiptUrl, receiptPreview, receiptStatus);
     }
-    const pending = s.status === 'pending';
-    document.getElementById('approvePaymentBtn').hidden = !pending;
-    document.getElementById('rejectPaymentBtn').hidden  = !pending;
     this._receiptModal.open(document.getElementById('receiptClose'));
   }
 
@@ -174,44 +168,6 @@ window.PaymentApprovalManager = class PaymentApprovalManager {
     }
   }
 
-  async _review (s, action, reason = '') {
-    if (this._reviewing) return;
-    this._reviewing = true;
-    try {
-      const body = { payment_id: s.id, action };
-      if (action === 'reject') body.reject_reason = reason;
-      await apiFetch('../backend/api/payments/payments.php', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      });
-      if (this._receiptModal.modal) this._receiptModal.close();
-      showToast('Payment ' + (action === 'approve' ? 'approved' : 'rejected') + ' for ' + s.patient);
-      await this.render();
-      if (typeof applyBraces === 'function') await applyBraces();
-      if (typeof patientMgr !== 'undefined') await patientMgr.load();
-    } catch (error) { showToast(error.message, 'error'); }
-    finally { this._reviewing = false; }
-  }
-
-  _approve (s) { return this._review(s, 'approve'); }
-  async _reject (s) {
-    let reason = '';
-    if (window.ASDC?.promptText) {
-      reason = await window.ASDC.promptText({
-        title: 'Reject payment',
-        message: 'Why is this payment being rejected?',
-        label: 'Rejection reason',
-        confirmLabel: 'Reject Payment',
-        maxLength: 200
-      });
-    } else {
-      reason = window.prompt('Reason for rejecting this payment:') || '';
-    }
-    reason = String(reason || '').trim();
-    if (!reason) return;
-    return this._review(s, 'reject', reason);
-  }
-
   _dueTag (s) {
     const tag = {
       overdue: 'red',
@@ -234,8 +190,6 @@ window.PaymentApprovalManager = class PaymentApprovalManager {
       if (!sub) return;
       const action = btn.dataset.payAction;
       if (action === 'view')    this._openReceipt(sub);
-      else if (action === 'approve') this._approve(sub);
-      else if (action === 'reject')  this._reject(sub);
     });
   }
 

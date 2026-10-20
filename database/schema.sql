@@ -67,7 +67,8 @@ CREATE TABLE rate_limits (
 -- Extends users where role = 'patient'; also allows walk-in patients with no login
 CREATE TABLE patients (
     patient_id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NULL,                       -- nullable: walk-ins may not have a portal account
+    user_id INT NULL,                       -- legacy account link retained for history
+    is_active TINYINT(1) NOT NULL DEFAULT 1,
     first_name VARCHAR(100) NOT NULL,
     last_name VARCHAR(100) NOT NULL,
     birthdate DATE,

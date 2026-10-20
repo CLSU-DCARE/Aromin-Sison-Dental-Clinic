@@ -73,7 +73,7 @@ class PatientService
         $pdo->beginTransaction();
         try {
             $stmt = $pdo->prepare(
-                'SELECT p.user_id, p.archived_at, COALESCE(u.is_active, 1) AS is_active
+                'SELECT p.user_id, p.archived_at, p.is_active
                    FROM patients p
                    LEFT JOIN users u ON u.user_id = p.user_id
                   WHERE p.patient_id = ?
@@ -134,7 +134,7 @@ class PatientService
         [$where, $params] = $scope->patientFilter();
         $stmt = Database::pdo()->prepare(
             "SELECT p.patient_id, p.first_name, p.last_name, p.contact_number, p.email, p.registered_at,
-                    COALESCE(u.is_active, 1) AS is_active,
+                    p.is_active,
                     (SELECT MAX(a.scheduled_date) FROM appointments a WHERE a.patient_id=p.patient_id AND a.status='completed') AS last_visit,
                     (SELECT tb.balance_amount FROM treatment_bills tb WHERE tb.patient_id=p.patient_id AND tb.status='active' ORDER BY tb.bill_id DESC LIMIT 1) AS treatment_balance
              FROM patients p
@@ -228,10 +228,8 @@ class PatientService
             if (!$row) { $pdo->rollBack(); ApiResponse::error(404, 'not_found', 'Patient not found.'); }
             if (!$row['archived_at']) { $pdo->rollBack(); ApiResponse::error(409, 'not_archived', 'Patient is already active.'); }
 
-            $pdo->prepare('UPDATE patients SET archived_at=NULL, archived_by=NULL, retention_note=NULL WHERE patient_id=?')->execute([$patientId]);
-            if ($row['user_id']) {
-                $pdo->prepare("UPDATE users SET is_active=1 WHERE user_id=? AND role='patient'")->execute([(int) $row['user_id']]);
-            }
+            $pdo->prepare('UPDATE patients SET is_active=1, archived_at=NULL, archived_by=NULL, retention_note=NULL WHERE patient_id=?')->execute([$patientId]);
+
             PortalEvent::patient($patientId, 'Patient record restored', 'This patient record was reactivated.', 'info');
             $pdo->commit();
             return ['patient_id' => $patientId, 'status' => 'active'];

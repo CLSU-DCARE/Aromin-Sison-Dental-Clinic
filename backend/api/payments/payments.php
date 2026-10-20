@@ -27,22 +27,4 @@ if ($method === 'GET') {
     }
 }
 
-require_role('receptionist');
-\ASDC\CsrfToken::requireValid();
-$body = \ASDC\ApiResponse::requireJson();
-
-$paymentId = is_string($body['payment_id'] ?? null)
-    ? trim($body['payment_id'])
-    : \ASDC\InputValidator::positiveId($body['payment_id'] ?? null);
-$action = is_string($body['action'] ?? null) ? strtolower(trim($body['action'])) : '';
-
-if (!$paymentId || !in_array($action, ['approve', 'reject'], true)) {
-    \ASDC\ApiResponse::error(422, 'validation_failed', 'A valid payment and action are required.');
-}
-
-$reviewerId = (int) $_SESSION['user_id'];
-$result = $action === 'approve'
-    ? \ASDC\PaymentApprovalService::approve($paymentId, $reviewerId)
-    : \ASDC\PaymentApprovalService::reject($paymentId, $reviewerId, $body['reject_reason'] ?? '');
-
-\ASDC\ApiResponse::ok(['payment' => $result], $action === 'approve' ? 'Payment approved' : 'Payment rejected');
+\ASDC\ApiResponse::error(410, 'payments_removed', 'Payment processing has been removed. Historical records are read-only.');

@@ -1,9 +1,9 @@
-/** Shared staff polling uses the same retry/visibility controller as the patient portal. */
+/** Shared staff polling refreshes clinic records across devices. */
 window.ASDC.startPortalSync = function ({ start = () => '', apply }) {
   const label = document.createElement('p');
   label.id = 'portalSyncStatus'; label.className = 'sync-status'; label.setAttribute('role', 'status');
   label.textContent = 'Loading clinic records…'; document.body.appendChild(label);
-  const sync = new PatientLiveSync({
+  const sync = new ClinicLiveSync({
     validate: data => data && Array.isArray(data.week?.appointments) && Array.isArray(data.week?.requests) &&
       ['pending','patients','contracts','records','notifications','metrics','payments','inventory','promotions'].every(key => Array.isArray(data[key])) &&
       data.reports && typeof data.reports === 'object' &&

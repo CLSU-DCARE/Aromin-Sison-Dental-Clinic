@@ -234,22 +234,7 @@ class ContractService
      */
     public static function applyPayment(int $contractId, float $amount): void
     {
-        $pdo = Database::pdo();
-        $stmt = $pdo->prepare('SELECT balance_amount, status FROM braces_contracts WHERE contract_id = ? FOR UPDATE');
-        $stmt->execute([$contractId]);
-        $row = $stmt->fetch();
-        if (!$row) return;
-
-        $newBalance = max(0, (float) $row['balance_amount'] - $amount);
-        $newStatus = $row['status'];
-        if ($newBalance <= 0) {
-            $newStatus = 'completed';
-        } elseif ($row['status'] === 'defaulted') {
-            $newStatus = 'active'; // paying up clears a defaulted/overdue contract
-        }
-
-        $upd = $pdo->prepare('UPDATE braces_contracts SET balance_amount = ?, status = ? WHERE contract_id = ?');
-        $upd->execute([$newBalance, $newStatus, $contractId]);
+        ApiResponse::error(410, 'payments_removed', 'Payment processing has been removed.');
     }
 
     /** Finds patient_id's newest non-cancelled contract (used to resolve

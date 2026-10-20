@@ -13,7 +13,7 @@ if (typeof window !== 'undefined') !window.ASDC && (window.ASDC = {});
     dashboard:    { title: 'Dashboard',          crumb: 'Overview' },
     patients:     { title: 'Patients',           crumb: 'Patients' },
     braces:       { title: 'Braces Contracts',   crumb: 'Patients' },
-    payments:     { title: 'Payment & Billing',  crumb: 'Billing' },
+    payments:     { title: 'Billing History',  crumb: 'Billing' },
     records:      { title: 'Treatment Records',  crumb: 'Records' },
     archived:     { title: 'Archived Patients',  crumb: 'Patients' },
     reports:      { title: 'Attendance Reports', crumb: 'Reports' },

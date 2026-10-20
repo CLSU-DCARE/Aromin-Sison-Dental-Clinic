@@ -154,6 +154,10 @@ class AuthMiddleware
             return $notSignedIn;
         }
 
+        if (!in_array($_SESSION['role'] ?? '', AuthService::ALLOWED_ROLES, true)) {
+            return ['status' => 401, 'code' => 'SESSION_REVOKED', 'message' => 'Patient portal access has been removed. Please contact clinic staff.'];
+        }
+
         $sessionId = session_id();
         $userId = (int) $_SESSION['user_id'];
 
@@ -188,7 +192,7 @@ class AuthMiddleware
         $stmt = Database::pdo()->prepare('SELECT role FROM users WHERE user_id=? AND is_active=1');
         $stmt->execute([$userId]);
         $role = $stmt->fetchColumn();
-        if (!$role || $role !== ($_SESSION['role'] ?? null)) {
+        if (!in_array($role, AuthService::ALLOWED_ROLES, true) || $role !== ($_SESSION['role'] ?? null)) {
             SessionManager::removeSession($userId, $sessionId);
             return ['status' => 401, 'code' => 'SESSION_EXPIRED', 'message' => 'Your session has ended. Please sign in again.'];
         }

@@ -36,24 +36,8 @@ if ($isTreatment) {
 }
 
 \ASDC\ApiResponse::method('GET');
-$token = is_string($_GET['token'] ?? null) ? trim($_GET['token']) : '';
+require_role('receptionist', 'dentist');
 $relative = null;
-if ($id > 0 && $token !== '') {
-    if ($isTreatment) {
-        $stmt = \ASDC\Database::pdo()->prepare('SELECT receipt_path FROM treatment_payments WHERE payment_id = ?');
-    } else {
-        $stmt = \ASDC\Database::pdo()->prepare('SELECT receipt_path FROM contract_payments WHERE payment_id = ?');
-    }
-    $stmt->execute([$id]);
-    $candidate = $stmt->fetchColumn();
-    if (\ASDC\ReceiptAccess::validToken($paymentRef, $candidate ?: null, $token)) {
-        $relative = $candidate;
-    }
-}
-
-if (!$relative) {
-    require_role('receptionist', 'dentist', 'patient');
-}
 
 if (!$relative && $isTreatment) {
     [$where, $params] = \ASDC\DataScope::current()->patientFilter();

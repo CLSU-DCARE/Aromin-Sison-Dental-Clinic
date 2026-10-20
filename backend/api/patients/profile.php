@@ -2,7 +2,7 @@
 require_once __DIR__ . '/../../autoload.php';
 require_once __DIR__ . '/../../config/headers.php';
 require_once __DIR__ . '/../../config/auth.php';
-require_role('patient', 'receptionist');
+require_role('receptionist');
 $method = \ASDC\ApiResponse::method('PATCH', 'POST', 'DELETE');
 \ASDC\CsrfToken::requireValid();
 $body = \ASDC\ApiResponse::requireJson();
@@ -16,10 +16,8 @@ if ($method === 'DELETE') {
     if (!$patientId) \ASDC\ApiResponse::error(422, 'validation_failed', 'Choose a valid patient.');
     \ASDC\ApiResponse::ok(\ASDC\PatientService::delete($patientId), 'Patient archived.');
 }
-if ($_SESSION['role'] === 'patient') {
-    \ASDC\ApiResponse::error(403, 'profile_read_only', 'Patient profiles are read-only. Please contact the clinic to update your information.');
-}
-$patientId = $_SESSION['role'] === 'patient' ? \ASDC\PatientService::resolvePatientId((int) $_SESSION['user_id']) : \ASDC\InputValidator::positiveId($body['patient_id'] ?? null);
+
+$patientId = \ASDC\InputValidator::positiveId($body['patient_id'] ?? null);
 $name = is_string($body['name'] ?? null) ? trim($body['name']) : '';
 $contact = is_string($body['contact_number'] ?? null) ? trim($body['contact_number']) : '';
 $billingBalance = array_key_exists('billing_balance', $body) && $body['billing_balance'] !== '' ? filter_var($body['billing_balance'], FILTER_VALIDATE_FLOAT) : null;
@@ -31,7 +29,7 @@ if (array_key_exists('is_active', $body)) {
     $activeStatus = (int) $body['is_active'];
 }
 if (!$patientId || mb_strlen($name) < 2 || mb_strlen($name) > 100 || ($contact !== '' && !preg_match('/^[+0-9() -]{7,20}$/', $contact))) \ASDC\ApiResponse::error(422, 'validation_failed', 'Enter a name and valid contact number.');
-// Login email is deliberately not editable through a demographic update.
+// Email changes are outside this demographic update.
 $parts = preg_split('/\s+/', $name, 2);
 if ($billingBalance !== null) \ASDC\PaymentApprovalService::ensureGeneralTreatmentBillingTables();
 $pdo = \ASDC\Database::pdo();
@@ -40,11 +38,8 @@ try {
     $stmt = $pdo->prepare('SELECT user_id FROM patients WHERE patient_id=? AND archived_at IS NULL FOR UPDATE'); $stmt->execute([$patientId]);
     $row = $stmt->fetch();
     if (!$row) { $pdo->rollBack(); \ASDC\ApiResponse::error(404, 'not_found', 'Patient not found.'); }
-    $pdo->prepare('UPDATE patients SET first_name=?,last_name=?,contact_number=? WHERE patient_id=?')->execute([$parts[0], $parts[1] ?? '', $contact ?: null, $patientId]);
-    if ($row['user_id']) {
-        if ($activeStatus === null) $pdo->prepare('UPDATE users SET full_name=?,contact_number=? WHERE user_id=?')->execute([$name, $contact ?: null, $row['user_id']]);
-        else $pdo->prepare('UPDATE users SET full_name=?,contact_number=?,is_active=? WHERE user_id=?')->execute([$name, $contact ?: null, $activeStatus, $row['user_id']]);
-    }
+    $pdo->prepare('UPDATE patients SET first_name=?,last_name=?,contact_number=?,is_active=COALESCE(?,is_active) WHERE patient_id=?')->execute([$parts[0], $parts[1] ?? '', $contact ?: null, $activeStatus, $patientId]);
+
     if ($billingBalance !== null) {
         $bill = $pdo->prepare("SELECT bill_id, total_amount FROM treatment_bills WHERE patient_id=? AND status='active' ORDER BY bill_id DESC LIMIT 1 FOR UPDATE");
         $bill->execute([$patientId]);

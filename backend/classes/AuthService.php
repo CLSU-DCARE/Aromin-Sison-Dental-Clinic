@@ -25,7 +25,7 @@ class AuthService
     private const LOGIN_LOCKOUT_SECONDS = 30;
     private const RESET_MAX_ATTEMPTS = 3;
     private const RESET_WINDOW_SECONDS = 900;
-    public const ALLOWED_ROLES = ['dentist', 'receptionist', 'patient'];
+    public const ALLOWED_ROLES = ['dentist', 'receptionist'];
 
     /**
      * Authenticate a user by registered email address or mobile number + password.
@@ -267,63 +267,7 @@ class AuthService
      */
     public static function register(array $data): array
     {
-        $firstName     = trim($data['first_name'] ?? '');
-        $lastName      = trim($data['last_name'] ?? '');
-        $email         = strtolower(trim($data['email'] ?? ''));
-        $contactNumber = trim($data['contact_number'] ?? '');
-        $password      = $data['password'] ?? '';
-
-        if ($firstName === '' || $lastName === '' || $email === '' || $password === '') {
-            return ['success' => false, 'error' => 'First name, last name, email, and password are required.', 'code' => 400];
-        }
-        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            return ['success' => false, 'error' => 'A valid email address is required.', 'code' => 400];
-        }
-        if (strlen($password) < 8) {
-            return ['success' => false, 'error' => 'Password must be at least 8 characters.', 'code' => 400];
-        }
-        if (strlen($firstName) > 100 || strlen($lastName) > 100 || strlen($email) > 150 || strlen($contactNumber) > 20) {
-            return ['success' => false, 'error' => 'One or more fields exceed the allowed length.', 'code' => 400];
-        }
-
-        $pdo = Database::pdo();
-
-        try {
-            $pdo->beginTransaction();
-
-            $existingUser = $pdo->prepare('SELECT user_id FROM users WHERE email = ? LIMIT 1');
-            $existingUser->execute([$email]);
-            if ($existingUser->fetch()) {
-                $pdo->rollBack();
-                return ['success' => false, 'error' => 'An account already uses this email address.', 'code' => 409];
-            }
-
-            $fullName = trim($firstName . ' ' . $lastName);
-            $passwordHash = password_hash($password, PASSWORD_DEFAULT);
-
-            $insertUser = $pdo->prepare('INSERT INTO users (role, email, password_hash, full_name, contact_number, is_active) VALUES (?, ?, ?, ?, ?, 1)');
-            $insertUser->execute(['patient', $email, $passwordHash, $fullName, $contactNumber ?: null]);
-            $userId = (int) $pdo->lastInsertId();
-
-            $insertPatient = $pdo->prepare('INSERT INTO patients (user_id, first_name, last_name, contact_number, email) VALUES (?, ?, ?, ?, ?)');
-            $insertPatient->execute([$userId, $firstName, $lastName, $contactNumber ?: null, $email]);
-
-            $pdo->commit();
-
-            return [
-                'success' => true,
-                'user' => [
-                    'user_id'   => $userId,
-                    'role'      => 'patient',
-                    'email'     => $email,
-                    'full_name' => $fullName,
-                ],
-            ];
-        } catch (PDOException $e) {
-            if ($pdo->inTransaction()) $pdo->rollBack();
-            error_log('Patient registration failed: ' . $e->getMessage());
-            return ['success' => false, 'error' => 'Unable to create the patient account.', 'code' => 500];
-        }
+        return ['success' => false, 'error' => 'Patient accounts are no longer available. Contact clinic staff.', 'code' => 410];
     }
 
     /**
@@ -347,7 +291,7 @@ class AuthService
         $ipKey = 'password_reset_ip:' . AuthMiddleware::getClientIp();
 
         $pdo = Database::pdo();
-        $roleSql = "role IN ('dentist', 'receptionist', 'patient')";
+        $roleSql = "role IN ('dentist', 'receptionist')";
         $stmt = $pdo->prepare("SELECT user_id, email, full_name FROM users WHERE email = ? AND {$roleSql} AND is_active = 1 LIMIT 1");
         $stmt->execute([$email]);
         $user = $stmt->fetch();
@@ -513,7 +457,7 @@ class AuthService
             $passwordHash = password_hash($password, PASSWORD_DEFAULT);
             if ($passwordHash === false) throw new \RuntimeException('Password hashing failed.');
 
-            $update = $pdo->prepare('UPDATE users SET password_hash = ? WHERE user_id = ? AND is_active = 1');
+            $update = $pdo->prepare('UPDATE users SET password_hash = ? WHERE user_id = ? AND is_active = 1 AND role IN (\'dentist\', \'receptionist\')');
             $update->execute([$passwordHash, $reset['user_id']]);
             if ($update->rowCount() !== 1) throw new \RuntimeException('Reset account is unavailable.');
 

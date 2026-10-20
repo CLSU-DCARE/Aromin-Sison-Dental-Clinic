@@ -3,7 +3,12 @@
 
 <html lang="en">
 <head>
-  <base href="/public-website/">
+<base href="/public-website/">
+<script>
+  const publicFolder = location.pathname.indexOf('/public-website/');
+  if (publicFolder >= 0) document.querySelector('base').href = location.pathname.slice(0, publicFolder) + '/public-website/';
+</script>
+
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Aromin-Sison Dental Clinic | Where Beautiful Smiles Are Made</title>
@@ -18,8 +23,7 @@
 <link rel="stylesheet" href="assets/css/main.css?v=49">
 <link rel="stylesheet" href="../shared/css/performance.css?v=2">
 </head>
-<!-- Presentation-only switch: remove presentation-account-booking to restore the public form. -->
-<body class="presentation-account-booking">
+<body>
 
 <!-- Entrance cover: a dark panel with the gold smile band at its top
      edge covers the screen on load, then rises away to reveal the hero.
@@ -69,7 +73,7 @@
       <li><a href="#faq">FAQ</a></li>
     </ul>
     <div class="nav-actions">
-      <a href="../auth/login.html" class="nav-icon-btn" title="Log In / Sign Up" aria-label="Log In or Sign Up">
+      <a href="../auth/login.html" class="nav-icon-btn" title="Staff Sign In" aria-label="Staff Sign In">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
       </a>
     </div>
@@ -103,7 +107,7 @@
   <div class="mobile-menu-actions">
     <a href="../auth/login.html" class="btn btn-outline-light">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-      Log In / Sign Up
+      Staff Sign In
     </a>
   </div>
 </div>
@@ -298,29 +302,10 @@
     <div class="cta-copy">
       <div class="eyebrow">Chapter Five: Begin</div>
       <h2>The next chapter<br>is <em>yours.</em></h2>
-      <p class="legacy-booking-copy">Book a consultation at the clinic. Our team will confirm within the hour.</p>
-      <p class="presentation-booking-copy">Create your patient account, request the time that works for you, and let our receptionist confirm the details.</p>
+      <p>Book a consultation at the clinic. Our team will contact you to confirm your preferred schedule.</p>
     </div>
-    <div class="cta-account-card" aria-labelledby="accountBookingTitle">
-      <div class="cta-account-card-top">
-        <span class="cta-account-mark" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/><path d="M19 8v6M16 11h6"/></svg>
-        </span>
-        <div>
-          <span class="cta-account-kicker">Patient Portal</span>
-          <h3 id="accountBookingTitle">Ready to book your visit?</h3>
-        </div>
-      </div>
-      <p class="cta-account-intro">An account keeps your appointment request, clinic updates, and visit details in one secure place.</p>
-      <ol class="cta-account-steps">
-        <li><span>1</span><div><strong>Create your account</strong><small>Register your patient details in a few minutes.</small></div></li>
-        <li><span>2</span><div><strong>Request an appointment</strong><small>Choose your service, preferred dentist, date, and time.</small></div></li>
-        <li><span>3</span><div><strong>Receive confirmation</strong><small>Our receptionist reviews and approves your request.</small></div></li>
-      </ol>
-      <a href="../auth/patient-signup.html" class="btn btn-gold btn-lg btn-block">Create an Account / Book an Appointment <span aria-hidden="true">→</span></a>
-      <p class="cta-account-signin">Already have an account? <a href="../auth/login.html">Sign in</a></p>
-    </div>
-    <form class="cta-form-card cta-form-card--legacy" id="ctaForm">
+    <form class="cta-form-card" id="ctaForm">
+      <p>Request an appointment below. No account needed. Clinic staff will contact you to confirm availability.</p>
       <div class="cta-form-fields">
         <div class="field"><label for="ctaFirstName">First Name</label><input type="text" id="ctaFirstName" name="first_name" maxlength="100" autocomplete="given-name" required></div>
         <div class="field"><label for="ctaLastName">Last Name</label><input type="text" id="ctaLastName" name="last_name" maxlength="100" autocomplete="family-name" required></div>
@@ -423,8 +408,7 @@
           </span>
         </summary>
         <div class="faq-answer">
-          <span class="legacy-booking-copy">Use the booking form above, or log in to your patient account to choose a service, dentist, and time slot. If your preferred slot isn't available, you'll be guided to pick another date and time.</span>
-          <span class="presentation-booking-copy">Create a patient account first, then sign in to request your preferred service, dentist, date, and time. Our receptionist will review your request and send confirmation once it is approved.</span>
+          <p>Use the booking form above to request your preferred service, date, and time. No account is needed. Our receptionist will contact you to confirm availability.</p>
         </div>
       </details>
       <details class="faq-item">
@@ -486,7 +470,7 @@
   </div>
 </section>
 
-<footer>
+<footer id="contact">
   <div class="wrap">
     <div class="foot-grid">
       <div>
@@ -524,7 +508,8 @@
 <script src="assets/js/MobileMenu.js?v=1" defer></script>
 <script src="assets/js/NavDropdownManager.js?v=1" defer></script>
 <script src="../shared/js/core/HolidayCalendar.js?v=20260928-closures" defer></script>
-<script src="assets/js/CtaBookingForm.js?v=20260928-persistent-closed-date" defer></script>
+
+<script src="assets/js/CtaBookingForm.js?v=20261020-public-booking" defer></script>
 <script src="assets/js/ScrollReveal.js?v=1" defer></script>
 <script src="assets/js/main.js?v=9" defer></script>
 

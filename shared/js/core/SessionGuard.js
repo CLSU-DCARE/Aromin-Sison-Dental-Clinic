@@ -433,7 +433,6 @@
 
   // Role destinations used when the shared router is not available
   SessionGuard.prototype._roleDestinations = {
-    patient: '../patient-dashboard/dashboard.html',
     dentist: '../dentist-dashboard/dashboard.html',
     receptionist: '../admin-system/dashboard.html',
   };

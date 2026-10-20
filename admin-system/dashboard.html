@@ -72,9 +72,9 @@
       </button>
 
       <div class="nav-group-label">Operations</div>
-      <button class="nav-item" data-view="payments" data-tooltip="Payment & Billing">
+      <button class="nav-item" data-view="payments" data-tooltip="Billing History">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg>
-        <span class="nav-label">Payment &amp; Billing</span>
+        <span class="nav-label">Billing History</span>
       </button>
       <button class="nav-item" data-view="reports" data-tooltip="Reports">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
@@ -400,7 +400,7 @@
         <div class="page-head">
           <div>
             <div class="eyebrow">Billing</div>
-            <p>Review patient payments, receipts, and billing status.</p>
+            <p>Historical billing and receipts are read-only. Online payment processing is disabled.</p>
           </div>
         </div>
         <div class="panel">
@@ -566,7 +566,7 @@
     <button class="modal-close" id="receiptClose" aria-label="Close">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
     </button>
-    <h3 id="receiptTitle">Review Payment Receipt</h3>
+    <h3 id="receiptTitle">Historical Payment Receipt</h3>
     <div class="receipt-grid">
       <div class="receipt-img">
         <div id="receiptImg" class="receipt-preview" role="img" aria-label="" hidden></div>
@@ -584,8 +584,6 @@
     </div>
     <div class="modal-actions">
       <button class="btn btn-secondary" id="receiptCancelBtn">Close</button>
-      <button class="btn btn-danger" id="rejectPaymentBtn" hidden>Reject</button>
-      <button class="btn btn-gold" id="approvePaymentBtn" hidden>Approve Payment</button>
     </div>
   </div>
 </div>
@@ -1007,7 +1005,7 @@
 <script src="assets/js/PaymentApprovalManager.js?v=20261002-live-receipt-auth" defer></script>
 <script src="assets/js/PatientTableManager.js?v=20260928-inactive-archive-only" defer></script>
 <script src="assets/js/RecordTableManager.js?v=20260927-readonly-records-layout" defer></script>
-<script src="../patient-dashboard/assets/js/PatientLiveSync.js?v=20260916-integration" defer></script>
+<script src="../shared/js/core/ClinicLiveSync.js?v=20261020-staff-sync" defer></script>
 <script src="../shared/js/core/PortalSync.js?v=20260921-sessionfix" defer></script>
 <script src="../shared/js/core/PortalForms.js?v=20260928-payment-reject-reason" defer></script>
 <script src="assets/js/admin.js?v=20261007-promo-actions" defer></script>

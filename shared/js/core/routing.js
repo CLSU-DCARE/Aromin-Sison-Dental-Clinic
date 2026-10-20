@@ -9,13 +9,11 @@
   const ROLE_DESTINATIONS = {
     dentist: '../dentist-dashboard/dashboard.html',
     receptionist: '../admin-system/dashboard.html',
-    patient: '../patient-dashboard/dashboard.html',
   };
 
   const ROLE_PATH_PREFIXES = {
     dentist: '/dentist-dashboard/',
     receptionist: '/admin-system/',
-    patient: '/patient-dashboard/',
   };
 
   const LOGIN_URL = '../auth/login.html';

@@ -1,5 +1,5 @@
 /** Poll the authenticated server across devices; preserve the last good snapshot on failure. */
-window.PatientLiveSync = class PatientLiveSync {
+window.ClinicLiveSync = class ClinicLiveSync {
   constructor({ fetchSnapshot, applySnapshot, onStatus = () => {}, interval = 10000, validate = null }) {
     this.validate = validate;
     this.fetchSnapshot = fetchSnapshot;
@@ -45,12 +45,7 @@ window.PatientLiveSync = class PatientLiveSync {
       try {
         const data = await this.fetchSnapshot();
         if (!this.running || generation !== this.generation) return;
-        if (this.validate ? !this.validate(data) : (!data || !data.profile || !data.braces?.braces || !data.braces?.contract ||
-            typeof data.braces.has_contract !== 'boolean' || !Array.isArray(data.braces.contract.summary) ||
-            !Array.isArray(data.braces.contract.payments) || !Array.isArray(data.braces.braces.stages) ||
-            !Array.isArray(data.submissions) ||
-            !Array.isArray(data.treatments) || !Array.isArray(data.appointments?.schedule) ||
-            !Array.isArray(data.appointments?.upcoming) || !Array.isArray(data.appointments?.history))) {
+        if (!data || (this.validate && !this.validate(data))) {
           throw new Error('Invalid dashboard response.');
         }
         const version = JSON.stringify(data);

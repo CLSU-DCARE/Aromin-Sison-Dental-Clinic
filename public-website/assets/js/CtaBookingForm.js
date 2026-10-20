@@ -92,7 +92,7 @@
         if (!res.ok) throw new Error(payload.error && payload.error.message || 'Unable to submit booking.');
         btn.classList.remove('is-loading');
         btn.disabled = false;
-        showNote('Request received! Our team will confirm within the hour.', 'ok');
+        showNote('Request received! Clinic staff will contact you to confirm your appointment.', 'ok');
         ctaForm.reset();
       });
     }).catch(function(error){

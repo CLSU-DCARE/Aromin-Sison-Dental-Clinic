@@ -1,20 +1,5 @@
 <?php
-/**
- * Payment submission & approval service: Aromin-Sison Dental Clinic System.
- *
- * Patient-facing: submit a payment receipt for review.
- * Receptionist-facing: list pending submissions, approve/reject them.
- * Approving applies the amount to the contract's balance (via
- * ContractService::applyPayment) and logs a real notification to the
- * patient - this is what actually connects "Patient submits payment" to
- * "Receptionist approves" to "Patient sees updated balance" end to end.
- *
- * Usage:
- *   PaymentApprovalService::submit($patientId, $data, $receiptPath);
- *   PaymentApprovalService::listPending();
- *   PaymentApprovalService::approve($paymentId, $reviewerId);
- *   PaymentApprovalService::reject($paymentId, $reviewerId, $reason);
- */
+/** Historical billing queries. Submission and review entry points are retired. */
 
 namespace ASDC;
 
@@ -35,64 +20,7 @@ class PaymentApprovalService
      */
     public static function submit(int $patientId, array $data, string $receiptPath): array
     {
-        self::ensureGeneralTreatmentBillingTables();
-        $method = self::METHOD_MAP[strtolower(trim($data['method'] ?? ''))] ?? 'other';
-
-        $pdo = Database::pdo();
-        $pdo->beginTransaction();
-        try {
-        $amount = (float) $data['amount'];
-        $contract = self::lockActiveContractForPatient($patientId);
-        if ($contract) {
-            $pendingTotal = self::pendingTotal((int) $contract['contract_id']);
-            $availableBalance = max(0, (float) $contract['balance_amount'] - $pendingTotal);
-            if ($amount > $availableBalance) {
-                $pdo->rollBack();
-                ApiResponse::error(409, 'payment_exceeds_balance', 'This payment exceeds the remaining balance after pending submissions.');
-            }
-
-            $stmt = $pdo->prepare(
-                'INSERT INTO contract_payments
-                    (contract_id, amount_paid, payment_date, payment_method, status, receipt_path, note, submitted_by)
-                 VALUES (?, ?, CURRENT_DATE(), ?, \'pending\', ?, ?, ?)'
-            );
-            $stmt->execute([
-                $contract['contract_id'], $amount, $method,
-                $receiptPath, $data['note'] !== '' ? $data['note'] : null, $data['user_id'],
-            ]);
-
-            $result = self::present(self::findRaw((int) $pdo->lastInsertId()) + self::patientInfo($patientId));
-        } else {
-            $bill = self::lockOrCreateTreatmentBill($patientId, $amount);
-            $pendingTotal = self::pendingTreatmentTotal((int) $bill['bill_id']);
-            $availableBalance = max(0, (float) $bill['balance_amount'] - $pendingTotal);
-            if ($amount > $availableBalance) {
-                $pdo->rollBack();
-                ApiResponse::error(409, 'payment_exceeds_balance', 'This payment exceeds the remaining balance after pending submissions.');
-            }
-
-            $stmt = $pdo->prepare(
-                'INSERT INTO treatment_payments
-                    (bill_id, amount_paid, payment_date, payment_method, status, receipt_path, note, submitted_by)
-                 VALUES (?, ?, CURRENT_DATE(), ?, \'pending\', ?, ?, ?)'
-            );
-            $stmt->execute([
-                $bill['bill_id'], $amount, $method,
-                $receiptPath, $data['note'] !== '' ? $data['note'] : null, $data['user_id'],
-            ]);
-
-            $result = self::presentTreatment(self::findTreatmentRaw((int) $pdo->lastInsertId()) + self::patientInfo($patientId));
-        }
-        PortalEvent::patient($patientId, 'Payment submitted', 'Your payment receipt was submitted and is awaiting review.', 'pay');
-        PortalEvent::staffNotice(
-            'Payment receipt submitted',
-            trim(($result['patient'] ?? 'A patient') . ' submitted a payment receipt for ' . ($result['amount'] ?? 'review') . '.'),
-            'pay',
-            $patientId
-        );
-        $pdo->commit();
-        return $result;
-        } catch (\Throwable $e) { if ($pdo->inTransaction()) $pdo->rollBack(); throw $e; }
+        ApiResponse::error(410, 'payments_removed', 'Payment processing has been removed. Historical records are read-only.');
     }
 
     private static function patientInfo(int $patientId): array
@@ -194,12 +122,12 @@ class PaymentApprovalService
 
     public static function approve($paymentId, int $reviewerId): array
     {
-        return self::review($paymentId, $reviewerId, true);
+        ApiResponse::error(410, 'payments_removed', 'Payment processing has been removed. Historical records are read-only.');
     }
 
     public static function reject($paymentId, int $reviewerId, string $reason = ''): array
     {
-        return self::review($paymentId, $reviewerId, false, $reason);
+        ApiResponse::error(410, 'payments_removed', 'Payment processing has been removed. Historical records are read-only.');
     }
 
     private static function review($paymentId, int $reviewerId, bool $approve, string $reason = ''): array
