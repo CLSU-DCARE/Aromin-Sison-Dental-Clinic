@@ -1,6 +1,9 @@
 .patient-chart-page{min-height:100vh;background:var(--ivory,#f7f5ef);color:var(--ink,#23231f);}
 .chart-shell{width:min(1120px,calc(100% - 40px));margin:0 auto;padding:28px 0 64px;}
-.chart-back{gap:8px;margin-bottom:30px;text-decoration:none;}
+.chart-actions{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:24px;}
+.chart-back{gap:8px;text-decoration:none;}
+#chartDownloadStatus:empty{display:none;}
+#chartDownloadStatus{margin:0 0 18px;font-size:13px;}
 .chart-heading{margin:0 0 22px;}
 .chart-heading .eyebrow,.chart-section-heading .eyebrow{margin:0 0 7px;color:var(--gold-dark,#8c7b31);font-size:11px;font-weight:700;letter-spacing:.12em;}
 .chart-heading h1{margin:0;font-family:Fraunces,Georgia,serif;font-size:clamp(30px,4vw,42px);font-weight:500;}

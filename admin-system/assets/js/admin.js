@@ -36,7 +36,12 @@ const views = {
 
 function switchView(view){
   const target = document.getElementById('view-' + view);
-  if (!target || target.classList.contains('active')) return;
+  if (!target || !Object.hasOwn(views, view)) return;
+  // Preserve the selected section when returning from a patient chart or reloading.
+  if (window.location.hash !== '#' + view) {
+    window.history.replaceState(null, '', '#' + view);
+  }
+  if (target.classList.contains('active')) return;
 
   document.querySelectorAll('.nav-item').forEach(el => {
     const active = el.dataset.view === view;
@@ -872,3 +877,11 @@ window.staffLiveSync = ASDC.startPortalSync({
     if (document.getElementById('view-archived')?.classList.contains('active')) loadArchivedPatients();
   }
 });
+
+function restoreDashboardView() {
+  const view = window.location.hash.slice(1);
+  if (Object.hasOwn(views, view)) switchView(view);
+}
+window.addEventListener('hashchange', restoreDashboardView);
+window.addEventListener('pageshow', restoreDashboardView);
+restoreDashboardView();

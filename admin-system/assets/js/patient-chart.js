@@ -1,5 +1,6 @@
 (function () {
   'use strict';
+  let chartData = null;
 
   const esc = value => window.ASDC.HtmlHelpers.escapeHtml(String(value ?? ''));
   const date = value => value ? window.ASDC.HtmlHelpers.formatDate(value) : 'Date not recorded';
@@ -76,6 +77,8 @@
       document.getElementById('recordsSearch').addEventListener('input', () => renderRecords(records));
       document.getElementById('appointmentsSearch').addEventListener('input', () => renderAppointments(appointments));
       message.hidden = true;
+      chartData = data;
+      document.getElementById('downloadChartPDF').disabled = false;
     } catch (error) {
       document.getElementById('patientName').textContent = 'Patient chart unavailable';
       message.textContent = error.status === 401
@@ -89,6 +92,20 @@
   }
 
   document.addEventListener('DOMContentLoaded', () => {
+    const download = document.getElementById('downloadChartPDF');
+    download.addEventListener('click', () => {
+      if (!chartData) return;
+      download.disabled = true;
+      const status = document.getElementById('chartDownloadStatus');
+      try {
+        window.ASDC.downloadPatientChartPDF(chartData);
+        status.textContent = 'A4 PDF downloaded.';
+      } catch (error) {
+        status.textContent = error.message || 'Unable to download the patient chart.';
+      } finally {
+        download.disabled = false;
+      }
+    });
     const guard = new window.ASDC.SessionGuard();
     window.ASDC.sessionGuard = guard;
     window.addEventListener('asdc:authenticated', event => {
