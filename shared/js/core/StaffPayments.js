@@ -3,10 +3,21 @@
   'use strict';
   const section = document.getElementById('view-payments');
   if (!section) return;
+  const historyPanels = [...section.querySelectorAll(':scope > .panel')];
+  const addButton = document.createElement('button');
+  addButton.type = 'button';
+  addButton.className = 'btn btn-primary';
+  addButton.textContent = 'Add Payment';
+  addButton.setAttribute('aria-controls', 'staffPaymentEntry');
+  addButton.setAttribute('aria-expanded', 'false');
+  section.querySelector('.page-head').append(addButton);
   const panel = document.createElement('div');
+  panel.id = 'staffPaymentEntry';
+  panel.hidden = true;
   panel.className = 'panel staff-payment-entry';
   panel.innerHTML = `
-    <h3>Record patient payment</h3>
+    <button class="btn btn-outline btn-sm" type="button" id="staffPaymentBack">Back to Billing</button>
+    <h3 tabindex="-1" id="staffPaymentHeading">Add Payment</h3>
     <p>Choose an existing treatment bill or braces contract. Payments are recorded immediately and reduce the balance.</p>
     <form id="staffPaymentForm">
       <div class="staff-payment-grid">
@@ -40,6 +51,26 @@
   date.max = today;
   let accounts = [];
   let saving = false;
+  const back = document.getElementById('staffPaymentBack');
+  function showHistory() {
+    panel.hidden = true;
+    historyPanels.forEach(item => { item.hidden = false; });
+    addButton.hidden = false;
+    addButton.setAttribute('aria-expanded', 'false');
+  }
+  addButton.addEventListener('click', () => {
+    historyPanels.forEach(item => { item.hidden = true; });
+    panel.hidden = false;
+    addButton.hidden = true;
+    addButton.setAttribute('aria-expanded', 'true');
+    document.getElementById('staffPaymentHeading').focus();
+    loadAccounts();
+  });
+  back.addEventListener('click', () => {
+    if (saving) return;
+    showHistory();
+    addButton.focus();
+  });
   const peso = value => new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(value);
   function updateBalance() {
     const bill = accounts.find(item => item.id === account.value);
@@ -76,6 +107,7 @@
     event.preventDefault();
     if (saving || !form.reportValidity()) return;
     saving = true;
+    back.disabled = true;
     submit.disabled = true;
     refresh.disabled = true;
     status.textContent = 'Recording payment...';
@@ -97,14 +129,14 @@
       status.textContent = error.message + ' Check payment history before retrying if the connection was interrupted.';
     } finally {
       saving = false;
+      back.disabled = false;
       fields.forEach(field => { field.disabled = false; });
       await loadAccounts();
     }
   });
-  // Load only when the billing view is opened; refresh when returning to it.
+  // Return to billing history when leaving this view.
   const observer = new MutationObserver(() => {
-    if (section.classList.contains('active') && !saving) loadAccounts();
+    if (!section.classList.contains('active') && !saving) showHistory();
   });
   observer.observe(section, { attributes: true, attributeFilter: ['class'] });
-  if (section.classList.contains('active')) loadAccounts();
 })();

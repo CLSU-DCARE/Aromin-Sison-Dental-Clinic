@@ -1,4 +1,6 @@
 .staff-payment-entry { padding: 24px; margin-bottom: 24px; }
+.staff-payment-entry[hidden], #view-payments > .panel[hidden], #view-payments .page-head > button[hidden] { display: none !important; }
+#staffPaymentBack { margin-bottom: 20px; }
 .staff-payment-entry h3 { margin: 0 0 8px; }
 .staff-payment-entry p { margin: 10px 0; line-height: 1.6; }
 .staff-payment-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-top: 20px; }
