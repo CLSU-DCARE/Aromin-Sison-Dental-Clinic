@@ -3,22 +3,23 @@
   'use strict';
   const section = document.getElementById('view-payments');
   if (!section) return;
-  const historyPanels = [...section.querySelectorAll(':scope > .panel')];
   const addButton = document.createElement('button');
   addButton.type = 'button';
   addButton.className = 'btn btn-primary';
   addButton.textContent = 'Add Payment';
   addButton.setAttribute('aria-controls', 'staffPaymentEntry');
   addButton.setAttribute('aria-expanded', 'false');
+  addButton.setAttribute('aria-haspopup', 'dialog');
   section.querySelector('.page-head').append(addButton);
-  const panel = document.createElement('div');
+  const panel = document.createElement('dialog');
   panel.id = 'staffPaymentEntry';
-  panel.hidden = true;
-  panel.className = 'panel staff-payment-entry';
+  panel.className = 'staff-payment-entry';
+  panel.setAttribute('aria-labelledby', 'staffPaymentHeading');
+  panel.setAttribute('aria-describedby', 'staffPaymentDescription');
   panel.innerHTML = `
-    <button class="btn btn-outline btn-sm" type="button" id="staffPaymentBack">Back to Billing</button>
+    <button class="staff-payment-close" type="button" id="staffPaymentClose" aria-label="Close Add Payment">&times;</button>
     <h3 tabindex="-1" id="staffPaymentHeading">Add Payment</h3>
-    <p>Choose an existing treatment bill or braces contract. Payments are recorded immediately and reduce the balance.</p>
+    <p id="staffPaymentDescription">Choose an existing treatment bill or braces contract. Payments are recorded immediately and reduce the balance.</p>
     <form id="staffPaymentForm">
       <div class="staff-payment-grid">
         <label class="staff-payment-account">Patient / billing account
@@ -30,14 +31,14 @@
           <option value="bank_transfer">Bank transfer</option><option value="other">Other</option>
         </select></label>
         <label>Payment date<input name="payment_date" type="date" required></label>
-        <label class="staff-payment-account">Notes / transaction reference (optional)<input name="note" maxlength="255" placeholder="Reference number or collection notes"></label>
+        <label>Notes / transaction reference (optional)<input name="note" maxlength="255" placeholder="Reference number or collection notes"></label>
       </div>
       <p id="staffPaymentBalance">Select a billing account to see the balance.</p>
       <div class="staff-payment-actions"><button class="btn btn-primary" type="submit" disabled>Record payment</button>
         <button class="btn btn-outline" type="button" id="staffPaymentRefresh">Refresh accounts</button></div>
       <p id="staffPaymentStatus" role="status" aria-live="polite"></p>
     </form>`;
-  section.querySelector('.page-head').after(panel);
+  document.body.appendChild(panel);
   const form = panel.querySelector('form');
   const account = form.elements.account_id;
   const amount = form.elements.amount;
@@ -51,25 +52,29 @@
   date.max = today;
   let accounts = [];
   let saving = false;
-  const back = document.getElementById('staffPaymentBack');
+  const closeButton = document.getElementById('staffPaymentClose');
   function showHistory() {
-    panel.hidden = true;
-    historyPanels.forEach(item => { item.hidden = false; });
-    addButton.hidden = false;
-    addButton.setAttribute('aria-expanded', 'false');
+    if (!saving && panel.open) panel.close();
   }
   addButton.addEventListener('click', () => {
-    historyPanels.forEach(item => { item.hidden = true; });
-    panel.hidden = false;
-    addButton.hidden = true;
+    if (panel.open) return;
+    panel.showModal();
+    document.body.classList.add('staff-payment-modal-open');
     addButton.setAttribute('aria-expanded', 'true');
     document.getElementById('staffPaymentHeading').focus();
     loadAccounts();
   });
-  back.addEventListener('click', () => {
-    if (saving) return;
-    showHistory();
+  closeButton.addEventListener('click', showHistory);
+  panel.addEventListener('cancel', event => { if (saving) event.preventDefault(); });
+  panel.addEventListener('close', () => {
+    document.body.classList.remove('staff-payment-modal-open');
+    addButton.setAttribute('aria-expanded', 'false');
     addButton.focus();
+  });
+  panel.addEventListener('click', event => {
+    if (event.target !== panel) return;
+    const rect = panel.getBoundingClientRect();
+    if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) showHistory();
   });
   const peso = value => new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(value);
   function updateBalance() {
@@ -107,7 +112,7 @@
     event.preventDefault();
     if (saving || !form.reportValidity()) return;
     saving = true;
-    back.disabled = true;
+    closeButton.disabled = true;
     submit.disabled = true;
     refresh.disabled = true;
     status.textContent = 'Recording payment...';
@@ -129,7 +134,7 @@
       status.textContent = error.message + ' Check payment history before retrying if the connection was interrupted.';
     } finally {
       saving = false;
-      back.disabled = false;
+      closeButton.disabled = false;
       fields.forEach(field => { field.disabled = false; });
       await loadAccounts();
     }

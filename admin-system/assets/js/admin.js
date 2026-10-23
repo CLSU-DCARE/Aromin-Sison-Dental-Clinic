@@ -23,7 +23,6 @@
 const views = {
   dashboard: { title: 'Dashboard', crumb: 'Overview' },
   patients: { title: 'Patient Management', crumb: 'Patients' },
-  records: { title: 'Treatment Records', crumb: 'Patients' },
   archived: { title: 'Archived Patients', crumb: 'Patients' },
   appointments: { title: 'Appointment Scheduling', crumb: 'Scheduling' },
   braces: { title: 'Braces Contracts', crumb: 'Scheduling' },
@@ -274,28 +273,6 @@ document.addEventListener('keydown', event => {
   if (event.key === 'Escape' && !document.getElementById('archivedDetailPanel')?.hidden) closeArchivedDetails();
 });
 
-// =====================================================================
-// RECORDS TABLE: category filter + view details (delegated to RecordTableManager)
-// =====================================================================
-const recordMgr = new RecordTableManager({ state: AdminState });
-recordMgr.init();
-
-const addTreatmentRecordBtn = document.getElementById('addTreatmentRecordBtn');
-function syncTreatmentRecordPermission(user = window.ASDCAuthUser) {
-  if (addTreatmentRecordBtn) addTreatmentRecordBtn.hidden = user?.role !== 'dentist';
-}
-syncTreatmentRecordPermission();
-window.addEventListener('asdc:authenticated', event => syncTreatmentRecordPermission(event.detail));
-addTreatmentRecordBtn?.addEventListener('click', () => {
-  if (window.ASDCAuthUser?.role !== 'dentist') return;
-  const snapshot = window.staffSnapshot;
-  if (!snapshot || !Array.isArray(snapshot.patients)) {
-    showToast('Patient information is still loading. Please try again shortly.', 'error');
-    return;
-  }
-  ASDC.openClinicalForm(snapshot);
-});
-
 // ---------- Inventory and automatic usage rules ----------
 const inventoryMgr = new InventoryTableManager({ state: AdminState });
 inventoryMgr.init();
@@ -414,10 +391,6 @@ if (userChip && userMenu){
 
 // =====================================================================
 // PATIENT MODALS: delegated to PatientTableManager
-// =====================================================================
-
-// =====================================================================
-// RECORDS: add new treatment record (delegated to RecordTableManager)
 // =====================================================================
 
 // =====================================================================
@@ -858,7 +831,7 @@ window.staffLiveSync = ASDC.startPortalSync({
     window.staffSnapshot = data;
     if (has('week', 'pending')) appointmentScheduler.applySnapshot(data);
     if (has('patients', 'contracts')) patientMgr.load(data);
-    if (has('records')) { AdminState.records = data.records; recordMgr.apply(); }
+    if (has('records')) AdminState.records = data.records;
     if (has('inventory')) {
       AdminState.inventory = data.inventory.map(item => inventoryMgr.normalize(item));
       inventoryMgr.apply();
@@ -878,6 +851,7 @@ window.staffLiveSync = ASDC.startPortalSync({
 
 function restoreDashboardView() {
   const view = window.location.hash.slice(1);
+  if (view === 'records') { switchView('patients'); return; }
   if (Object.hasOwn(views, view)) switchView(view);
 }
 window.addEventListener('hashchange', restoreDashboardView);
