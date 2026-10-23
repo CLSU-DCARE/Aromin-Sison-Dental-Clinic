@@ -66,6 +66,24 @@ try {
     check(count(array_filter($history, fn($item) => $item['status'] === 'approved')) === 4, 'Collections missing from shared billing history.');
     $snapshot = \ASDC\StaffDashboardService::snapshot(date('Y-m-d'));
     check((float)$snapshot['metrics'][2] === 3000.0, 'Weekly collections must include treatment and braces payments.');
+    $ledger = \ASDC\StaffPaymentService::patientBilling($patient);
+    check(count($ledger['accounts']) === 2 && count($ledger['payments']) === 5, 'Patient billing must retain settled accounts and all payment statuses.');
+    check(array_sum(array_column($ledger['accounts'], 'paid_amount')) == 3000, 'Patient recorded payment total incorrect.');
+    $pdo->exec("INSERT INTO patients (first_name,last_name) VALUES ('Other','Patient')");
+    $otherPatient = (int)$pdo->lastInsertId();
+    $pdo->prepare("INSERT INTO treatment_bills (patient_id,service_treatment,total_amount,balance_amount) VALUES (?,'Other bill',200,200)")->execute([$otherPatient]);
+    $otherBill = (int)$pdo->lastInsertId();
+    try { \ASDC\StaffPaymentService::record(array_replace($base, ['account_id'=>'T-'.$otherBill, 'patient_id'=>$patient, 'amount'=>'25'])); throw new RuntimeException('A payment was assigned to another patient.'); }
+    catch (DomainException $expected) {}
+    \ASDC\StaffPaymentService::record(array_replace($base, ['account_id'=>'T-'.$otherBill, 'patient_id'=>$otherPatient, 'amount'=>'25']));
+    $summaries = \ASDC\StaffPaymentService::patientSummaries();
+    check(count($summaries) === 2, 'Billing directory must group by patient.');
+    $otherSummary = array_values(array_filter($summaries, fn($item) => $item['patient_id'] === $otherPatient))[0];
+    check($otherSummary['paid_amount'] == 25 && $otherSummary['balance_amount'] == 175, 'Patient totals were mixed.');
+    check(count(\ASDC\StaffPaymentService::accounts($patient)) === 0, 'Paid patient should have no payable accounts.');
+    $otherLedger = \ASDC\StaffPaymentService::patientBilling($otherPatient);
+    check(count($otherLedger['payments']) === 1 && count($otherLedger['accounts']) === 1, 'Patient history contains another patient records.');
+    $pdo->prepare('DELETE FROM patients WHERE patient_id=?')->execute([$otherPatient]);
     try { \ASDC\StaffPaymentService::record($base); throw new RuntimeException('Paid bill accepted another payment.'); }
     catch (DomainException $expected) {}
     $pdo->prepare("UPDATE treatment_bills SET status='active', balance_amount=100 WHERE bill_id=?")->execute([$bill]);

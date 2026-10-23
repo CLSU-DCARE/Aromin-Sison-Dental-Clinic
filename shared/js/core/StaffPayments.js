@@ -3,6 +3,9 @@
   'use strict';
   const section = document.getElementById('view-payments');
   if (!section) return;
+  const patientId = Number(section.dataset.patientId) || null;
+  // Collections are entered from an individual patient's billing record.
+  if (!patientId && document.getElementById('patientBillingBody')) return;
   const addButton = document.createElement('button');
   addButton.type = 'button';
   addButton.className = 'btn btn-primary';
@@ -91,7 +94,7 @@
     submit.disabled = true;
     account.disabled = true;
     try {
-      const data = await apiFetch('../backend/api/payments/payments.php?view=accounts', { cache: 'no-store' });
+      const data = await apiFetch('../backend/api/payments/payments.php?view=accounts' + (patientId ? '&patient_id=' + patientId : ''), { cache: 'no-store' });
       accounts = data.accounts || [];
       account.replaceChildren(new Option(accounts.length ? 'Select patient and billing account' : 'No outstanding billing accounts', ''));
       accounts.forEach(bill => account.add(new Option(`${bill.patient} (#P-${bill.patient_id}) · ${bill.service} [${bill.id}] · ${peso(bill.balance_amount)}`, bill.id)));
@@ -123,7 +126,7 @@
     try {
       const data = await apiFetch('../backend/api/payments/payments.php', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...body, action: 'record' })
+        body: JSON.stringify({ ...body, action: 'record', ...(patientId ? { patient_id: patientId } : {}) })
       });
       amount.value = '';
       form.elements.note.value = '';
@@ -141,7 +144,7 @@
   });
   // Return to billing history when leaving this view.
   const observer = new MutationObserver(() => {
-    if (!section.classList.contains('active') && !saving) showHistory();
+    if (!section.classList.contains('active') && !saving && !patientId) showHistory();
   });
   observer.observe(section, { attributes: true, attributeFilter: ['class'] });
 })();

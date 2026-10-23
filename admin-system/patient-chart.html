@@ -14,6 +14,7 @@
 <link rel="stylesheet" href="../shared/css/panels.css?v=4">
 <link rel="stylesheet" href="assets/css/admin.css?v=20261020-patient-chart">
 <link rel="stylesheet" href="assets/css/patient-chart.css?v=20261023-a4-pdf">
+<link rel="stylesheet" href="../shared/css/staff-payments.css?v=20261023-patient-billing">
 </head>
 <body class="patient-chart-page">
 <main class="chart-shell">
@@ -47,6 +48,19 @@
 
   <div id="chartMessage" class="chart-message" role="status">Loading patient chart…</div>
 
+  <section class="panel chart-history active patient-billing" id="view-payments" aria-labelledby="billingHeading">
+    <div class="chart-section-heading page-head">
+      <div><p class="eyebrow">PATIENT ACCOUNT</p><h2 id="billingHeading">Billing &amp; Payments</h2></div>
+    </div>
+    <p id="patientBillingMessage" role="status">Loading billing information…</p>
+    <div class="chart-stats" id="patientBillingTotals"></div>
+    <h3>Billing accounts</h3>
+    <div class="table-scroll"><table><thead><tr><th>Treatment / Plan</th><th>Total</th><th>Recorded payments</th><th>Balance</th><th>Pending</th><th>Status</th></tr></thead><tbody id="patientBillingAccounts"></tbody></table></div>
+    <h3>Payment history</h3>
+    <div class="table-scroll"><table><thead><tr><th>Payment date</th><th>Treatment / Plan</th><th>Amount</th><th>Method</th><th>Status</th><th>Reference / Notes</th></tr></thead><tbody id="patientPaymentHistory"></tbody></table></div>
+    <button class="btn btn-outline btn-sm" type="button" id="refreshPatientBilling">Refresh billing</button>
+  </section>
+
   <section class="panel chart-history" aria-labelledby="recordsHeading">
     <div class="chart-section-heading">
       <div><p class="eyebrow">CARE HISTORY</p><h2 id="recordsHeading">Clinical Treatment Records</h2></div>
@@ -73,5 +87,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
 <script src="assets/js/PatientChartPDF.js?v=20261023-compact-pdf" defer></script>
 <script src="assets/js/patient-chart.js?v=20261023-instant-back" defer></script>
+<script src="../shared/js/core/PatientBilling.js?v=20261023-patient-billing" defer></script>
+<script src="../shared/js/core/StaffPayments.js?v=20261023-patient-billing" defer></script>
 </body>
 </html>

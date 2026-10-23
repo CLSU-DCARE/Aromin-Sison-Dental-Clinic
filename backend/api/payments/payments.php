@@ -15,9 +15,22 @@ $method = \ASDC\ApiResponse::method('GET', 'POST');
 require_role('receptionist', 'dentist');
 
 if ($method === 'GET') {
+    session_write_close();
     try {
+        $patientId = null;
+        if (isset($_GET['patient_id'])) {
+            $patientId = \ASDC\InputValidator::positiveId($_GET['patient_id']);
+            if (!$patientId) \ASDC\ApiResponse::error(422, 'validation_failed', 'Choose a valid patient.');
+        }
+        if (($_GET['view'] ?? '') === 'patients') {
+            \ASDC\ApiResponse::ok(['patients'=>\ASDC\StaffPaymentService::patientSummaries()]);
+        }
+        if (($_GET['view'] ?? '') === 'patient') {
+            if (!$patientId) \ASDC\ApiResponse::error(422, 'validation_failed', 'Choose a valid patient.');
+            \ASDC\ApiResponse::ok(\ASDC\StaffPaymentService::patientBilling($patientId));
+        }
         if (($_GET['view'] ?? '') === 'accounts') {
-            \ASDC\ApiResponse::ok(['accounts' => \ASDC\StaffPaymentService::accounts()]);
+            \ASDC\ApiResponse::ok(['accounts' => \ASDC\StaffPaymentService::accounts($patientId)]);
         }
         $status = $_GET['status'] ?? '';
         $rows = $status === 'pending'

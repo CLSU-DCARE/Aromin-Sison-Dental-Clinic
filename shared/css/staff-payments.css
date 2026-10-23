@@ -15,4 +15,16 @@ body.staff-payment-modal-open { overflow: hidden; }
 .staff-payment-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 16px; }
 .staff-payment-entry button:disabled { opacity: .55; cursor: wait; }
 #staffPaymentStatus { font-weight: 600; overflow-wrap: anywhere; }
+.patient-billing { scroll-margin-top: 20px; }
+.patient-billing .table-scroll { overflow-x: auto; margin: 14px 0 20px; }
+.patient-billing table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; }
+.patient-billing th, .patient-billing td { padding: 12px; border-bottom: 1px solid var(--line, #e5e1d8); vertical-align: top; }
+.patient-billing th { font-size: 11px; color: var(--ink-muted, #73746f); }
+.patient-billing td small { display: inline-block; margin-top: 4px; color: var(--ink-muted, #73746f); overflow-wrap: anywhere; max-width: 280px; }
+.patient-billing .chart-stats { display: flex; gap: 12px; flex-wrap: wrap; margin: 18px 0 24px; }
+.patient-billing .chart-stat { display: grid; gap: 6px; min-width: 160px; flex: 1; padding: 16px; border: 1px solid var(--line, #e5e1d8); border-radius: 12px; }
+.patient-billing .chart-stat span { font-size: 22px; font-weight: 700; }
+.patient-billing .chart-status { text-transform: capitalize; }
+.patient-billing .chart-search { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; padding: 12px; }
+.patient-billing .chart-search input { min-width: 0; max-width: 100%; padding: 10px 12px; border: 1px solid var(--line, #e5e1d8); border-radius: 8px; font: inherit; }
 @media (max-width: 760px) { .staff-payment-grid { grid-template-columns: 1fr; } .staff-payment-account { grid-column: auto; } .staff-payment-entry { padding: 16px; } }

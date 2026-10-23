@@ -37,19 +37,24 @@
     if (url.origin !== location.origin || !/\/admin-system\/patient-chart\.html$/.test(url.pathname)) return;
     event.preventDefault();
     trigger = link;
-    const path = url.pathname + url.search;
+    const path = url.pathname + url.search + url.hash;
     history.pushState({ patientChartPath: path }, '', path);
     openChart(path);
   });
 
   window.addEventListener('popstate', event => {
     const path = event.state?.patientChartPath;
-    if (typeof path === 'string' && /^\/(?:[^?#]*\/)?admin-system\/patient-chart\.html\?patient_id=\d+$/.test(path)) openChart(path);
+    if (typeof path === 'string' && /^\/(?:[^?#]*\/)?admin-system\/patient-chart\.html\?patient_id=\d+(?:#billing)?$/.test(path)) openChart(path);
     else closeChart();
   });
 
   window.addEventListener('message', event => {
     if (!frame || event.source !== frame.contentWindow || event.origin !== location.origin) return;
+    if (event.data?.type === 'asdc:patient-billing-updated') {
+      window.dispatchEvent(new CustomEvent('staff-payment-recorded'));
+      window.staffLiveSync?.refetch().catch(() => {});
+      return;
+    }
     if (event.data?.type === 'asdc:patient-chart-back') {
       // Restore the existing list immediately, without another dashboard request.
       closeChart();
