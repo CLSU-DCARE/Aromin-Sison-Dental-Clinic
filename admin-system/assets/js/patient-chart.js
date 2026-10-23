@@ -50,20 +50,9 @@
     }
 
     try {
-      const response = await fetch(`../backend/api/patients/details.php?patient_id=${encodeURIComponent(patientId)}`, {
-        credentials: 'same-origin', cache: 'no-store', headers: { Accept: 'application/json' }
+      const data = await window.ASDC.ApiClient.api(`../backend/api/patients/details.php?patient_id=${encodeURIComponent(patientId)}`, {
+        cache: 'no-store'
       });
-      let payload;
-      try { payload = await response.json(); } catch (_) { throw new Error('Unable to read the patient chart response.'); }
-      if (!response.ok) {
-        if (response.status === 401) throw new Error('Your staff session has expired. Please sign in again.');
-        if (response.status === 403) throw new Error('Your account is not authorized to view patient charts.');
-        throw new Error(payload.error?.message || payload.message || 'Unable to load this patient chart.');
-      }
-
-      // ApiResponse::ok wraps successful endpoint data as { success, message, data }.
-      // Unwrap it while accepting a direct object too, for API compatibility.
-      const data = payload.data || payload;
       const patient = data.patient || {};
       const fullName = `${patient.first_name || ''} ${patient.last_name || ''}`.trim() || 'Patient';
       const phone = patient.contact_number || '';
@@ -88,8 +77,14 @@
       document.getElementById('appointmentsSearch').addEventListener('input', () => renderAppointments(appointments));
       message.hidden = true;
     } catch (error) {
-      message.textContent = error.message || 'Unable to load this patient chart.';
+      document.getElementById('patientName').textContent = 'Patient chart unavailable';
+      message.textContent = error.status === 401
+        ? 'Your staff session has expired. Please sign in again.'
+        : error.status === 403
+          ? 'Your account is not authorized to view patient charts.'
+          : error.message || 'Unable to load this patient chart.';
       message.classList.add('is-error');
+      if (error.status === 401) window.ASDC.sessionGuard.revalidate({ force: true });
     }
   }
 
@@ -100,12 +95,13 @@
       const role = String(event.detail?.role || '').toLowerCase();
       const label = role === 'dentist' ? 'DENTIST PORTAL' : role === 'receptionist' ? 'RECEPTIONIST PORTAL' : 'PORTAL';
       document.getElementById('chartPortalRole').textContent = label;
+      loadChart();
     });
     const currentRole = String(window.ASDCAuthUser?.role || '').toLowerCase();
     if (currentRole) {
       document.getElementById('chartPortalRole').textContent = currentRole === 'dentist' ? 'DENTIST PORTAL' : currentRole === 'receptionist' ? 'RECEPTIONIST PORTAL' : 'PORTAL';
+      loadChart();
     }
     guard.init();
-    loadChart();
   });
 })();
