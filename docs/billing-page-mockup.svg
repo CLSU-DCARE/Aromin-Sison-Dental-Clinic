@@ -1,0 +1,256 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1120" viewBox="0 0 1600 1120" role="img" aria-labelledby="title desc">
+  <title id="title">Aromin-Sison Dental Clinic billing page concept</title>
+  <desc id="desc">A polished billing and payment review dashboard in the clinic's charcoal, ivory, and muted gold color palette. Illustrative sample data is shown.</desc>
+  <defs>
+    <linearGradient id="canvas" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#FAFAF7"/>
+      <stop offset="1" stop-color="#F1EDE3"/>
+    </linearGradient>
+    <linearGradient id="sidebar" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1C1C1A"/>
+      <stop offset="1" stop-color="#111110"/>
+    </linearGradient>
+    <filter id="shadow" x="-15%" y="-15%" width="130%" height="140%">
+      <feDropShadow dx="0" dy="5" stdDeviation="12" flood-color="#171716" flood-opacity=".06"/>
+    </filter>
+    <style>
+      .ui{font-family:"Segoe UI",Arial,sans-serif}
+      .muted{fill:#77766F}
+      .serif{font-family:Georgia,"Times New Roman",serif}
+      .label{font-size:11px;font-weight:700;letter-spacing:1.5px}
+      .small{font-size:12px}
+      .body{font-size:14px}
+      .line{stroke:#E9E7DF;stroke-width:1}
+    </style>
+  </defs>
+
+  <rect width="1600" height="1120" fill="url(#canvas)"/>
+  <circle cx="1510" cy="15" r="290" fill="#C7B876" opacity=".055"/>
+  <circle cx="415" cy="1015" r="240" fill="#9C8B3E" opacity=".035"/>
+
+  <!-- Navigation rail -->
+  <rect x="20" y="20" width="258" height="1080" rx="24" fill="url(#sidebar)"/>
+  <rect x="20.5" y="20.5" width="257" height="1079" rx="23.5" fill="none" stroke="#FFFFFF" stroke-opacity=".09"/>
+  <g transform="translate(42 42)">
+    <circle cx="24" cy="24" r="23" fill="#C7B876"/>
+    <path d="M19 11c-5 0-8 4-8 10 0 8 5 15 8 15 2 0 3-3 5-3s3 3 5 3c3 0 8-7 8-15 0-6-3-10-8-10-2 0-4 2-5 2s-3-2-5-2Z" fill="none" stroke="#1C1C1A" stroke-width="1.8"/>
+    <path d="M17 17c2-2 4-2 7-1" fill="none" stroke="#1C1C1A" stroke-width="1.3" stroke-linecap="round"/>
+  </g>
+  <text x="102" y="58" fill="#C7B876" font-family="Segoe UI,Arial,sans-serif" font-size="13" font-weight="700" letter-spacing="1.2">AROMIN-SISON</text>
+  <text x="102" y="77" fill="#FAFAF7" fill-opacity=".54" font-family="Segoe UI,Arial,sans-serif" font-size="10" letter-spacing="1.5">DENTAL CLINIC</text>
+  <line x1="40" y1="105" x2="258" y2="105" stroke="#FFFFFF" stroke-opacity=".1"/>
+
+  <text x="44" y="145" fill="#FAFAF7" fill-opacity=".42" class="label">WORKSPACE</text>
+  <g class="ui">
+    <g transform="translate(44 166)" fill="none" stroke="#FAFAF7" stroke-opacity=".65" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="1" y="1" width="18" height="18" rx="3"/><path d="M10 1v18M1 10h18"/>
+    </g>
+    <text x="78" y="181" fill="#FAFAF7" fill-opacity=".76" font-size="14">Dashboard</text>
+    <g transform="translate(44 216)" fill="none" stroke="#FAFAF7" stroke-opacity=".65" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="8" cy="7" r="4"/><path d="M1 20v-2a7 7 0 0 1 14 0v2M17 4a4 4 0 0 1 0 7M19 14a6 6 0 0 1 4 6"/>
+    </g>
+    <text x="78" y="231" fill="#FAFAF7" fill-opacity=".76" font-size="14">Patients</text>
+    <g transform="translate(44 266)" fill="none" stroke="#FAFAF7" stroke-opacity=".65" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="2" y="3" width="18" height="18" rx="3"/><path d="M7 1v4M15 1v4M2 9h18M6 13h3M6 17h7"/>
+    </g>
+    <text x="78" y="281" fill="#FAFAF7" fill-opacity=".76" font-size="14">Appointments</text>
+    <g transform="translate(44 316)" fill="none" stroke="#FAFAF7" stroke-opacity=".65" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 2h11l5 5v15H4zM14 2v6h6M8 13h8M8 17h8"/>
+    </g>
+    <text x="78" y="331" fill="#FAFAF7" fill-opacity=".76" font-size="14">Treatment records</text>
+  </g>
+  <text x="44" y="390" fill="#FAFAF7" fill-opacity=".42" class="label">OPERATIONS</text>
+  <rect x="34" y="409" width="230" height="48" rx="11" fill="#9C8B3E"/>
+  <g transform="translate(49 422)" fill="none" stroke="#1C1C1A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="1" y="2" width="21" height="16" rx="3"/><path d="M1 7h21M7 13h4"/>
+  </g>
+  <text x="84" y="439" fill="#171716" font-family="Segoe UI,Arial,sans-serif" font-size="14" font-weight="700">Billing &amp; payments</text>
+  <circle cx="244" cy="433" r="3" fill="#171716" opacity=".75"/>
+  <g class="ui">
+    <g transform="translate(44 474)" fill="none" stroke="#FAFAF7" stroke-opacity=".65" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <path d="m12 2 9 5v10l-9 5-9-5V7zM3.5 7.5 12 12l8.5-4.5M12 22V12"/>
+    </g>
+    <text x="78" y="490" fill="#FAFAF7" fill-opacity=".76" font-size="14">Inventory</text>
+    <g transform="translate(44 524)" fill="none" stroke="#FAFAF7" stroke-opacity=".65" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3 20V5M10 20V2M17 20v-9M1 20h20"/>
+    </g>
+    <text x="78" y="540" fill="#FAFAF7" fill-opacity=".76" font-size="14">Reports</text>
+    <g transform="translate(44 574)" fill="none" stroke="#FAFAF7" stroke-opacity=".65" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M18 9a6 6 0 0 0-12 0c0 7-3 8-3 9h18c0-1-3-2-3-9M10 22h4"/>
+    </g>
+    <text x="78" y="590" fill="#FAFAF7" fill-opacity=".76" font-size="14">Notifications</text>
+  </g>
+  <line x1="40" y1="1030" x2="258" y2="1030" stroke="#FFFFFF" stroke-opacity=".1"/>
+  <circle cx="61" cy="1064" r="18" fill="#E8E1C9"/>
+  <text x="61" y="1069" text-anchor="middle" class="ui" font-size="12" font-weight="700">DS</text>
+  <text x="90" y="1061" fill="#FAFAF7" font-family="Segoe UI,Arial,sans-serif" font-size="13" font-weight="600">Clinic staff</text>
+  <text x="90" y="1078" fill="#FAFAF7" fill-opacity=".48" font-family="Segoe UI,Arial,sans-serif" font-size="11">Receptionist</text>
+  <circle cx="244" cy="1064" r="4" fill="#5C7A5C"/>
+
+  <!-- Main top bar -->
+  <rect x="298" y="0" width="1302" height="78" fill="#FAFAF7" fill-opacity=".73"/>
+  <line x1="298" y1="78" x2="1600" y2="78" stroke="#1B1B19" stroke-opacity=".07"/>
+  <g class="ui">
+    <text x="338" y="47" fill="#77766F" font-size="12">Operations</text>
+    <path d="m405 43 4 4 4-4" fill="none" stroke="#AAA89F" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="426" y="47" font-size="12" font-weight="600">Billing</text>
+    <g transform="translate(1473 26)" fill="none" stroke="#4B4A45" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M18 9a6 6 0 0 0-12 0c0 6-3 8-3 9h18c0-1-3-3-3-9M10 22h4"/>
+    </g>
+    <circle cx="1494" cy="27" r="4" fill="#B4543F"/>
+    <circle cx="1534" cy="39" r="19" fill="#E9E2CF"/>
+    <text x="1534" y="43" text-anchor="middle" font-size="11" font-weight="700">DS</text>
+    <text x="1563" y="36" font-size="12" font-weight="600">Staff</text>
+    <text x="1563" y="52" class="muted" font-size="10">Reception</text>
+  </g>
+
+  <!-- Page heading -->
+  <text x="338" y="132" fill="#7A6B2E" class="ui label">OPERATIONS  /  BILLING</text>
+  <text x="338" y="176" class="ui serif" font-size="34" font-weight="600" letter-spacing="-.6">Billing &amp; payments</text>
+  <text x="338" y="205" class="ui muted" font-size="14">Review patient payment submissions, due dates, and receipts in one place.</text>
+  <rect x="1330" y="145" width="220" height="44" rx="10" fill="#1C1C1A"/>
+  <g transform="translate(1350 158)" fill="none" stroke="#FAFAF7" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12 2v12M7 9l5 5 5-5M3 17v3h18v-3"/>
+  </g>
+  <text x="1385" y="173" fill="#FAFAF7" class="ui" font-size="13" font-weight="600">Export billing report</text>
+  <rect x="338" y="222" width="1212" height="34" rx="8" fill="#F1EDE3" opacity=".75"/>
+  <circle cx="357" cy="239" r="7" fill="#9C8B3E" opacity=".17"/>
+  <path d="M357 235v5m0 2v.2" stroke="#7A6B2E" stroke-width="1.5" stroke-linecap="round"/>
+  <text x="374" y="243" class="ui" font-size="11.5" fill="#67645B">Historical billing and receipts are read-only. Online payment processing is disabled.</text>
+  <text x="1530" y="243" text-anchor="end" class="ui" font-size="10" fill="#8C887C" letter-spacing=".3">CONCEPT PREVIEW · SAMPLE DATA</text>
+
+  <!-- Summary cards -->
+  <g filter="url(#shadow)">
+    <rect x="338" y="278" width="386" height="142" rx="15" fill="#FFFFFF"/>
+    <rect x="741" y="278" width="386" height="142" rx="15" fill="#FFFFFF"/>
+    <rect x="1144" y="278" width="406" height="142" rx="15" fill="#FFFFFF"/>
+  </g>
+  <g class="ui">
+    <rect x="361" y="301" width="38" height="38" rx="11" fill="#F1EDE3"/>
+    <g transform="translate(370 310)" fill="none" stroke="#7A6B2E" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="1" y="2" width="20" height="15" rx="3"/><path d="M1 7h20M6 13h4"/>
+    </g>
+    <text x="412" y="315" fill="#77766F" font-size="12">Payment submissions</text>
+    <text x="361" y="376" class="serif" font-size="32" font-weight="600">24</text>
+    <text x="408" y="375" fill="#77766F" font-size="12">all time</text>
+    <text x="361" y="400" fill="#5C7A5C" font-size="11" font-weight="600">+ 6 this month</text>
+
+    <rect x="764" y="301" width="38" height="38" rx="11" fill="#FBF1DE"/>
+    <g transform="translate(773 310)" fill="none" stroke="#9A702F" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="11" cy="10" r="9"/><path d="M11 5v5l3 2"/>
+    </g>
+    <text x="815" y="315" fill="#77766F" font-size="12">Awaiting confirmation</text>
+    <text x="764" y="376" class="serif" font-size="32" font-weight="600">06</text>
+    <text x="811" y="375" fill="#77766F" font-size="12">need review</text>
+    <text x="764" y="400" fill="#9A702F" font-size="11" font-weight="600">Review submitted receipts</text>
+
+    <rect x="1167" y="301" width="38" height="38" rx="11" fill="#EAF0E9"/>
+    <g transform="translate(1176 310)" fill="none" stroke="#4F6A4F" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3 1h11l5 5v15H3zM13 1v6h6M7 13h8M7 17h8"/>
+    </g>
+    <text x="1218" y="315" fill="#77766F" font-size="12">Receipts on file</text>
+    <text x="1167" y="376" class="serif" font-size="32" font-weight="600">18</text>
+    <text x="1214" y="375" fill="#77766F" font-size="12">available to view</text>
+    <text x="1167" y="400" fill="#4F6A4F" font-size="11" font-weight="600">Securely attached to submissions</text>
+  </g>
+
+  <!-- Payment history surface -->
+  <g filter="url(#shadow)">
+    <rect x="338" y="442" width="1212" height="620" rx="15" fill="#FFFFFF"/>
+  </g>
+  <text x="366" y="481" class="ui serif" font-size="20" font-weight="600">Payment history</text>
+  <text x="366" y="503" class="ui muted" font-size="12">Track submissions and review uploaded proof of payment.</text>
+  <rect x="1320" y="459" width="205" height="40" rx="9" fill="#FFFFFF" stroke="#E5E2D9"/>
+  <g transform="translate(1336 470)" fill="none" stroke="#77766F" stroke-width="1.5" stroke-linecap="round">
+    <circle cx="8" cy="8" r="6"/><path d="m12.5 12.5 4 4"/>
+  </g>
+  <text x="1364" y="484" class="ui" font-size="12" fill="#AAA89F">Search patient...</text>
+
+  <!-- Filter chips -->
+  <rect x="366" y="522" width="48" height="31" rx="16" fill="#1C1C1A"/>
+  <text x="390" y="542" text-anchor="middle" fill="#FAFAF7" class="ui" font-size="11.5" font-weight="600">All</text>
+  <rect x="422" y="522" width="91" height="31" rx="16" fill="#FAFAF7" stroke="#E9E7DF"/>
+  <text x="468" y="542" text-anchor="middle" class="ui" font-size="11.5" fill="#5B5A54">Pending <tspan fill="#A27735" font-weight="700">6</tspan></text>
+  <rect x="521" y="522" width="102" height="31" rx="16" fill="#FAFAF7" stroke="#E9E7DF"/>
+  <text x="572" y="542" text-anchor="middle" class="ui" font-size="11.5" fill="#5B5A54">Completed</text>
+  <rect x="631" y="522" width="86" height="31" rx="16" fill="#FAFAF7" stroke="#E9E7DF"/>
+  <text x="674" y="542" text-anchor="middle" class="ui" font-size="11.5" fill="#5B5A54">Overdue</text>
+  <rect x="725" y="522" width="87" height="31" rx="16" fill="#FAFAF7" stroke="#E9E7DF"/>
+  <text x="768" y="542" text-anchor="middle" class="ui" font-size="11.5" fill="#5B5A54">Rejected</text>
+  <text x="1522" y="542" text-anchor="end" class="ui muted" font-size="11">Showing 6 of 24 submissions</text>
+
+  <!-- Table -->
+  <rect x="338" y="572" width="1212" height="44" fill="#FAFAF7"/>
+  <text x="366" y="599" class="ui label" fill="#77766F" font-size="10">PATIENT</text>
+  <text x="665" y="599" class="ui label" fill="#77766F" font-size="10">AMOUNT</text>
+  <text x="790" y="599" class="ui label" fill="#77766F" font-size="10">METHOD</text>
+  <text x="930" y="599" class="ui label" fill="#77766F" font-size="10">DUE DATE</text>
+  <text x="1063" y="599" class="ui label" fill="#77766F" font-size="10">SUBMITTED</text>
+  <text x="1211" y="599" class="ui label" fill="#77766F" font-size="10">STATUS</text>
+  <text x="1410" y="599" class="ui label" fill="#77766F" font-size="10">RECEIPT</text>
+
+  <line x1="338" y1="616" x2="1550" y2="616" class="line"/>
+  <line x1="338" y1="688" x2="1550" y2="688" class="line"/>
+  <line x1="338" y1="760" x2="1550" y2="760" class="line"/>
+  <line x1="338" y1="832" x2="1550" y2="832" class="line"/>
+  <line x1="338" y1="904" x2="1550" y2="904" class="line"/>
+  <line x1="338" y1="976" x2="1550" y2="976" class="line"/>
+
+  <!-- Row 1 -->
+  <circle cx="385" cy="652" r="18" fill="#F1EDE3"/><text x="385" y="656" text-anchor="middle" class="ui" font-size="10" font-weight="700">JM</text>
+  <text x="414" y="650" class="ui" font-size="12.5" font-weight="600">Julia Mendoza</text><text x="414" y="668" class="ui muted" font-size="10.5">Patient #10482</text>
+  <text x="665" y="657" class="ui" font-size="12.5" font-weight="600">₱2,500.00</text><text x="790" y="657" class="ui" font-size="12">GCash</text>
+  <rect x="930" y="640" width="88" height="24" rx="12" fill="#FBF1DE"/><text x="974" y="656" text-anchor="middle" class="ui" fill="#8A642A" font-size="10.5" font-weight="600">Oct 22, 2026</text>
+  <text x="1063" y="657" class="ui" font-size="11.5">Oct 20, 2026</text>
+  <rect x="1211" y="640" width="130" height="24" rx="12" fill="#FBF1DE"/><circle cx="1224" cy="652" r="3" fill="#C7913E"/><text x="1233" y="656" class="ui" fill="#8A642A" font-size="10.5" font-weight="600">Pending confirmation</text>
+  <rect x="1400" y="636" width="91" height="31" rx="8" fill="#FFFFFF" stroke="#DCD8CC"/><path d="M1415 646h11v13h-11zM1417 643h7" fill="none" stroke="#77766F" stroke-width="1.3" stroke-linejoin="round"/><text x="1457" y="656" text-anchor="middle" class="ui" font-size="10.5" font-weight="600">View</text>
+
+  <!-- Row 2 -->
+  <circle cx="385" cy="724" r="18" fill="#E8ECE8"/><text x="385" y="728" text-anchor="middle" class="ui" font-size="10" font-weight="700">AR</text>
+  <text x="414" y="722" class="ui" font-size="12.5" font-weight="600">Adrian Reyes</text><text x="414" y="740" class="ui muted" font-size="10.5">Patient #10319</text>
+  <text x="665" y="729" class="ui" font-size="12.5" font-weight="600">₱1,800.00</text><text x="790" y="729" class="ui" font-size="12">Bank transfer</text>
+  <rect x="930" y="712" width="88" height="24" rx="12" fill="#EAF0E9"/><text x="974" y="728" text-anchor="middle" class="ui" fill="#4F6A4F" font-size="10.5" font-weight="600">Oct 24, 2026</text>
+  <text x="1063" y="729" class="ui" font-size="11.5">Oct 19, 2026</text>
+  <rect x="1211" y="712" width="80" height="24" rx="12" fill="#EAF0E9"/><circle cx="1224" cy="724" r="3" fill="#5C7A5C"/><text x="1233" y="728" class="ui" fill="#4F6A4F" font-size="10.5" font-weight="600">Approved</text>
+  <rect x="1400" y="708" width="91" height="31" rx="8" fill="#FFFFFF" stroke="#DCD8CC"/><path d="M1415 718h11v13h-11zM1417 715h7" fill="none" stroke="#77766F" stroke-width="1.3" stroke-linejoin="round"/><text x="1457" y="728" text-anchor="middle" class="ui" font-size="10.5" font-weight="600">View</text>
+
+  <!-- Row 3 -->
+  <circle cx="385" cy="796" r="18" fill="#F2EAE6"/><text x="385" y="800" text-anchor="middle" class="ui" font-size="10" font-weight="700">LC</text>
+  <text x="414" y="794" class="ui" font-size="12.5" font-weight="600">Leah Cruz</text><text x="414" y="812" class="ui muted" font-size="10.5">Patient #10277</text>
+  <text x="665" y="801" class="ui" font-size="12.5" font-weight="600">₱3,200.00</text><text x="790" y="801" class="ui" font-size="12">GCash</text>
+  <rect x="930" y="784" width="88" height="24" rx="12" fill="#FBF1DE"/><text x="974" y="800" text-anchor="middle" class="ui" fill="#8A642A" font-size="10.5" font-weight="600">Oct 20, 2026</text>
+  <text x="1063" y="801" class="ui" font-size="11.5">Oct 18, 2026</text>
+  <rect x="1211" y="784" width="92" height="24" rx="12" fill="#F8EAE6"/><circle cx="1224" cy="796" r="3" fill="#B4543F"/><text x="1233" y="800" class="ui" fill="#9C4634" font-size="10.5" font-weight="600">Overdue</text>
+  <rect x="1400" y="780" width="91" height="31" rx="8" fill="#FFFFFF" stroke="#DCD8CC"/><path d="M1415 790h11v13h-11zM1417 787h7" fill="none" stroke="#77766F" stroke-width="1.3" stroke-linejoin="round"/><text x="1457" y="800" text-anchor="middle" class="ui" font-size="10.5" font-weight="600">View</text>
+
+  <!-- Row 4 -->
+  <circle cx="385" cy="868" r="18" fill="#ECEAF1"/><text x="385" y="872" text-anchor="middle" class="ui" font-size="10" font-weight="700">MT</text>
+  <text x="414" y="866" class="ui" font-size="12.5" font-weight="600">Marco Tan</text><text x="414" y="884" class="ui muted" font-size="10.5">Patient #10188</text>
+  <text x="665" y="873" class="ui" font-size="12.5" font-weight="600">₱1,200.00</text><text x="790" y="873" class="ui" font-size="12">Cash</text>
+  <rect x="930" y="856" width="88" height="24" rx="12" fill="#EAF0E9"/><text x="974" y="872" text-anchor="middle" class="ui" fill="#4F6A4F" font-size="10.5" font-weight="600">Oct 28, 2026</text>
+  <text x="1063" y="873" class="ui" font-size="11.5">Oct 17, 2026</text>
+  <rect x="1211" y="856" width="80" height="24" rx="12" fill="#EAF0E9"/><circle cx="1224" cy="868" r="3" fill="#5C7A5C"/><text x="1233" y="872" class="ui" fill="#4F6A4F" font-size="10.5" font-weight="600">Approved</text>
+  <rect x="1400" y="852" width="91" height="31" rx="8" fill="#FFFFFF" stroke="#DCD8CC"/><path d="M1415 862h11v13h-11zM1417 859h7" fill="none" stroke="#77766F" stroke-width="1.3" stroke-linejoin="round"/><text x="1457" y="872" text-anchor="middle" class="ui" font-size="10.5" font-weight="600">View</text>
+
+  <!-- Row 5 -->
+  <circle cx="385" cy="940" r="18" fill="#F1EDE3"/><text x="385" y="944" text-anchor="middle" class="ui" font-size="10" font-weight="700">SP</text>
+  <text x="414" y="938" class="ui" font-size="12.5" font-weight="600">Sofia Perez</text><text x="414" y="956" class="ui muted" font-size="10.5">Patient #10094</text>
+  <text x="665" y="945" class="ui" font-size="12.5" font-weight="600">₱2,000.00</text><text x="790" y="945" class="ui" font-size="12">Bank transfer</text>
+  <rect x="930" y="928" width="88" height="24" rx="12" fill="#F1EDE3"/><text x="974" y="944" text-anchor="middle" class="ui" fill="#77766F" font-size="10.5" font-weight="600">Oct 16, 2026</text>
+  <text x="1063" y="945" class="ui" font-size="11.5">Oct 16, 2026</text>
+  <rect x="1211" y="928" width="79" height="24" rx="12" fill="#F8EAE6"/><circle cx="1224" cy="940" r="3" fill="#B4543F"/><text x="1233" y="944" class="ui" fill="#9C4634" font-size="10.5" font-weight="600">Rejected</text>
+  <rect x="1400" y="924" width="91" height="31" rx="8" fill="#FFFFFF" stroke="#DCD8CC"/><path d="M1415 934h11v13h-11zM1417 931h7" fill="none" stroke="#77766F" stroke-width="1.3" stroke-linejoin="round"/><text x="1457" y="944" text-anchor="middle" class="ui" font-size="10.5" font-weight="600">View</text>
+
+  <!-- Table footer -->
+  <text x="366" y="1016" class="ui muted" font-size="11">Showing 1–5 of 24 payments</text>
+  <g class="ui">
+    <rect x="1374" y="993" width="34" height="30" rx="7" fill="#FFFFFF" stroke="#E5E2D9"/>
+    <path d="m1395 1003-5 5 5 5" fill="none" stroke="#AAA89F" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <rect x="1415" y="993" width="31" height="30" rx="7" fill="#1C1C1A"/>
+    <text x="1430.5" y="1013" text-anchor="middle" fill="#FAFAF7" font-size="11" font-weight="600">1</text>
+    <rect x="1453" y="993" width="31" height="30" rx="7" fill="#FFFFFF" stroke="#E5E2D9"/>
+    <text x="1468.5" y="1013" text-anchor="middle" font-size="11">2</text>
+    <rect x="1491" y="993" width="34" height="30" rx="7" fill="#FFFFFF" stroke="#E5E2D9"/>
+    <path d="m1504 1003 5 5-5 5" fill="none" stroke="#77766F" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>
