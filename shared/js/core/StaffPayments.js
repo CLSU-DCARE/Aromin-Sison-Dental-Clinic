@@ -8,7 +8,7 @@
   if (!patientId && document.getElementById('patientBillingBody')) return;
   const addButton = document.createElement('button');
   addButton.type = 'button';
-  addButton.className = 'btn btn-primary';
+  addButton.className = 'btn btn-gold';
   addButton.textContent = 'Add Payment';
   addButton.setAttribute('aria-controls', 'staffPaymentEntry');
   addButton.setAttribute('aria-expanded', 'false');
@@ -21,6 +21,7 @@
   panel.setAttribute('aria-describedby', 'staffPaymentDescription');
   panel.innerHTML = `
     <button class="staff-payment-close" type="button" id="staffPaymentClose" aria-label="Close Add Payment">&times;</button>
+    <div class="staff-payment-eyebrow">PATIENT ACCOUNT</div>
     <h3 tabindex="-1" id="staffPaymentHeading">Add Payment</h3>
     <p id="staffPaymentDescription">Choose an existing treatment bill or braces contract. Payments are recorded immediately and reduce the balance.</p>
     <form id="staffPaymentForm">
@@ -37,7 +38,7 @@
         <label>Notes / transaction reference (optional)<input name="note" maxlength="255" placeholder="Reference number or collection notes"></label>
       </div>
       <p id="staffPaymentBalance">Select a billing account to see the balance.</p>
-      <div class="staff-payment-actions"><button class="btn btn-primary" type="submit" disabled>Record payment</button>
+      <div class="staff-payment-actions"><button class="btn btn-gold" type="submit" disabled>Record payment</button>
         <button class="btn btn-outline" type="button" id="staffPaymentRefresh">Refresh accounts</button></div>
       <p id="staffPaymentStatus" role="status" aria-live="polite"></p>
     </form>`;

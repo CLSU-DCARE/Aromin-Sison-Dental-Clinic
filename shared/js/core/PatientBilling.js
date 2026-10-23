@@ -10,26 +10,44 @@
   const esc = value => ASDC.HtmlHelpers.escapeHtml(String(value ?? ''));
   const peso = value => new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(Number(value || 0));
   const date = value => value ? ASDC.HtmlHelpers.formatDate(value) : 'Not recorded';
-  const status = value => `<span class="chart-status">${esc(value === 'approved' ? 'Recorded' : value)}</span>`;
+  const status = value => {
+    const color = { approved: 'green', paid: 'green', completed: 'green', pending: 'amber', rejected: 'red', cancelled: 'red', active: 'blue' }[value] || 'gray';
+    return `<span class="tag tag-${color} billing-status">${esc(value === 'approved' ? 'Recorded' : value)}</span>`;
+  };
   let loading = null;
   let patients = [];
+  let filter = 'all';
   const message = document.getElementById('patientBillingMessage');
+  const cards = items => items.map(([label, value, detail, tone]) => `<div class="billing-stat billing-stat-${tone}"><span class="billing-stat-label">${label}</span><strong>${peso(value)}</strong><small>${detail}</small></div>`).join('');
   function renderDirectory() {
     const query = document.getElementById('billingPatientSearch').value.trim().toLowerCase();
-    const filtered = patients.filter(item => `${item.patient} #P-${item.patient_id}`.toLowerCase().includes(query));
+    const filtered = patients.filter(item => {
+      const match = `${item.patient} #P-${item.patient_id}`.toLowerCase().includes(query);
+      return match && (filter === 'all' || (filter === 'balance' && Number(item.balance_amount) > 0) || (filter === 'pending' && Number(item.pending_amount) > 0) || (filter === 'settled' && Number(item.accounts) > 0 && Number(item.balance_amount) <= 0));
+    });
+    const sum = key => patients.reduce((value, item) => value + Number(item[key] || 0), 0);
+    document.getElementById('billingDirectoryTotals').innerHTML = cards([
+      ['Recorded payments', sum('paid_amount'), 'Across all patient accounts', 'green'],
+      ['Outstanding balance', sum('balance_amount'), `${patients.filter(item => Number(item.balance_amount) > 0).length} patients with a balance`, 'gold'],
+      ['Pending payments', sum('pending_amount'), 'Awaiting confirmation', 'amber']
+    ]);
     document.getElementById('patientBillingBody').innerHTML = filtered.map(item => `<tr>
-      <td><strong>${esc(item.patient)}</strong><br><small>#P-${Number(item.patient_id)}</small></td>
-      <td>${peso(item.paid_amount)}</td><td>${peso(item.balance_amount)}</td><td>${peso(item.pending_amount)}</td>
-      <td><a class="btn btn-outline btn-sm patient-view-btn" href="${chart ? '' : '../admin-system/'}patient-chart.html?patient_id=${Number(item.patient_id)}#billing">View Billing</a></td>
-    </tr>`).join('') || '<tr><td colspan="5">No patients match this search.</td></tr>';
+      <td><div class="billing-patient"><span class="billing-avatar" aria-hidden="true">${esc(String(item.patient).trim().split(/\s+/).slice(0, 2).map(word => word[0]).join('').toUpperCase())}</span><div><strong>${esc(item.patient)}</strong><small>#P-${Number(item.patient_id)} <span aria-hidden="true">·</span> ${Number(item.accounts || 0)} billing ${Number(item.accounts) === 1 ? 'account' : 'accounts'}</small></div></div></td>
+      <td class="billing-money">${peso(item.paid_amount)}</td><td class="billing-money ${Number(item.balance_amount) > 0 ? 'billing-outstanding' : 'billing-muted'}">${peso(item.balance_amount)}</td>
+      <td class="billing-money ${Number(item.pending_amount) > 0 ? 'billing-pending' : 'billing-muted'}">${peso(item.pending_amount)}</td>
+      <td class="billing-row-action"><a class="btn btn-outline btn-sm patient-view-btn" href="${chart ? '' : '../admin-system/'}patient-chart.html?patient_id=${Number(item.patient_id)}#billing">View Billing <span aria-hidden="true">↗</span></a></td>
+    </tr>`).join('') || '<tr><td colspan="5" class="billing-empty">No patients found. Try another name or filter.</td></tr>';
+    message.textContent = `Showing ${filtered.length} of ${patients.length} patients`;
   }
   function renderPatient(data) {
     const accounts = data.accounts || [];
     const payments = data.payments || [];
     const total = key => accounts.reduce((sum, item) => sum + (key === 'balance_amount' && item.status === 'cancelled' ? 0 : Number(item[key] || 0)), 0);
-    document.getElementById('patientBillingTotals').innerHTML = [
-      ['Recorded payments', total('paid_amount')], ['Outstanding balance', total('balance_amount')], ['Pending payments', total('pending_amount')]
-    ].map(([label, value]) => `<div class="chart-stat"><span>${peso(value)}</span><small>${label}</small></div>`).join('');
+    document.getElementById('patientBillingTotals').innerHTML = cards([
+      ['Recorded payments', total('paid_amount'), 'Successfully recorded', 'green'],
+      ['Outstanding balance', total('balance_amount'), 'Remaining across treatment plans', 'gold'],
+      ['Pending payments', total('pending_amount'), 'Awaiting confirmation', 'amber']
+    ]);
     document.getElementById('patientBillingAccounts').innerHTML = accounts.map(item => `<tr>
       <td>${esc(item.service)}<br><small>${esc(item.id)}</small></td><td>${peso(item.total_amount)}</td>
       <td>${peso(item.paid_amount)}</td><td>${peso(item.balance_amount)}</td><td>${peso(item.pending_amount)}</td><td>${status(item.status)}</td>
@@ -51,7 +69,7 @@
         const data = await apiFetch(url, { cache: 'no-store' });
         if (chart) renderPatient(data);
         else { patients = data.patients || []; renderDirectory(); }
-        message.textContent = chart ? 'Pending payments have not yet reduced the outstanding balance.' : 'Select a patient to view their accounts, payment history, and outstanding balances.';
+        if (chart) message.textContent = 'Pending payments have not yet reduced the outstanding balance.';
         if (chart && location.hash === '#billing') section.scrollIntoView({ block: 'start' });
       } catch (error) {
         message.textContent = error.message || 'Unable to load billing information.';
@@ -64,6 +82,15 @@
   }
   document.getElementById('refreshPatientBilling')?.addEventListener('click', load);
   document.getElementById('billingPatientSearch')?.addEventListener('input', renderDirectory);
+  document.querySelectorAll('[data-billing-filter]').forEach(button => button.addEventListener('click', () => {
+    filter = button.dataset.billingFilter;
+    document.querySelectorAll('[data-billing-filter]').forEach(item => {
+      const selected = item === button;
+      item.classList.toggle('active', selected);
+      item.setAttribute('aria-pressed', String(selected));
+    });
+    renderDirectory();
+  }));
   window.addEventListener('staff-payment-recorded', () => {
     load();
     if (chart && window.frameElement?.id === 'patientChartFrame') {

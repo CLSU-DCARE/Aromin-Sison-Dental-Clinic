@@ -19,7 +19,7 @@
 <link rel="stylesheet" href="../admin-system/assets/css/admin.css?v=20261020-case-actions-row">
 <link rel="stylesheet" href="assets/css/dentist-records.css?v=20260926-records-columns">
 <link rel="stylesheet" href="../shared/css/dashboard-system.css?v=20260924-unified-dashboard-shell">
-<link rel="stylesheet" href="../shared/css/staff-payments.css?v=20261023-patient-billing">
+<link rel="stylesheet" href="../shared/css/staff-payments.css?v=20261023-billing-design">
 </head>
 <body class="dentist-dashboard">
 
@@ -213,12 +213,21 @@
       </section>
 
       <!-- ===== PAYMENT & BILLING ===== -->
-      <section class="view patient-billing" id="view-payments">
-        <div class="page-head"><div><div class="eyebrow">Billing</div><p>Patient accounts, payment history, and outstanding balances.</p></div><button class="btn btn-outline btn-sm" type="button" id="refreshPatientBilling">Refresh</button></div>
-        <div class="panel">
-          <div class="toolbar"><label class="chart-search">Search patient <input id="billingPatientSearch" type="search" placeholder="Name or patient ID" aria-label="Search billing patients"></label></div>
-          <p id="patientBillingMessage" role="status">Choose a patient to view billing details.</p>
-          <div class="table-scroll"><table><thead><tr><th>Patient</th><th>Recorded payments</th><th>Outstanding balance</th><th>Pending payments</th><th></th></tr></thead><tbody id="patientBillingBody"></tbody></table></div>
+      <section class="view patient-billing billing-directory" id="view-payments">
+        <div class="page-head"><div><div class="eyebrow">Patient accounts</div><p>Payments and balances, organised around your patients.</p></div><button class="btn btn-outline btn-sm" type="button" id="refreshPatientBilling"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5"/><path d="M6 7a7 7 0 0 1 12-1l2 3M4 15l2 3a7 7 0 0 0 12-1"/></svg> Refresh</button></div>
+        <div class="billing-overview" id="billingDirectoryTotals" aria-label="Billing overview"></div>
+        <div class="panel billing-directory-panel">
+          <div class="billing-toolbar">
+            <div class="billing-filter-group" role="group" aria-label="Filter billing accounts">
+              <button class="filter-chip active" data-billing-filter="all" aria-pressed="true">All patients</button>
+              <button class="filter-chip" data-billing-filter="balance" aria-pressed="false">With balance</button>
+              <button class="filter-chip" data-billing-filter="pending" aria-pressed="false">Pending</button>
+              <button class="filter-chip" data-billing-filter="settled" aria-pressed="false">Settled</button>
+            </div>
+            <label class="billing-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg><input id="billingPatientSearch" type="search" placeholder="Search name or patient ID" aria-label="Search billing patients"></label>
+          </div>
+          <div class="table-scroll"><table><thead><tr><th>Patient</th><th class="billing-money">Recorded payments</th><th class="billing-money">Outstanding balance</th><th class="billing-money">Pending payments</th><th><span class="billing-sr-only">Actions</span></th></tr></thead><tbody id="patientBillingBody"></tbody></table></div>
+          <div class="billing-table-footer"><p id="patientBillingMessage" role="status">Loading patient accounts…</p><span>Select a patient to view their full billing record</span></div>
         </div>
       </section>
 
@@ -624,7 +633,7 @@
 <script src="assets/js/DentistDashboard.js?v=20261023-fast-response" defer></script>
 <script src="assets/js/dentist.js?v=20260916-integration" defer></script>
 
-<script src="../shared/js/core/PatientBilling.js?v=20261023-patient-billing" defer></script>
-<script src="../shared/js/core/StaffPayments.js?v=20261023-patient-billing" defer></script>
+<script src="../shared/js/core/PatientBilling.js?v=20261023-billing-design" defer></script>
+<script src="../shared/js/core/StaffPayments.js?v=20261023-billing-design" defer></script>
 </body>
 </html>
