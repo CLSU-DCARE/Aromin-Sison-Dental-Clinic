@@ -16,6 +16,7 @@ let html = read('admin-system/patient-chart.html').replace(/<script\b[^>]*>[\s\S
 const setup = `window.ASDC={HtmlHelpers:{escapeHtml:v=>String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'),formatDate:v=>v},SessionGuard:class{init(){window.dispatchEvent(new CustomEvent('asdc:authenticated',{detail:{role:'receptionist'}}));}}};window.apiFetch=async()=>(${JSON.stringify(data)});window.ASDC.ApiClient={api:window.apiFetch};`;
 const checks = `document.addEventListener('DOMContentLoaded',()=>setTimeout(()=>{
   document.querySelector('main').classList.add('billing-pdf-layout');
+  document.getElementById('chartAppointmentHistory').hidden=false;
   const results=[];
   for(const width of [1000,740]) {
     document.querySelector('main').style.cssText='width:'+width+'px;max-width:none;';
@@ -31,7 +32,7 @@ try {
   fs.writeFileSync(fixture, html);
   const chrome = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
   const edge = process.env.ASDC_EDGE_BINARY || (fs.existsSync(chrome) ? chrome : 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe');
-  const result = spawnSync(edge, ['--headless=new', '--disable-gpu', '--disable-background-networking', '--disable-extensions', '--no-first-run', '--no-default-browser-check', '--host-resolver-rules=MAP * 0.0.0.0', '--virtual-time-budget=2000', '--user-data-dir=' + path.join(dir, 'profile'), '--dump-dom', 'file:///' + fixture.replace(/\\/g, '/') + '?patient_id=2'], { encoding: 'utf8', windowsHide: true, timeout: 30000, maxBuffer: 4 * 1024 * 1024 });
+  const result = spawnSync(edge, ['--headless=new', '--disable-gpu', '--disable-background-networking', '--disable-extensions', '--no-first-run', '--no-default-browser-check', '--host-resolver-rules=MAP * 0.0.0.0', '--virtual-time-budget=2000', '--user-data-dir=' + path.join(dir, 'profile'), '--dump-dom', 'file:///' + fixture.replace(/\\/g, '/') + '?patient_id=2#billing'], { encoding: 'utf8', windowsHide: true, timeout: 30000, maxBuffer: 4 * 1024 * 1024 });
   if (result.error) throw result.error;
   assert.equal(result.status, 0, result.stderr);
   const outcome = result.stdout.match(/data-layout-result="([^"]+)"/);

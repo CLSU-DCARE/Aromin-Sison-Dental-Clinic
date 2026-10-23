@@ -13,7 +13,7 @@
 <link rel="stylesheet" href="../shared/css/buttons.css?v=5">
 <link rel="stylesheet" href="../shared/css/panels.css?v=4">
 <link rel="stylesheet" href="assets/css/admin.css?v=20261020-patient-chart">
-<link rel="stylesheet" href="assets/css/patient-chart.css?v=20261023-appointment-layout">
+<link rel="stylesheet" href="assets/css/patient-chart.css?v=20261023-separated-views">
 <link rel="stylesheet" href="../shared/css/staff-payments.css?v=20261023-wrap-pdf">
 </head>
 <body class="patient-chart-page">
@@ -26,8 +26,8 @@
 
   <header class="chart-heading">
     <p class="eyebrow"><span id="chartPortalRole">PORTAL</span> · PATIENT RECORDS</p>
-    <h1>Patient Chart</h1>
-    <p>Clinical and appointment history for clinic staff.</p>
+    <h1 id="chartPageTitle">Patient Record</h1>
+    <p id="chartPageDescription">Patient details and appointment history for clinic staff.</p>
   </header>
 
   <section class="panel chart-profile" aria-labelledby="patientName">
@@ -41,14 +41,13 @@
     <div class="chart-contact-grid" id="patientContact"></div>
   </section>
 
-  <div class="chart-stats" aria-label="Record totals">
-    <div class="chart-stat"><span id="recordCount">—</span><small>Clinical records</small></div>
+  <div class="chart-stats" id="chartRecordTotals" aria-label="Record totals">
     <div class="chart-stat"><span id="appointmentCount">—</span><small>Appointments</small></div>
   </div>
 
   <div id="chartMessage" class="chart-message" role="status">Loading patient chart…</div>
 
-  <section class="panel chart-history active patient-billing" id="view-payments" aria-labelledby="billingHeading">
+  <section class="panel chart-history active patient-billing" id="view-payments" aria-labelledby="billingHeading" hidden>
     <div class="chart-section-heading page-head">
       <div><p class="eyebrow">PATIENT ACCOUNT</p><h2 id="billingHeading">Billing &amp; Payments</h2></div>
     </div>
@@ -62,13 +61,6 @@
     <button class="btn btn-outline btn-sm" type="button" id="downloadPatientBilling">Download</button>
   </section>
 
-  <section class="panel chart-history" id="chartClinicalHistory" aria-labelledby="recordsHeading">
-    <div class="chart-section-heading">
-      <div><p class="eyebrow">CARE HISTORY</p><h2 id="recordsHeading">Clinical Treatment Records</h2></div>
-      <label class="chart-search"><i class="bi bi-search" aria-hidden="true"></i><input id="recordsSearch" type="search" placeholder="Search records" aria-label="Search clinical records"></label>
-    </div>
-    <div id="recordsList" class="chart-entry-list"></div>
-  </section>
 
   <section class="panel chart-history" id="chartAppointmentHistory" aria-labelledby="appointmentsHeading">
     <div class="chart-section-heading">
@@ -87,9 +79,9 @@
 <script src="../shared/js/core/HtmlHelpers.js?v=20260921-avatar-fallback" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
 <script src="assets/js/PatientChartPDF.js?v=20261023-statement-tables" defer></script>
-<script src="assets/js/BillingLayoutPDF.js?v=20261023-chart-layout" defer></script>
-<script src="assets/js/patient-chart.js?v=20261023-appointment-layout" defer></script>
-<script src="../shared/js/core/PatientBilling.js?v=20261023-layout-pdf" defer></script>
-<script src="../shared/js/core/StaffPayments.js?v=20261023-billing-design" defer></script>
+<script src="assets/js/BillingLayoutPDF.js?v=20261023-appointments-only" defer></script>
+<script src="assets/js/patient-chart.js?v=20261023-archived-record" defer></script>
+<script src="../shared/js/core/PatientBilling.js?v=20261023-archived-record" defer></script>
+<script src="../shared/js/core/StaffPayments.js?v=20261023-archived-record" defer></script>
 </body>
 </html>

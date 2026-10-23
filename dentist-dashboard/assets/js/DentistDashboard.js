@@ -237,7 +237,7 @@ if (inboxEmpty) inboxEmpty.textContent = 'Loading notifications...';
         '<td>' + ASDC.HtmlHelpers.escapeHtml(ASDC.HtmlHelpers.formatDateTime(patient.archived_at || '')) + '</td>' +
         '<td>' + ASDC.HtmlHelpers.escapeHtml(retained) + '</td>' +
         '<td>' + ASDC.HtmlHelpers.escapeHtml(patient.archived_by_name || 'System') + '</td>' +
-        '<td><button type="button" class="btn btn-outline btn-sm" data-archive-view="' + Number(patient.patient_id) + '">View</button></td>' +
+        '<td><a class="btn btn-outline btn-sm patient-view-btn" href="../admin-system/patient-chart.html?patient_id=' + Number(patient.patient_id) + '&amp;archived=1">View Record</a></td>' +
       '</tr>';
     }).join('');
   };

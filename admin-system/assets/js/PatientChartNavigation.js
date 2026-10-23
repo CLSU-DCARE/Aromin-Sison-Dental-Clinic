@@ -44,7 +44,7 @@
 
   window.addEventListener('popstate', event => {
     const path = event.state?.patientChartPath;
-    if (typeof path === 'string' && /^\/(?:[^?#]*\/)?admin-system\/patient-chart\.html\?patient_id=\d+(?:#billing)?$/.test(path)) openChart(path);
+    if (typeof path === 'string' && /^\/(?:[^?#]*\/)?admin-system\/patient-chart\.html\?patient_id=\d+(?:&archived=1)?(?:#billing)?$/.test(path)) openChart(path);
     else closeChart();
   });
 

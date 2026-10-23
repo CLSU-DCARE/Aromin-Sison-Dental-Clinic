@@ -1,28 +1,20 @@
 (function () {
   'use strict';
   let chartData = null;
+  const archivedView = new URLSearchParams(window.location.search).get('archived') === '1';
+  const billingView = !archivedView && window.location.hash === '#billing';
+  document.getElementById('view-payments').hidden = !billingView;
+  document.getElementById('chartAppointmentHistory').hidden = billingView;
+  document.getElementById('chartRecordTotals').hidden = billingView;
+  document.getElementById('chartPageTitle').textContent = billingView ? 'Patient Billing' : 'Patient Record';
+  document.getElementById('chartPageDescription').textContent = billingView ? 'Billing accounts and payment history for this patient.' : 'Patient details and appointment history for clinic staff.';
+  if (billingView || archivedView) {
+    const back = document.querySelector('.chart-back');
+    if (back) { back.href = archivedView ? 'dashboard.html#archived' : 'dashboard.html#payments'; back.innerHTML = '<i class="bi bi-arrow-left" aria-hidden="true"></i> ' + (archivedView ? 'Back to Archived Patients' : 'Back to Billing'); }
+  }
 
   const esc = value => window.ASDC.HtmlHelpers.escapeHtml(String(value ?? ''));
   const date = value => value ? window.ASDC.HtmlHelpers.formatDate(value) : 'Date not recorded';
-
-  function renderRecords(records, search = null) {
-    const list = document.getElementById('recordsList');
-    const query = search ?? document.getElementById('recordsSearch').value.trim().toLowerCase();
-    const rows = records.filter(record => [record.date_recorded, record.diagnosis, record.treatment_given, record.treatment_protocol, record.dentist_name]
-      .some(value => String(value || '').toLowerCase().includes(query)));
-    if (!rows.length) {
-      list.innerHTML = `<p class="chart-empty">${records.length ? 'No clinical records match your search.' : 'No clinical treatment records are on file.'}</p>`;
-      return;
-    }
-    list.innerHTML = rows.map(record => {
-      const details = [
-        record.diagnosis ? `<div><b>Diagnosis</b><p>${esc(record.diagnosis)}</p></div>` : '',
-        record.treatment_given ? `<div><b>Treatment</b><p>${esc(record.treatment_given)}</p></div>` : '',
-        record.treatment_protocol ? `<div><b>Notes / protocol</b><p>${esc(record.treatment_protocol)}</p></div>` : ''
-      ].filter(Boolean).join('');
-      return `<article class="chart-entry"><div class="chart-entry-top"><strong>${esc(date(record.date_recorded))}</strong><span>${esc(record.dentist_name || 'Dentist not recorded')}</span></div><div class="chart-entry-details">${details || '<p>Clinical details not recorded.</p>'}</div></article>`;
-    }).join('');
-  }
 
   function renderAppointments(appointments, search = null) {
     const list = document.getElementById('appointmentsList');
@@ -52,30 +44,28 @@
     }
 
     try {
-      const data = await window.ASDC.ApiClient.api(`../backend/api/patients/details.php?patient_id=${encodeURIComponent(patientId)}`, {
+      const endpoint = archivedView ? 'archived.php' : 'details.php';
+      const data = await window.ASDC.ApiClient.api(`../backend/api/patients/${endpoint}?patient_id=${encodeURIComponent(patientId)}${archivedView ? '&view=record' : ''}`, {
         cache: 'no-store'
       });
       const patient = data.patient || {};
       const fullName = `${patient.first_name || ''} ${patient.last_name || ''}`.trim() || 'Patient';
       const phone = patient.contact_number || '';
-      document.title = `${fullName} · Patient Chart | Aromin-Sison Dental Clinic`;
+      document.title = `${fullName} · ${billingView ? 'Patient Billing' : 'Patient Record'} | Aromin-Sison Dental Clinic`;
       document.getElementById('patientName').textContent = fullName;
       document.getElementById('patientInitials').textContent = fullName.split(/\s+/).slice(0, 2).map(part => part[0] || '').join('').toUpperCase();
       document.getElementById('patientIdentifier').textContent = `Patient ID #P-${Number(patient.patient_id)}`;
-      document.getElementById('patientStatus').innerHTML = `<span class="tag tag-${Number(patient.is_active) === 0 ? 'red' : 'green'}">${Number(patient.is_active) === 0 ? 'Inactive' : 'Active'}</span>`;
+      document.getElementById('patientStatus').innerHTML = `<span class="tag tag-${archivedView ? 'amber' : Number(patient.is_active) === 0 ? 'red' : 'green'}">${archivedView ? 'Archived' : Number(patient.is_active) === 0 ? 'Inactive' : 'Active'}</span>`;
       document.getElementById('patientContact').innerHTML = [
         `<div><small>PHONE</small>${phone ? `<a class="phone-link" href="tel:${esc(phone.replace(/[^+0-9]/g, ''))}">${esc(phone)}</a>` : '<span>Not provided</span>'}</div>`,
         `<div><small>EMAIL</small><span>${esc(patient.email || 'Not provided')}</span></div>`,
-        `<div><small>REGISTERED</small><span>${esc(date(patient.registered_at))}</span></div>`
+        `<div><small>REGISTERED</small><span>${esc(date(patient.registered_at))}</span></div>`,
+        ...(archivedView ? [`<div><small>ARCHIVED</small><span>${esc(date(patient.archived_at))}</span></div>`] : [])
       ].join('');
 
-      const records = Array.isArray(data.records) ? data.records : [];
       const appointments = Array.isArray(data.appointments) ? data.appointments : [];
-      document.getElementById('recordCount').textContent = records.length;
       document.getElementById('appointmentCount').textContent = appointments.length;
-      renderRecords(records);
       renderAppointments(appointments);
-      document.getElementById('recordsSearch').addEventListener('input', () => renderRecords(records));
       document.getElementById('appointmentsSearch').addEventListener('input', () => renderAppointments(appointments));
       message.hidden = true;
       chartData = data;
@@ -105,12 +95,11 @@
       download.disabled = true;
       const status = document.getElementById('chartDownloadStatus');
       try {
-        if (window.location.hash === '#billing') await window.ASDC.exportPatientBilling();
+        if (billingView) await window.ASDC.exportPatientBilling();
         else {
-          renderRecords(chartData.records || [], '');
           renderAppointments(chartData.appointments || [], '');
           try { await window.ASDC.downloadPatientChartLayoutPDF(chartData.patient); }
-          finally { renderRecords(chartData.records || []); renderAppointments(chartData.appointments || []); }
+          finally { renderAppointments(chartData.appointments || []); }
         }
         status.textContent = 'A4 PDF downloaded.';
       } catch (error) {

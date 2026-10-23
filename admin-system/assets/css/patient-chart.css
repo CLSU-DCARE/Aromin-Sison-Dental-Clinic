@@ -1,4 +1,5 @@
 .patient-chart-page{min-height:100vh;background:var(--ivory,#f7f5ef);color:var(--ink,#23231f);}
+.patient-chart-page [hidden]{display:none !important;}
 .chart-shell{width:min(1120px,calc(100% - 40px));margin:0 auto;padding:28px 0 64px;}
 .chart-actions{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:24px;}
 .chart-back{gap:8px;text-decoration:none;}

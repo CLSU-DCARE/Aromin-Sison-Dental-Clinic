@@ -3,6 +3,7 @@
   'use strict';
   const section = document.getElementById('view-payments');
   if (!section) return;
+  if (document.body.classList.contains('patient-chart-page') && (location.hash !== '#billing' || new URLSearchParams(location.search).get('archived') === '1')) return;
   const patientId = Number(section.dataset.patientId) || null;
   // Collections are entered from an individual patient's billing record.
   if (!patientId && document.getElementById('patientBillingBody')) return;

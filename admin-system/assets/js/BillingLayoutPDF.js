@@ -22,7 +22,7 @@
     const profile = document.querySelector('.chart-profile');
     const sections = billingOnly
       ? [document.getElementById('view-payments')]
-      : [document.getElementById('chartClinicalHistory'), document.getElementById('chartAppointmentHistory')];
+      : [document.getElementById('chartAppointmentHistory')];
     if (!profile || sections.some(section => !section)) throw new Error('Patient record is not ready. Please try again.');
     const root = document.createElement('div');
     root.className = 'chart-shell billing-pdf-layout';

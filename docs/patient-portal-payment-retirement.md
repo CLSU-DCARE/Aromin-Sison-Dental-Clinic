@@ -24,6 +24,10 @@ Deploy the migration before the code that reads `patients.is_active`. Validate p
 
 Do not drop legacy account or payment tables without a separately reviewed export and retention plan. Pending submissions remain pending historical evidence; the revised system does not approve, reject, refund or otherwise settle them automatically.
 
+## Patient registration
+
+Patient registration now rejects a non-archived match on full name, email, or contact number. Names ignore letter case and repeated spaces; Philippine mobile numbers ignore formatting and equivalent `09`/`+639` prefixes. Inactive records continue to reserve their identity until archived. Archived records remain intact and allow a new registration; restoring an archived record is blocked if a replacement currently exists. The same check applies to profile edits, and booking confirmation reuses matching existing patients. Concurrent identity changes share a database advisory lock. Existing duplicate records are retained; no migration or automatic merge is performed. Verify with `php tests/patient_duplicates_integration.php`, which uses a disposable schema.
+
 ## Staff payment collection
 
 Both staff dashboards provide **Billing & Payments** with a shared collection form. Choose an existing patient billing account, amount, method, payment date, and optional notes/reference. New collections are immediately approved, attributed to the signed-in staff user, and assigned an internal reference. The payment and balance update commit together; full payment marks a treatment bill paid or a braces contract completed. Amounts reserved by historical pending submissions are unavailable for new collections. Archived patients and inactive or settled accounts cannot receive payments. Existing history and receipts are preserved; patient payment APIs remain disabled.

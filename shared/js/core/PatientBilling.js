@@ -4,6 +4,7 @@
   const section = document.getElementById('view-payments');
   if (!section) return;
   const chart = document.body.classList.contains('patient-chart-page');
+  if (chart && (location.hash !== '#billing' || new URLSearchParams(location.search).get('archived') === '1')) return;
   const patientId = chart ? Number(new URLSearchParams(location.search).get('patient_id')) : null;
   if (chart && (!Number.isInteger(patientId) || patientId < 1)) return;
   if (chart) section.dataset.patientId = String(patientId);

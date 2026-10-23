@@ -27,7 +27,7 @@ const ctx = {
   },
   html2canvas: async (element, config) => {
     assert.equal(config.windowWidth, 1200, 'Use desktop card layout even when downloading on mobile.');
-    assert.deepEqual(element.children.slice(1).map(child => child.kind), chartExport ? ['patient-profile', 'chartClinicalHistory', 'chartAppointmentHistory'] : ['patient-profile', 'billing-only']);
+    assert.deepEqual(element.children.slice(1).map(child => child.kind), chartExport ? ['patient-profile', 'chartAppointmentHistory'] : ['patient-profile', 'billing-only']);
     config.onclone({}, element);
     return { width: 2000, height: 4200 };
   },

@@ -4,7 +4,7 @@ const path = require('node:path');
 const vm = require('node:vm');
 const root = path.join(__dirname, '..');
 
-async function scenario({ hostname = 'arominsisondental.vercel.app', role = 'receptionist', recover = false, failure = null, patientId = '2' } = {}) {
+async function scenario({ hostname = 'arominsisondental.vercel.app', role = 'receptionist', recover = false, failure = null, patientId = '2', hash = '', archived = false } = {}) {
   const elements = new Map();
   const listeners = new Map();
   const calls = [];
@@ -14,10 +14,10 @@ async function scenario({ hostname = 'arominsisondental.vercel.app', role = 'rec
     return elements.get(id);
   };
   const ctx = {
-    location: { hostname, pathname: '/admin-system/patient-chart.html', search: '?patient_id=' + patientId },
+    location: { hostname, pathname: '/admin-system/patient-chart.html', search: '?patient_id=' + patientId + (archived ? '&archived=1' : ''), hash },
     URLSearchParams, navigator: {},
     CustomEvent: class { constructor(type, options) { this.type = type; this.detail = options.detail; } },
-    document: { getElementById: element, querySelector: () => null, addEventListener(name, handler) { if (name === 'DOMContentLoaded') ready = handler; } },
+    document: { getElementById: element, querySelector: selector => selector === '.chart-back' ? element('chartBack') : null, addEventListener(name, handler) { if (name === 'DOMContentLoaded') ready = handler; } },
     addEventListener(name, handler) { listeners.set(name, handler); },
     dispatchEvent(event) { listeners.get(event.type)?.(event); },
     fetch: async (url, options) => {
@@ -59,12 +59,21 @@ async function scenario({ hostname = 'arominsisondental.vercel.app', role = 'rec
     assert.equal(calls[0].url, 'https://asdc-api-production.up.railway.app/backend/api/patients/details.php?patient_id=2');
     assert.equal(calls[0].options.credentials, 'include', 'Production API must receive session cookies.');
     assert.equal(elements.get('patientName').textContent, 'Chart Test');
-    assert.equal(elements.get('recordCount').textContent, 1);
     assert.equal(elements.get('appointmentCount').textContent, 1);
-    assert(elements.get('recordsList').innerHTML.includes('Test diagnosis'));
+    assert.equal(elements.get('view-payments').hidden, true, 'Patient Management must not show billing.');
+    assert.equal(elements.get('chartAppointmentHistory').hidden, false);
     assert(elements.get('appointmentsList').innerHTML.includes('Cleaning'));
     assert.equal(elements.get('chartMessage').hidden, true);
   }
+  const billing = await scenario({ hash: '#billing' });
+  assert.equal(billing.elements.get('view-payments').hidden, false);
+  assert.equal(billing.elements.get('chartAppointmentHistory').hidden, true, 'Billing view must not show appointments.');
+  const archive = await scenario({ archived: true });
+  assert(archive.calls[0].url.endsWith('/patients/archived.php?patient_id=2&view=record'));
+  assert.equal(archive.elements.get('view-payments').hidden, true);
+  assert.equal(archive.elements.get('chartAppointmentHistory').hidden, false);
+  assert(archive.elements.get('patientStatus').innerHTML.includes('Archived'));
+  assert.equal(archive.elements.get('chartBack').href, 'dashboard.html#archived');
   const local = await scenario({ hostname: 'localhost' });
   assert.equal(local.calls[0].options.credentials, 'same-origin');
   assert.equal(local.calls[0].url, '../backend/api/patients/details.php?patient_id=2');

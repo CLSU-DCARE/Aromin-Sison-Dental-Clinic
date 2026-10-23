@@ -417,32 +417,18 @@ class AppointmentService
 
     private static function findOrCreatePatient(PDO $pdo, array $request): int
     {
-        if ($request['email']) {
-            $stmt = $pdo->prepare('SELECT patient_id FROM patients WHERE email=? AND archived_at IS NULL ORDER BY user_id IS NOT NULL DESC LIMIT 1');
-            $stmt->execute([$request['email']]);
-            $patient = $stmt->fetchColumn();
-            if ($patient) return (int) $patient;
-        }
-
-        if ($request['contact_number']) {
-            $stmt = $pdo->prepare('SELECT patient_id FROM patients WHERE contact_number=? AND archived_at IS NULL ORDER BY user_id IS NOT NULL DESC LIMIT 1');
-            $stmt->execute([$request['contact_number']]);
-            $patient = $stmt->fetchColumn();
-            if ($patient) {
-                /* A public booking can supply contact details that were absent
-                   from a receptionist-created patient record. Preserve an
-                   existing email, but fill an empty one before notifications
-                   are generated for the new appointment. */
-                if ($request['email']) {
-                    $pdo->prepare("UPDATE patients SET email=? WHERE patient_id=? AND (email IS NULL OR TRIM(email)='')")
-                        ->execute([$request['email'], (int) $patient]);
+        return PatientIdentity::locked(function () use ($pdo, $request) {
+            $existing = PatientIdentity::find($request['first_name'] . ' ' . $request['last_name'], (string)$request['contact_number'], (string)$request['email']);
+            if ($existing) {
+                // A booking may fill an absent email, but never replace an existing one.
+                if ($request['email'] && !trim((string)$existing['email'])) {
+                    $pdo->prepare('UPDATE patients SET email=? WHERE patient_id=?')->execute([$request['email'], (int)$existing['patient_id']]);
                 }
-                return (int) $patient;
+                return (int)$existing['patient_id'];
             }
-        }
-
-        $stmt = $pdo->prepare('INSERT INTO patients(first_name,last_name,contact_number,email) VALUES(?,?,?,?)');
-        $stmt->execute([$request['first_name'], $request['last_name'], $request['contact_number'], $request['email']]);
-        return (int) $pdo->lastInsertId();
+            $stmt = $pdo->prepare('INSERT INTO patients(first_name,last_name,contact_number,email) VALUES(?,?,?,?)');
+            $stmt->execute([$request['first_name'], $request['last_name'], $request['contact_number'], $request['email']]);
+            return (int) $pdo->lastInsertId();
+        });
     }
 }

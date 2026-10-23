@@ -6,6 +6,7 @@ require_once __DIR__ . '/../../config/auth.php';
 $method = \ASDC\ApiResponse::method('GET', 'POST');
 
 if ($method === 'GET') {
+    session_write_close();
     require_role('receptionist', 'dentist');
 } else {
     require_role('receptionist', 'dentist');
@@ -15,7 +16,7 @@ if ($method === 'GET') {
     header('Cache-Control: no-store');
     $patientId = \ASDC\InputValidator::positiveId($_GET['patient_id'] ?? null);
     if ($patientId) {
-        \ASDC\ApiResponse::ok(\ASDC\PatientService::archivedDetails($patientId));
+        \ASDC\ApiResponse::ok(\ASDC\PatientService::archivedDetails($patientId, ($_GET['view'] ?? '') === 'record'));
     }
     \ASDC\ApiResponse::ok(['patients' => \ASDC\PatientService::listArchived()]);
 }
@@ -29,7 +30,11 @@ if (!$patientId || !in_array($action, ['restore', 'purge'], true)) {
 }
 
 if ($action === 'restore') {
-    \ASDC\ApiResponse::ok(\ASDC\PatientService::restore($patientId), 'Patient restored.');
+    try {
+        \ASDC\ApiResponse::ok(\ASDC\PatientService::restore($patientId), 'Patient restored.');
+    } catch (\ASDC\DuplicatePatientException $e) {
+        \ASDC\ApiResponse::error(409, 'duplicate_patient', $e->getMessage());
+    }
 }
 
 \ASDC\ApiResponse::ok(\ASDC\PatientService::purgeArchived($patientId), 'Archived patient permanently deleted.');

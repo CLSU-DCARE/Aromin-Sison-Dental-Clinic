@@ -2,7 +2,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
-async function run(chart) {
+async function run(chart, appointmentOnly = false) {
   const elements = new Map(), calls = [], events = {};
   const filters = ['all', 'balance', 'settled'].map(value => ({ dataset: { billingFilter: value }, classList: { toggle() {} }, setAttribute() {}, addEventListener(name, fn) { this.click = fn; } }));
   const get = id => {
@@ -10,7 +10,7 @@ async function run(chart) {
     return elements.get(id);
   };
   const ctx = {
-    URLSearchParams, location: { search: '?patient_id=2', hash: '#billing' }, ASDCAuthUser: { role: 'receptionist' },
+    URLSearchParams, location: { search: '?patient_id=2', hash: appointmentOnly ? '' : '#billing' }, ASDCAuthUser: { role: 'receptionist' },
     ASDC: { HtmlHelpers: { escapeHtml: value => value.replace(/</g, '&lt;'), formatDate: value => value } },
     MutationObserver: class { observe() {} },
     document: { getElementById: get, querySelectorAll: () => chart ? [] : filters, body: { classList: { contains: () => chart } } },
@@ -26,6 +26,12 @@ async function run(chart) {
   ctx.window = ctx;
   vm.createContext(ctx);
   vm.runInContext(fs.readFileSync(path.join(__dirname, '../shared/js/core/PatientBilling.js'), 'utf8'), ctx);
+  if (appointmentOnly) {
+    vm.runInContext(fs.readFileSync(path.join(__dirname, '../shared/js/core/StaffPayments.js'), 'utf8'), ctx);
+    assert.equal(calls.length, 0, 'Appointment records must not fetch billing or initialise payment entry.');
+    assert.equal(ctx.ASDC.exportPatientBilling, undefined);
+    return;
+  }
   await new Promise(resolve => setImmediate(resolve));
   if (chart) {
     assert(calls[0].endsWith('view=patient&patient_id=2'));
@@ -57,4 +63,4 @@ async function run(chart) {
   await new Promise(resolve => setImmediate(resolve));
   assert.equal(calls.length, 2, 'Refresh the ledger after payment entry.');
 }
-(async () => { await run(false); await run(true); console.log('PASS: patient billing directory, scoped ledger, totals, complete payment history, escaped notes and post-payment refresh.'); })().catch(error => { console.error(error); process.exitCode = 1; });
+(async () => { await run(false); await run(true); await run(true, true); console.log('PASS: patient billing directory, scoped ledger, totals, complete payment history, escaped notes, post-payment refresh and appointment-only records.'); })().catch(error => { console.error(error); process.exitCode = 1; });

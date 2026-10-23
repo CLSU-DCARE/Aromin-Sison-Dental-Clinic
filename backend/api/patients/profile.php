@@ -8,7 +8,14 @@ $method = \ASDC\ApiResponse::method('PATCH', 'POST', 'DELETE');
 $body = \ASDC\ApiResponse::requireJson();
 if ($method === 'POST') {
     require_role('receptionist', 'dentist');
-    \ASDC\ApiResponse::ok(\ASDC\PatientService::create($body), 'Patient created.', 201);
+    try {
+        \ASDC\ApiResponse::ok(\ASDC\PatientService::create($body), 'Patient created.', 201);
+    } catch (\ASDC\DuplicatePatientException $e) {
+        \ASDC\ApiResponse::error(409, 'duplicate_patient', $e->getMessage(), [$e->field=>$e->getMessage()]);
+    } catch (\Throwable $e) {
+        error_log('Patient creation failed: ' . $e->getMessage());
+        \ASDC\ApiResponse::error(500, 'patient_create_failed', 'Unable to create patient. Please try again.');
+    }
 }
 if ($method === 'DELETE') {
     require_role('receptionist', 'dentist');
@@ -32,25 +39,34 @@ if (!$patientId || mb_strlen($name) < 2 || mb_strlen($name) > 100 || !preg_match
 // Email changes are outside this demographic update.
 $parts = preg_split('/\s+/', $name, 2);
 if ($billingBalance !== null) \ASDC\PaymentApprovalService::ensureGeneralTreatmentBillingTables();
-$pdo = \ASDC\Database::pdo();
-$pdo->beginTransaction();
 try {
-    $stmt = $pdo->prepare('SELECT user_id FROM patients WHERE patient_id=? AND archived_at IS NULL FOR UPDATE'); $stmt->execute([$patientId]);
-    $row = $stmt->fetch();
-    if (!$row) { $pdo->rollBack(); \ASDC\ApiResponse::error(404, 'not_found', 'Patient not found.'); }
-    $pdo->prepare('UPDATE patients SET first_name=?,last_name=?,contact_number=?,is_active=COALESCE(?,is_active) WHERE patient_id=?')->execute([$parts[0], $parts[1] ?? '', $contact ?: null, $activeStatus, $patientId]);
+    $result = \ASDC\PatientIdentity::locked(function () use ($patientId, $name, $parts, $contact, $activeStatus, $billingBalance) {
+        $pdo = \ASDC\Database::pdo();
+        $pdo->beginTransaction();
+        try {
+            $stmt = $pdo->prepare('SELECT user_id, email FROM patients WHERE patient_id=? AND archived_at IS NULL FOR UPDATE');
+            $stmt->execute([$patientId]);
+            $row = $stmt->fetch();
+            if (!$row) { $pdo->rollBack(); \ASDC\ApiResponse::error(404, 'not_found', 'Patient not found.'); }
+            \ASDC\PatientIdentity::assertAvailable($name, $contact, (string)$row['email'], $patientId);
+            $pdo->prepare('UPDATE patients SET first_name=?,last_name=?,contact_number=?,is_active=COALESCE(?,is_active) WHERE patient_id=?')->execute([$parts[0], $parts[1] ?? '', $contact ?: null, $activeStatus, $patientId]);
 
-    if ($billingBalance !== null) {
-        $bill = $pdo->prepare("SELECT bill_id, total_amount FROM treatment_bills WHERE patient_id=? AND status='active' ORDER BY bill_id DESC LIMIT 1 FOR UPDATE");
-        $bill->execute([$patientId]);
-        $existing = $bill->fetch();
-        if ($existing) {
-            $pdo->prepare('UPDATE treatment_bills SET balance_amount=?, total_amount=GREATEST(total_amount, ?) WHERE bill_id=?')->execute([$billingBalance, $billingBalance, $existing['bill_id']]);
-        } else {
-            $pdo->prepare("INSERT INTO treatment_bills (patient_id, service_treatment, total_amount, balance_amount, status) VALUES (?, 'Dental Treatment', ?, ?, 'active')")->execute([$patientId, $billingBalance, $billingBalance]);
-        }
-    }
-    \ASDC\PortalEvent::patient($patientId, 'Patient profile updated', 'Name or contact details have changed.');
-    $pdo->commit();
-    \ASDC\ApiResponse::ok(['patient_id' => $patientId], 'Profile updated.');
-} catch (\Throwable $e) { if ($pdo->inTransaction()) $pdo->rollBack(); error_log($e->getMessage()); \ASDC\ApiResponse::error(500, 'profile_failed', 'Unable to update profile.'); }
+            if ($billingBalance !== null) {
+                $bill = $pdo->prepare("SELECT bill_id, total_amount FROM treatment_bills WHERE patient_id=? AND status='active' ORDER BY bill_id DESC LIMIT 1 FOR UPDATE");
+                $bill->execute([$patientId]);
+                $existing = $bill->fetch();
+                if ($existing) {
+                    $pdo->prepare('UPDATE treatment_bills SET balance_amount=?, total_amount=GREATEST(total_amount, ?) WHERE bill_id=?')->execute([$billingBalance, $billingBalance, $existing['bill_id']]);
+                } else {
+                    $pdo->prepare("INSERT INTO treatment_bills (patient_id, service_treatment, total_amount, balance_amount, status) VALUES (?, 'Dental Treatment', ?, ?, 'active')")->execute([$patientId, $billingBalance, $billingBalance]);
+                }
+            }
+            \ASDC\PortalEvent::patient($patientId, 'Patient profile updated', 'Name or contact details have changed.');
+            $pdo->commit();
+            return ['patient_id'=>$patientId];
+        } catch (\Throwable $e) { if ($pdo->inTransaction()) $pdo->rollBack(); throw $e; }
+    });
+    \ASDC\ApiResponse::ok($result, 'Profile updated.');
+} catch (\ASDC\DuplicatePatientException $e) {
+    \ASDC\ApiResponse::error(409, 'duplicate_patient', $e->getMessage(), [$e->field=>$e->getMessage()]);
+} catch (\Throwable $e) { error_log($e->getMessage()); \ASDC\ApiResponse::error(500, 'profile_failed', 'Unable to update profile.'); }
