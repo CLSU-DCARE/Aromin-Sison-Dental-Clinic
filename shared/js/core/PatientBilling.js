@@ -18,40 +18,26 @@
   let patients = [];
   let filter = 'all';
   const message = document.getElementById('patientBillingMessage');
-  const cards = items => items.map(([label, value, detail, tone]) => `<div class="billing-stat billing-stat-${tone}"><span class="billing-stat-label">${label}</span><strong>${peso(value)}</strong><small>${detail}</small></div>`).join('');
   function renderDirectory() {
     const query = document.getElementById('billingPatientSearch').value.trim().toLowerCase();
     const filtered = patients.filter(item => {
       const match = `${item.patient} #P-${item.patient_id}`.toLowerCase().includes(query);
-      return match && (filter === 'all' || (filter === 'balance' && Number(item.balance_amount) > 0) || (filter === 'pending' && Number(item.pending_amount) > 0) || (filter === 'settled' && Number(item.accounts) > 0 && Number(item.balance_amount) <= 0));
+      return match && (filter === 'all' || (filter === 'balance' && Number(item.balance_amount) > 0) || (filter === 'settled' && Number(item.accounts) > 0 && Number(item.balance_amount) <= 0));
     });
-    const sum = key => patients.reduce((value, item) => value + Number(item[key] || 0), 0);
-    document.getElementById('billingDirectoryTotals').innerHTML = cards([
-      ['Recorded payments', sum('paid_amount'), 'Across all patient accounts', 'green'],
-      ['Outstanding balance', sum('balance_amount'), `${patients.filter(item => Number(item.balance_amount) > 0).length} patients with a balance`, 'gold'],
-      ['Pending payments', sum('pending_amount'), 'Awaiting confirmation', 'amber']
-    ]);
     document.getElementById('patientBillingBody').innerHTML = filtered.map(item => `<tr>
       <td><div class="billing-patient"><span class="billing-avatar" aria-hidden="true">${esc(String(item.patient).trim().split(/\s+/).slice(0, 2).map(word => word[0]).join('').toUpperCase())}</span><div><strong>${esc(item.patient)}</strong><small>#P-${Number(item.patient_id)} <span aria-hidden="true">·</span> ${Number(item.accounts || 0)} billing ${Number(item.accounts) === 1 ? 'account' : 'accounts'}</small></div></div></td>
       <td class="billing-money">${peso(item.paid_amount)}</td><td class="billing-money ${Number(item.balance_amount) > 0 ? 'billing-outstanding' : 'billing-muted'}">${peso(item.balance_amount)}</td>
-      <td class="billing-money ${Number(item.pending_amount) > 0 ? 'billing-pending' : 'billing-muted'}">${peso(item.pending_amount)}</td>
       <td class="billing-row-action"><a class="btn btn-outline btn-sm patient-view-btn" href="${chart ? '' : '../admin-system/'}patient-chart.html?patient_id=${Number(item.patient_id)}#billing">View Billing <span aria-hidden="true">↗</span></a></td>
-    </tr>`).join('') || '<tr><td colspan="5" class="billing-empty">No patients found. Try another name or filter.</td></tr>';
+    </tr>`).join('') || '<tr><td colspan="4" class="billing-empty">No patients found. Try another name or filter.</td></tr>';
     message.textContent = `Showing ${filtered.length} of ${patients.length} patients`;
   }
   function renderPatient(data) {
     const accounts = data.accounts || [];
     const payments = data.payments || [];
-    const total = key => accounts.reduce((sum, item) => sum + (key === 'balance_amount' && item.status === 'cancelled' ? 0 : Number(item[key] || 0)), 0);
-    document.getElementById('patientBillingTotals').innerHTML = cards([
-      ['Recorded payments', total('paid_amount'), 'Successfully recorded', 'green'],
-      ['Outstanding balance', total('balance_amount'), 'Remaining across treatment plans', 'gold'],
-      ['Pending payments', total('pending_amount'), 'Awaiting confirmation', 'amber']
-    ]);
     document.getElementById('patientBillingAccounts').innerHTML = accounts.map(item => `<tr>
       <td>${esc(item.service)}<br><small>${esc(item.id)}</small></td><td>${peso(item.total_amount)}</td>
-      <td>${peso(item.paid_amount)}</td><td>${peso(item.balance_amount)}</td><td>${peso(item.pending_amount)}</td><td>${status(item.status)}</td>
-    </tr>`).join('') || '<tr><td colspan="6">No billing accounts for this patient yet.</td></tr>';
+      <td>${peso(item.paid_amount)}</td><td>${peso(item.balance_amount)}</td><td>${status(item.status)}</td>
+    </tr>`).join('') || '<tr><td colspan="5">No billing accounts for this patient yet.</td></tr>';
     document.getElementById('patientPaymentHistory').innerHTML = payments.map(item => `<tr>
       <td>${esc(date(item.paymentDate))}</td><td>${esc(item.service || item.category)}</td><td>${esc(item.amount)}</td>
       <td>${esc(item.method)}</td><td>${status(item.status)}</td><td>${esc(item.orNumber || '—')}${item.note ? `<br><small>${esc(item.note)}</small>` : ''}</td>
@@ -69,7 +55,7 @@
         const data = await apiFetch(url, { cache: 'no-store' });
         if (chart) renderPatient(data);
         else { patients = data.patients || []; renderDirectory(); }
-        if (chart) message.textContent = 'Pending payments have not yet reduced the outstanding balance.';
+        if (chart) message.textContent = 'Treatment balances and payment history for this patient.';
         if (chart && location.hash === '#billing') section.scrollIntoView({ block: 'start' });
       } catch (error) {
         message.textContent = error.message || 'Unable to load billing information.';

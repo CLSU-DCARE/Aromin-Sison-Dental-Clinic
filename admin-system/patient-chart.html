@@ -53,9 +53,8 @@
       <div><p class="eyebrow">PATIENT ACCOUNT</p><h2 id="billingHeading">Billing &amp; Payments</h2></div>
     </div>
     <p id="patientBillingMessage" role="status">Loading billing information…</p>
-    <div class="chart-stats" id="patientBillingTotals"></div>
     <h3>Billing accounts</h3>
-    <div class="table-scroll"><table><thead><tr><th>Treatment / Plan</th><th>Total</th><th>Recorded payments</th><th>Balance</th><th>Pending</th><th>Status</th></tr></thead><tbody id="patientBillingAccounts"></tbody></table></div>
+    <div class="table-scroll"><table><thead><tr><th>Treatment / Plan</th><th>Total</th><th>Recorded payments</th><th>Balance</th><th>Status</th></tr></thead><tbody id="patientBillingAccounts"></tbody></table></div>
     <h3>Payment history</h3>
     <div class="table-scroll"><table><thead><tr><th>Payment date</th><th>Treatment / Plan</th><th>Amount</th><th>Method</th><th>Status</th><th>Reference / Notes</th></tr></thead><tbody id="patientPaymentHistory"></tbody></table></div>
     <button class="btn btn-outline btn-sm" type="button" id="refreshPatientBilling">Refresh billing</button>
@@ -87,7 +86,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
 <script src="assets/js/PatientChartPDF.js?v=20261023-compact-pdf" defer></script>
 <script src="assets/js/patient-chart.js?v=20261023-instant-back" defer></script>
-<script src="../shared/js/core/PatientBilling.js?v=20261023-billing-design" defer></script>
+<script src="../shared/js/core/PatientBilling.js?v=20261023-simplified-billing" defer></script>
 <script src="../shared/js/core/StaffPayments.js?v=20261023-billing-design" defer></script>
 </body>
 </html>

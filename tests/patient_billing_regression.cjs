@@ -4,7 +4,7 @@ const path = require('node:path');
 const vm = require('node:vm');
 async function run(chart) {
   const elements = new Map(), calls = [], events = {};
-  const filters = ['all', 'balance', 'pending', 'settled'].map(value => ({ dataset: { billingFilter: value }, classList: { toggle() {} }, setAttribute() {}, addEventListener(name, fn) { this.click = fn; } }));
+  const filters = ['all', 'balance', 'settled'].map(value => ({ dataset: { billingFilter: value }, classList: { toggle() {} }, setAttribute() {}, addEventListener(name, fn) { this.click = fn; } }));
   const get = id => {
     if (!elements.has(id)) elements.set(id, { value: '', textContent: '', innerHTML: '', dataset: {}, classList: { contains: () => true }, addEventListener(name, fn) { this[name] = fn; }, scrollIntoView() {} });
     return elements.get(id);
@@ -30,7 +30,6 @@ async function run(chart) {
   if (chart) {
     assert(calls[0].endsWith('view=patient&patient_id=2'));
     assert.equal(get('view-payments').dataset.patientId, '2', 'Modal must be scoped to this patient.');
-    assert(get('patientBillingTotals').innerHTML.includes('Outstanding balance'));
     assert(get('patientPaymentHistory').innerHTML.includes('OR-T1'));
     assert(get('patientPaymentHistory').innerHTML.includes('&lt;private>'), 'Escape user-entered notes.');
     assert(get('patientBillingAccounts').innerHTML.includes('Cleaning'));
@@ -41,7 +40,7 @@ async function run(chart) {
     filters[1].click();
     assert(get('patientBillingBody').innerHTML.includes('Billing Test'));
     assert(!get('patientBillingBody').innerHTML.includes('Settled Test'));
-    filters[3].click();
+    filters[2].click();
     assert(get('patientBillingBody').innerHTML.includes('Settled Test'));
     assert(!get('patientBillingBody').innerHTML.includes('Billing Test'));
     get('billingPatientSearch').value = 'Billing Test';
