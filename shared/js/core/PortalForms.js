@@ -22,6 +22,7 @@
       finally { button.disabled = false; }
     };
     dialog.showModal();
+    return dialog;
   }
   function confirmAction({
     title = 'Confirm action',
@@ -193,7 +194,11 @@
       const action = button.dataset.clinicalAction;
       const body = { action, appointment_id: appointment.appointment_id, resource_type: 'appointment' };
       if (action === 'reschedule') {
-        form('Reschedule appointment', field('Date', `<input type="date" name="scheduled_date" required value="${esc(appointment.scheduled_date)}">`) + field('Time', `<input type="time" name="scheduled_time" required value="${esc(appointment.scheduled_time.slice(0,5))}">`), async values => { await write('appointments/actions.php', { ...body, ...values }); await refreshStaffSnapshot(); });
+        const dialog = form('Reschedule appointment', field('Date', `<input type="date" name="scheduled_date" required value="${esc(appointment.scheduled_date)}">`) + field('Time', `<select name="scheduled_time" required>${ASDC.AppointmentTimes.options(appointment.scheduled_time)}</select>`), async values => { await write('appointments/actions.php', { ...body, ...values }); await refreshStaffSnapshot(); });
+        const dateInput = dialog.querySelector('[name="scheduled_date"]');
+        const timeInput = dialog.querySelector('[name="scheduled_time"]');
+        ASDC.AppointmentTimes.populate(timeInput, dateInput.value);
+        dateInput.addEventListener('change', () => ASDC.AppointmentTimes.populate(timeInput, dateInput.value));
         return;
       }
       if (action === 'cancel') {

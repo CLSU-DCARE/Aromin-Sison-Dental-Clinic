@@ -329,7 +329,7 @@
           <label for="ctaDate">Preferred Date</label>
           <input type="date" id="ctaDate" name="requested_date" required>
         </div>
-        <div class="field"><label for="ctaTime">Preferred Time</label><input type="time" id="ctaTime" name="requested_time" required></div>
+        <div class="field"><label for="ctaTime">Preferred Time</label><select id="ctaTime" name="requested_time" data-appointment-times required><option value="">Choose a time</option></select></div>
       </div>
       <button type="submit" id="ctaSubmit" class="btn btn-gold btn-lg btn-block">
         <span class="btn-label">Book Appointment →</span>
@@ -509,7 +509,8 @@
 <script src="assets/js/NavDropdownManager.js?v=1" defer></script>
 <script src="../shared/js/core/HolidayCalendar.js?v=20260928-closures" defer></script>
 
-<script src="assets/js/CtaBookingForm.js?v=20261020-public-booking" defer></script>
+<script src="../shared/js/core/AppointmentTimes.js?v=20261023-fixed-times" defer></script>
+<script src="assets/js/CtaBookingForm.js?v=20261023-fixed-times" defer></script>
 <script src="assets/js/ScrollReveal.js?v=1" defer></script>
 <script src="assets/js/main.js?v=11" defer></script>
 

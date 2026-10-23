@@ -281,6 +281,7 @@ class AppointmentService
         if (!$row) {
             ApiResponse::error(404, 'not_found', 'Pending appointment not found.');
         }
+        AppointmentTimes::requireAllowed($row['scheduled_time'], 'scheduled_time');
 
 
         $lock = AppointmentSlotManager::lock($pdo, $row['scheduled_date'], $row['scheduled_time']);
@@ -343,6 +344,7 @@ class AppointmentService
         if (!$request) {
             ApiResponse::error(404, 'not_found', 'Pending appointment request not found.');
         }
+        AppointmentTimes::requireAllowed($request['requested_time'], 'requested_time');
 
 
         $initialRequest = $request;

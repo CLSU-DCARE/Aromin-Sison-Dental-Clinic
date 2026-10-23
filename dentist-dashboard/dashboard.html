@@ -514,7 +514,7 @@
     </div>
     <div class="form-group">
       <label for="requestRescheduleTime">New Time</label>
-      <input type="time" id="requestRescheduleTime" required>
+      <select id="requestRescheduleTime" data-appointment-times required><option value="">Choose a time</option></select>
     </div>
     <p class="form-note" id="requestRescheduleNote" role="status" hidden></p>
     <div class="modal-actions">
@@ -624,9 +624,10 @@
 <script src="../shared/js/core/ContractFormat.js?v=20260916-integration" defer></script>
 <script src="../shared/js/core/ClinicLiveSync.js?v=20261023-fast-response" defer></script>
 <script src="../shared/js/core/PortalSync.js?v=20261023-fast-response" defer></script>
-<script src="../shared/js/core/PortalForms.js?v=20260928-payment-reject-reason" defer></script>
+<script src="../shared/js/core/AppointmentTimes.js?v=20261023-fixed-times" defer></script>
+<script src="../shared/js/core/PortalForms.js?v=20261023-fixed-times" defer></script>
 <script src="../admin-system/assets/js/AppointmentScheduler.js?v=20261020-phone-first" defer></script>
-<script src="../admin-system/assets/js/AppointmentActions.js?v=20261020-shared-staff-appointment-actions" defer></script>
+<script src="../admin-system/assets/js/AppointmentActions.js?v=20261023-fixed-times" defer></script>
 <script src="../shared/js/core/PromotionalCaseManager.js?v=20261020-case-actions-spacing" defer></script>
 <script src="assets/js/DentistDashboard.js?v=20261023-archived-record" defer></script>
 <script src="assets/js/dentist.js?v=20260916-integration" defer></script>
