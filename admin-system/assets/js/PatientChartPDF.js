@@ -1,6 +1,6 @@
 (function () {
   'use strict';
-  window.ASDC.downloadPatientChartPDF = function (data) {
+  window.ASDC.downloadPatientChartPDF = function (data, { billing = null } = {}) {
     const PDF = window.jspdf?.jsPDF;
     if (!PDF) throw new Error('PDF download is unavailable. Please reload the page and try again.');
     const pdf = new PDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
@@ -21,11 +21,11 @@
       pdf.text('AROMIN-SISON DENTAL CLINIC', margin, 18);
       pdf.setTextColor(...ink);
       pdf.setFontSize(18);
-      pdf.text('Patient Chart', margin, 27);
+      pdf.text(billing ? 'Billing Statement' : 'Patient Chart', margin, 27);
       pdf.setFont('helvetica', 'normal');
       pdf.setFontSize(8);
       pdf.setTextColor(...muted);
-      pdf.text('PATIENT RECORD', width - margin, 18, { align: 'right' });
+      pdf.text(billing ? 'PATIENT BILLING' : 'PATIENT RECORD', width - margin, 18, { align: 'right' });
       pdf.setFont('helvetica', 'bold');
       pdf.setFontSize(11);
       pdf.text('#P-' + patient.patient_id, width - margin, 27, { align: 'right' });
@@ -97,6 +97,36 @@
     field('Phone', patient.contact_number || 'Not provided');
     field('Email', patient.email || 'Not provided');
     field('Registered', date(patient.registered_at));
+    if (billing) {
+      const accounts = billing.accounts || [];
+      const payments = billing.payments || [];
+      const money = value => 'PHP ' + Number(value || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      const total = key => accounts.reduce((sum, account) => sum + (key === 'balance_amount' && account.status === 'cancelled' ? 0 : Number(account[key] || 0)), 0);
+      y += 3;
+      field('Recorded payments', money(total('paid_amount')));
+      field('Outstanding balance', money(total('balance_amount')));
+      section('Billing Accounts', accounts.length);
+      if (!accounts.length) text('No billing accounts for this patient.');
+      accounts.forEach(account => {
+        entry(`${account.id} | ${account.service}`);
+        field('Total', money(account.total_amount));
+        field('Recorded payments', money(account.paid_amount));
+        field('Balance', money(account.balance_amount));
+        field('Status', account.status);
+        y += 2;
+      });
+      section('Payment History', payments.length);
+      if (!payments.length) text('No payments have been recorded for this patient.');
+      payments.forEach(payment => {
+        entry(`${date(payment.paymentDate)} | ${payment.orNumber || payment.id}`);
+        field('Treatment / Plan', payment.service || payment.category);
+        field('Amount', String(payment.amount || '').replace(/₱/g, 'PHP '));
+        field('Method', payment.method);
+        field('Status', payment.status === 'approved' ? 'Recorded' : payment.status);
+        if (payment.note) field('Notes', payment.note);
+        y += 2;
+      });
+    } else {
     const records = Array.isArray(data.records) ? data.records : [];
     const appointments = Array.isArray(data.appointments) ? data.appointments : [];
     section('Clinical Treatment Records', records.length);
@@ -118,6 +148,7 @@
       field('Dentist', appointment.dentist_name || 'Not recorded');
       y += 2;
     });
+    }
     const pages = pdf.getNumberOfPages();
     for (let page = 1; page <= pages; page++) {
       pdf.setPage(page);
@@ -131,6 +162,6 @@
       pdf.text(`${page} / ${pages}`, width - margin, height - 13, { align: 'right' });
     }
     const filename = (name || 'patient').replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toLowerCase() || 'patient';
-    pdf.save(`patient-chart-P${patient.patient_id}-${filename}.pdf`);
+    pdf.save(`${billing ? 'patient-billing' : 'patient-chart'}-P${patient.patient_id}-${filename}.pdf`);
   };
 })();

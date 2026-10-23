@@ -52,7 +52,7 @@ class StaffPaymentService
 
     public static function patientBilling(int $patientId): array
     {
-        $stmt = Database::pdo()->prepare('SELECT patient_id, first_name, last_name FROM patients WHERE patient_id=? AND archived_at IS NULL');
+        $stmt = Database::pdo()->prepare('SELECT patient_id, first_name, last_name, contact_number, email, registered_at, is_active FROM patients WHERE patient_id=? AND archived_at IS NULL');
         $stmt->execute([$patientId]);
         $patient = $stmt->fetch();
         if (!$patient) ApiResponse::error(404, 'not_found', 'Patient not found.');

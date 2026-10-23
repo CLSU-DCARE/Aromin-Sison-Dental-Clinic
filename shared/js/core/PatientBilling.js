@@ -34,6 +34,10 @@
   function renderPatient(data) {
     const accounts = data.accounts || [];
     const payments = data.payments || [];
+    const total = key => accounts.reduce((sum, item) => sum + (key === 'balance_amount' && item.status === 'cancelled' ? 0 : Number(item[key] || 0)), 0);
+    document.getElementById('patientBillingTotals').innerHTML = [
+      ['Recorded payments', total('paid_amount'), 'green'], ['Outstanding balance', total('balance_amount'), 'gold']
+    ].map(([label, value, tone]) => `<div class="billing-stat billing-stat-${tone}"><span class="billing-stat-label">${label}</span><strong>${peso(value)}</strong><small>For this patient</small></div>`).join('');
     document.getElementById('patientBillingAccounts').innerHTML = accounts.map(item => `<tr>
       <td>${esc(item.service)}<br><small>${esc(item.id)}</small></td><td>${peso(item.total_amount)}</td>
       <td>${peso(item.paid_amount)}</td><td>${peso(item.balance_amount)}</td><td>${status(item.status)}</td>
@@ -84,6 +88,18 @@
     }
   });
   if (chart) {
+    window.ASDC.exportPatientBilling = async () => {
+      const data = await apiFetch('../backend/api/payments/payments.php?view=patient&patient_id=' + patientId, { cache: 'no-store' });
+      renderPatient(data);
+      window.ASDC.downloadPatientChartPDF({ patient: data.patient }, { billing: data });
+    };
+    const download = document.getElementById('downloadPatientBilling');
+    download?.addEventListener('click', async () => {
+      download.disabled = true;
+      try { await window.ASDC.exportPatientBilling(); message.textContent = 'Billing PDF downloaded.'; }
+      catch (error) { message.textContent = error.message || 'Unable to download billing.'; }
+      finally { download.disabled = false; }
+    });
     window.addEventListener('asdc:authenticated', load);
     if (window.ASDCAuthUser) load();
   } else {

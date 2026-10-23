@@ -99,12 +99,13 @@
       }
     });
     const download = document.getElementById('downloadChartPDF');
-    download.addEventListener('click', () => {
+    download.addEventListener('click', async () => {
       if (!chartData) return;
       download.disabled = true;
       const status = document.getElementById('chartDownloadStatus');
       try {
-        window.ASDC.downloadPatientChartPDF(chartData);
+        if (window.location.hash === '#billing') await window.ASDC.exportPatientBilling();
+        else window.ASDC.downloadPatientChartPDF(chartData);
         status.textContent = 'A4 PDF downloaded.';
       } catch (error) {
         status.textContent = error.message || 'Unable to download the patient chart.';

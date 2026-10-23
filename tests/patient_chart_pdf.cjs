@@ -31,6 +31,20 @@ const output = rendered.join('');
 assert(output.includes('END OF RECORD 19'), 'Last clinical note was truncated.');
 assert(output.includes('Checkup'), 'Appointment history missing.');
 assert(output.includes(`${pages} / ${pages}`), 'Page numbering missing.');
+rendered.length = 0;
+pages = 1;
+ctx.ASDC.downloadPatientChartPDF({
+  patient: { patient_id: 42, first_name: 'PDF', last_name: 'Test' },
+  records: [{ diagnosis: 'DO NOT INCLUDE CLINICAL HISTORY' }],
+  appointments: [{ service_type: 'DO NOT INCLUDE APPOINTMENTS' }]
+}, { billing: {
+  accounts: [{ id: 'C-1', service: 'Braces plan', total_amount: 1000, paid_amount: 200, balance_amount: 800, status: 'active' }],
+  payments: [{ id: 'C-2', orNumber: 'OR-TEST', paymentDate: '2026-10-23', category: 'Braces', amount: 'PHP 200.00', method: 'Cash', status: 'approved' }]
+} });
+const statement = rendered.join('');
+assert.equal(filename, 'patient-billing-P42-pdf-test.pdf');
+assert(statement.includes('Billing Statement') && statement.includes('OR-TEST') && statement.includes('800.00'));
+assert(!statement.includes('Appointment') && !statement.includes('Clinical') && !statement.includes('DO NOT INCLUDE'));
 ctx.jspdf = null;
 assert.throws(() => ctx.ASDC.downloadPatientChartPDF({}), /PDF download is unavailable/);
 console.log('PASS: A4 PDF layout, multi-page notes, complete history, filename, page numbering and missing-library handling.');

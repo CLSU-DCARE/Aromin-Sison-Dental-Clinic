@@ -30,6 +30,9 @@ async function run(chart) {
   if (chart) {
     assert(calls[0].endsWith('view=patient&patient_id=2'));
     assert.equal(get('view-payments').dataset.patientId, '2', 'Modal must be scoped to this patient.');
+    assert(get('patientBillingTotals').innerHTML.includes('Recorded payments'));
+    assert(get('patientBillingTotals').innerHTML.includes('Outstanding balance'));
+    assert(!get('patientBillingTotals').innerHTML.includes('Pending'));
     assert(get('patientPaymentHistory').innerHTML.includes('OR-T1'));
     assert(get('patientPaymentHistory').innerHTML.includes('&lt;private>'), 'Escape user-entered notes.');
     assert(get('patientBillingAccounts').innerHTML.includes('Cleaning'));

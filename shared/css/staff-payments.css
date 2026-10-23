@@ -77,6 +77,8 @@ body.staff-payment-modal-open { overflow: hidden; }
 .patient-chart-page .patient-billing th { background: var(--ivory); letter-spacing: .04em; }
 .patient-chart-page .patient-billing .table-scroll { border: 1px solid var(--glass-border); border-radius: 12px; }
 .billing-status { white-space: nowrap; text-transform: capitalize; }
+#patientBillingTotals.billing-patient-overview { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (max-width: 600px) { #patientBillingTotals.billing-patient-overview { grid-template-columns: 1fr; } }
 .staff-payment-entry { padding: 30px; border-radius: 20px; background: var(--ivory); font-family: var(--font-ui); }
 .staff-payment-eyebrow { margin-bottom: 8px; font-size: 10px; font-weight: 600; letter-spacing: .1em; color: var(--gold-text); }
 .staff-payment-entry h3 { font: 500 27px Fraunces, Georgia, serif; }
