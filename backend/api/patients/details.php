@@ -4,6 +4,7 @@ require_once __DIR__ . '/../../config/headers.php';
 require_once __DIR__ . '/../../config/auth.php';
 
 require_role('receptionist', 'dentist');
+session_write_close();
 \ASDC\ApiResponse::method('GET');
 header('Cache-Control: no-store');
 

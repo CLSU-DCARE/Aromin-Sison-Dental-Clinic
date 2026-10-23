@@ -55,9 +55,7 @@ function switchView(view){
   const crumbEl = document.getElementById('viewCrumb');
   if (crumbEl) crumbEl.textContent = meta.crumb;
 
-  // Crossfade: let the current view slide out first, then swap in the new
-  // one (durations match viewOut/viewIn in admin.css).
-  const current = document.querySelector('.view.active');
+  // Switch immediately so rapid navigation always shows the latest selection.
   const swap = () => {
     document.querySelectorAll('.view').forEach(el => el.classList.remove('active', 'view-leave'));
     target.classList.add('active');
@@ -66,12 +64,7 @@ function switchView(view){
     closeSidebar();
     announce('Showing ' + meta.title);
   };
-  if (current && current !== target){
-    current.classList.add('view-leave');
-    setTimeout(swap, 180);
-  } else {
-    swap();
-  }
+  swap();
 }
 
 document.querySelectorAll('.nav-item').forEach(btn => {
@@ -860,21 +853,26 @@ paymentMgr.init();
 
 window.staffLiveSync = ASDC.startPortalSync({
   start: () => appointmentScheduler.state.start,
-  apply: data => {
+  apply: (data, changed) => {
+    const has = (...keys) => !changed || keys.some(key => changed.has(key));
     window.staffSnapshot = data;
-    appointmentScheduler.applySnapshot(data);
-    patientMgr.load(data);
-    AdminState.records = data.records; recordMgr.apply();
-    AdminState.inventory = data.inventory.map(item => inventoryMgr.normalize(item));
-    inventoryMgr.apply();
-    applyBraces(data); paymentMgr.render(data);
-    inbox.setItems(data.notifications);
-    notificationManager.renderLog(data);
-    AdminState.reports = data.reports || AdminState.reports;
-    renderReports(AdminState.reports);
-    AdminState.dashboard.stats.forEach((stat, index) => { stat.num = index === 2 ? ContractFormat.peso(data.metrics[index]) : String(data.metrics[index]); });
-    renderDashboardStats(AdminState.dashboard.stats);
-    if (document.getElementById('view-archived')?.classList.contains('active')) loadArchivedPatients();
+    if (has('week', 'pending')) appointmentScheduler.applySnapshot(data);
+    if (has('patients', 'contracts')) patientMgr.load(data);
+    if (has('records')) { AdminState.records = data.records; recordMgr.apply(); }
+    if (has('inventory')) {
+      AdminState.inventory = data.inventory.map(item => inventoryMgr.normalize(item));
+      inventoryMgr.apply();
+    }
+    if (has('contracts')) applyBraces(data);
+    if (has('payments')) paymentMgr.render(data);
+    if (has('notifications')) inbox.setItems(data.notifications);
+    if (has('logs')) notificationManager.renderLog(data);
+    if (has('reports')) { AdminState.reports = data.reports || AdminState.reports; renderReports(AdminState.reports); }
+    if (has('metrics')) {
+      AdminState.dashboard.stats.forEach((stat, index) => { stat.num = index === 2 ? ContractFormat.peso(data.metrics[index]) : String(data.metrics[index]); });
+      renderDashboardStats(AdminState.dashboard.stats);
+    }
+    if (has('patients') && document.getElementById('view-archived')?.classList.contains('active')) loadArchivedPatients();
   }
 });
 

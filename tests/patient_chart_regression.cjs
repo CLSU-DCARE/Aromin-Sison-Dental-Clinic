@@ -17,7 +17,7 @@ async function scenario({ hostname = 'arominsisondental.vercel.app', role = 'rec
     location: { hostname, pathname: '/admin-system/patient-chart.html', search: '?patient_id=' + patientId },
     URLSearchParams, navigator: {},
     CustomEvent: class { constructor(type, options) { this.type = type; this.detail = options.detail; } },
-    document: { getElementById: element, addEventListener(name, handler) { if (name === 'DOMContentLoaded') ready = handler; } },
+    document: { getElementById: element, querySelector: () => null, addEventListener(name, handler) { if (name === 'DOMContentLoaded') ready = handler; } },
     addEventListener(name, handler) { listeners.set(name, handler); },
     dispatchEvent(event) { listeners.get(event.type)?.(event); },
     fetch: async (url, options) => {

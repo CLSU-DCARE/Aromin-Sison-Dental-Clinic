@@ -16,7 +16,7 @@ vm.runInContext(fs.readFileSync(path.join(__dirname, '../shared/js/core/ClinicLi
 const sync = new ctx.ClinicLiveSync({
   validate: data => Array.isArray(data.week?.requests),
   fetchSnapshot: async () => { calls++; if (response instanceof Error) throw response; return response; },
-  applySnapshot: (data, changed) => applied.push({ data, changed }), onStatus: status => statuses.push(status)
+  applySnapshot: (data, changed, keys) => applied.push({ data, changed, keys }), onStatus: status => statuses.push(status)
 });
 (async () => {
   sync.start(); await sync.pending;
@@ -25,6 +25,7 @@ const sync = new ctx.ClinicLiveSync({
   await sync.refresh(); assert.equal(applied.length, 1, 'Unchanged data must not redraw the page.');
   response = { ...response, week: { appointments: [], requests: [{ request_id: 2, status: 'pending' }] } };
   await sync.refresh(); assert.equal(applied.length, 2); assert.equal(applied[1].changed, true);
+  assert.deepEqual([...applied[1].keys], ['week'], 'Only the changed section should redraw.');
   const good = response;
   response = new Error('offline'); await sync.refresh();
   assert.equal(applied.length, 2, 'Connection errors must preserve the last good display.');

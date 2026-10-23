@@ -38,8 +38,13 @@ window.PatientTableManager = class PatientTableManager {
         apiFetch('../backend/api/patients/list.php'), apiFetch('../backend/api/contracts/contracts.php')
       ]);
       if (!Array.isArray(patients.patients) || !Array.isArray(contracts.contracts)) throw new Error('Invalid patient response.');
+      const activeContracts = new Map();
+      for (const contract of contracts.contracts) {
+        const id = Number(contract.patient_id);
+        if (!activeContracts.has(id) && ['Current', 'Overdue'].includes(contract.status)) activeContracts.set(id, contract);
+      }
       this.state.patients = patients.patients.map(p => {
-        const contract = contracts.contracts.find(c => Number(c.patient_id) === Number(p.patient_id) && ['Current', 'Overdue'].includes(c.status));
+        const contract = activeContracts.get(Number(p.patient_id));
         const name = p.first_name + ' ' + p.last_name;
         const active = Number(p.is_active) !== 0;
         return {

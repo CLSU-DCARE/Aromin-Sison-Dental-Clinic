@@ -33,7 +33,6 @@
       if (this.viewTitle) this.viewTitle.textContent = meta.title;
       if (this.viewCrumb) this.viewCrumb.textContent = meta.crumb;
 
-      const current = document.querySelector('.view.active');
       const swap = () => {
         document
           .querySelectorAll('.view')
@@ -45,12 +44,7 @@
           window.ASDC._toast.announce('Showing ' + meta.title);
       };
 
-      if (current && current !== target) {
-        current.classList.add('view-leave');
-        setTimeout(swap, 180);
-      } else {
-        swap();
-      }
+      swap();
     }
   }
 

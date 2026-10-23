@@ -92,6 +92,12 @@
   }
 
   document.addEventListener('DOMContentLoaded', () => {
+    document.querySelector('.chart-back')?.addEventListener('click', event => {
+      if (window.frameElement?.id === 'patientChartFrame') {
+        event.preventDefault();
+        window.parent.postMessage({ type: 'asdc:patient-chart-back' }, window.location.origin);
+      }
+    });
     const download = document.getElementById('downloadChartPDF');
     download.addEventListener('click', () => {
       if (!chartData) return;

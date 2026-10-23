@@ -11,6 +11,7 @@ window.ClinicLiveSync = class ClinicLiveSync {
     this.pending = null;
     this.failures = 0;
     this.last = null;
+    this.lastData = null;
     this.generation = 0;
     this.resume = () => {
       if (document.hidden) { clearTimeout(this.timer); return; }
@@ -50,8 +51,11 @@ window.ClinicLiveSync = class ClinicLiveSync {
         }
         const version = JSON.stringify(data);
         if (version !== this.last) {
-          this.applySnapshot(data, this.last !== null);
+          const keys = new Set([...Object.keys(this.lastData || {}), ...Object.keys(data)]);
+          const changedKeys = new Set([...keys].filter(key => !this.lastData || JSON.stringify(data[key]) !== JSON.stringify(this.lastData[key])));
+          this.applySnapshot(data, this.last !== null, changedKeys);
           this.last = version;
+          this.lastData = data;
         }
         this.failures = 0;
         this.onStatus('live');

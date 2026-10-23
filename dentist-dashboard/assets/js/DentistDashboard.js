@@ -74,7 +74,6 @@ if (typeof window !== 'undefined') !window.ASDC && (window.ASDC = {});
     if (this.viewTitle) this.viewTitle.textContent = meta.title;
     if (this.viewCrumb) this.viewCrumb.textContent = meta.crumb;
 
-    var current = document.querySelector('.view.active');
     var self = this;
     var swap = function(){
       self.viewSections.forEach(function(s){ s.classList.remove('active', 'view-leave'); });
@@ -85,12 +84,7 @@ if (typeof window !== 'undefined') !window.ASDC && (window.ASDC = {});
       ASDC._sidebar.close();
       ASDC._toast.show('Showing ' + meta.title);
     };
-    if (current && current !== target){
-      current.classList.add('view-leave');
-      setTimeout(swap, 180);
-    } else {
-      swap();
-    }
+    swap();
   };
 
   DentistDashboard.prototype._initCore = function(){
@@ -771,22 +765,28 @@ if (inboxEmpty) inboxEmpty.textContent = 'Loading notifications...';
       } catch (error) { showToast(error.message || 'Unable to delete selected records.', 'error'); }
       finally { event.currentTarget.disabled = false; }
     });
-    window.staffLiveSync = ASDC.startPortalSync({ start: () => self.appointmentScheduler.state.start, apply: data => {
+    window.staffLiveSync = ASDC.startPortalSync({ start: () => self.appointmentScheduler.state.start, apply: (data, changed) => {
+      const has = (...keys) => !changed || keys.some(key => changed.has(key));
       self.snapshot = data;
-      if (document.getElementById('view-payments')?.classList.contains('active')) self._loadPayments(data);
+      if (has('payments') && document.getElementById('view-payments')?.classList.contains('active')) self._loadPayments(data);
       self._contractsRaw = data.contracts;
       AdminState.records = data.records;
-      self._applyPatients(); self._applyBracesContracts(); self._applyRecords();
-      self.inbox.setItems(data.notifications);
-      AdminState.reports = data.reports || AdminState.reports;
-      self._renderReports(AdminState.reports);
-      self.appointmentScheduler.applySnapshot(data);
-      const week = ASDC.ScheduleView.week(data.week.week_start, data.week.appointments);
-      self._renderWeekGrid('dashWeekGrid', week);
-      self._renderQueue(ASDC.ScheduleView.queue(data.week.appointments));
-      ['dashWeekLabel'].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = week.label; });
-      AdminState.dashboard.stats.forEach((s,i) => { s.num = i === 2 ? ContractFormat.peso(data.metrics[i]) : String(data.metrics[i]); });
-      self._renderStats();
+      if (has('patients')) self._applyPatients();
+      if (has('contracts')) self._applyBracesContracts();
+      if (has('records')) self._applyRecords();
+      if (has('notifications')) self.inbox.setItems(data.notifications);
+      if (has('reports')) { AdminState.reports = data.reports || AdminState.reports; self._renderReports(AdminState.reports); }
+      if (has('week', 'pending')) {
+        self.appointmentScheduler.applySnapshot(data);
+        const week = ASDC.ScheduleView.week(data.week.week_start, data.week.appointments);
+        self._renderWeekGrid('dashWeekGrid', week);
+        self._renderQueue(ASDC.ScheduleView.queue(data.week.appointments));
+        ['dashWeekLabel'].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = week.label; });
+      }
+      if (has('metrics')) {
+        AdminState.dashboard.stats.forEach((s,i) => { s.num = i === 2 ? ContractFormat.peso(data.metrics[i]) : String(data.metrics[i]); });
+        self._renderStats();
+      }
     }});
   };
 

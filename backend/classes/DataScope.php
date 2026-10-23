@@ -28,7 +28,9 @@ class DataScope
      */
     public static function current(): self
     {
-        AuthMiddleware::secureSessionStart();
+        // Read-only endpoints may already have released the session lock.
+        // PHP retains the authenticated values in memory after write_close().
+        if (!isset($_SESSION)) AuthMiddleware::secureSessionStart();
         return new self(
             isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null,
             $_SESSION['role'] ?? null
