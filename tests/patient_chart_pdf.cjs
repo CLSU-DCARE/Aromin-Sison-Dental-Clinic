@@ -45,6 +45,15 @@ const statement = rendered.join('');
 assert.equal(filename, 'patient-billing-P42-pdf-test.pdf');
 assert(statement.includes('Billing Statement') && statement.includes('OR-TEST') && statement.includes('800.00'));
 assert(!statement.includes('Appointment') && !statement.includes('Clinical') && !statement.includes('DO NOT INCLUDE'));
+rendered.length = 0;
+pages = 1;
+ctx.ASDC.downloadPatientChartPDF({ patient: { patient_id: 42, first_name: 'PDF', last_name: 'Test' } }, { billing: {
+  accounts: [],
+  payments: Array.from({ length: 35 }, (_, index) => ({ id: 'T-' + index, paymentDate: '2026-10-23', amount: 'PHP 100.00', method: 'Cash', status: 'approved', category: 'Treatment', note: 'Payment details '.repeat(25) + 'LAST NOTE ' + index }))
+} });
+assert(pages > 1, 'Long billing histories must paginate.');
+assert(rendered.join('').includes('LAST NOTE 34'), 'Billing table truncated the final notes.');
+assert(rendered.filter(value => value === 'REFERENCE').length > 1, 'Repeat payment table headings on continued pages.');
 ctx.jspdf = null;
 assert.throws(() => ctx.ASDC.downloadPatientChartPDF({}), /PDF download is unavailable/);
 console.log('PASS: A4 PDF layout, multi-page notes, complete history, filename, page numbering and missing-library handling.');

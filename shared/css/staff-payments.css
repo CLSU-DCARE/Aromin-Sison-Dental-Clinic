@@ -77,6 +77,15 @@ body.staff-payment-modal-open { overflow: hidden; }
 .patient-chart-page .patient-billing th { background: var(--ivory); letter-spacing: .04em; }
 .patient-chart-page .patient-billing .table-scroll { border: 1px solid var(--glass-border); border-radius: 12px; }
 .billing-status { white-space: nowrap; text-transform: capitalize; }
+.billing-pdf-layout .chart-profile { gap: 20px; padding: 22px; }
+.billing-pdf-layout .chart-contact-grid { gap: 16px; }
+.billing-pdf-layout .chart-contact-grid > div { min-width: 90px; font-size: 12px; }
+.billing-pdf-layout .chart-name-line h2 { font-size: 23px; }
+.billing-pdf-layout .table-scroll { overflow: visible; }
+.billing-pdf-layout table { min-width: 0 !important; table-layout: fixed; }
+.billing-pdf-layout td { overflow-wrap: anywhere; }
+.billing-pdf-layout .page-head { margin-bottom: 0; }
+.billing-export-brand { padding: 0 0 16px; color: var(--gold-text); font-size: 11px; font-weight: 600; letter-spacing: .1em; }
 #patientBillingTotals.billing-patient-overview { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 @media (max-width: 600px) { #patientBillingTotals.billing-patient-overview { grid-template-columns: 1fr; } }
 .staff-payment-entry { padding: 30px; border-radius: 20px; background: var(--ivory); font-family: var(--font-ui); }

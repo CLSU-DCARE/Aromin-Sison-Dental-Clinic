@@ -91,7 +91,7 @@
     window.ASDC.exportPatientBilling = async () => {
       const data = await apiFetch('../backend/api/payments/payments.php?view=patient&patient_id=' + patientId, { cache: 'no-store' });
       renderPatient(data);
-      window.ASDC.downloadPatientChartPDF({ patient: data.patient }, { billing: data });
+      await window.ASDC.downloadBillingLayoutPDF(data.patient);
     };
     const download = document.getElementById('downloadPatientBilling');
     download?.addEventListener('click', async () => {
