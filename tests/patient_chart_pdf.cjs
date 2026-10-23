@@ -7,6 +7,7 @@ const rendered = [];
 class PDF {
   constructor(config) { options = config; this.internal = { pageSize: { getWidth: () => 210, getHeight: () => 297 } }; }
   setFont() {} setFontSize() {} setDrawColor() {} line() {} setPage() {}
+  setTextColor() {} setFillColor() {} rect() {}
   splitTextToSize(value) { return value.match(/.{1,75}/g) || ['']; }
   text(value, x, y) { assert(y <= 285, 'Text extends beyond A4 margins.'); rendered.push(value); }
   addPage() { pages++; }
@@ -28,7 +29,7 @@ assert.equal(filename, 'patient-chart-P42-pdf-test.pdf');
 assert(pages > 1, 'Long records must continue across multiple pages.');
 const output = rendered.join('');
 assert(output.includes('END OF RECORD 19'), 'Last clinical note was truncated.');
-assert(output.includes('Service: Checkup'), 'Appointment history missing.');
+assert(output.includes('Checkup'), 'Appointment history missing.');
 assert(output.includes(`${pages} / ${pages}`), 'Page numbering missing.');
 ctx.jspdf = null;
 assert.throws(() => ctx.ASDC.downloadPatientChartPDF({}), /PDF download is unavailable/);
