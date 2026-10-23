@@ -15,13 +15,15 @@
     });
     return canvasLoading;
   }
-  window.ASDC.downloadBillingLayoutPDF = async function (patient) {
+  async function downloadLayoutPDF(patient, billingOnly) {
     if (!window.jspdf?.jsPDF) throw new Error('PDF download is unavailable. Please reload and try again.');
     const capture = await loadCanvas();
     if (document.fonts?.ready) await document.fonts.ready;
     const profile = document.querySelector('.chart-profile');
-    const billing = document.getElementById('view-payments');
-    if (!profile || !billing) throw new Error('Patient billing is not ready. Please try again.');
+    const sections = billingOnly
+      ? [document.getElementById('view-payments')]
+      : [document.getElementById('chartClinicalHistory'), document.getElementById('chartAppointmentHistory')];
+    if (!profile || sections.some(section => !section)) throw new Error('Patient record is not ready. Please try again.');
     const root = document.createElement('div');
     root.className = 'chart-shell billing-pdf-layout';
     root.style.cssText = 'position:absolute;left:-12000px;top:0;width:1000px;max-width:none;margin:0;padding:24px;box-sizing:border-box;background:#FAFAF7;';
@@ -30,9 +32,9 @@
     brand.textContent = 'AROMIN-SISON DENTAL CLINIC';
     root.appendChild(brand);
     root.appendChild(profile.cloneNode(true));
-    root.appendChild(billing.cloneNode(true));
+    sections.forEach(section => root.appendChild(section.cloneNode(true)));
     root.querySelectorAll('button, .chart-search, #patientBillingMessage').forEach(element => element.remove());
-    // This temporary copy contains no clinical or appointment sections.
+    // Billing downloads and clinical downloads contain only their own sections.
     document.body.appendChild(root);
     const protectedBlocks = [];
     let logicalHeight = 1;
@@ -44,7 +46,7 @@
           copy.style.position = 'relative'; copy.style.left = '0'; copy.style.top = '0';
           const bounds = copy.getBoundingClientRect();
           logicalHeight = bounds.height;
-          copy.querySelectorAll('.chart-profile, .billing-stat, tr, .page-head, h3').forEach(element => {
+          copy.querySelectorAll('.chart-profile, .billing-stat, .chart-entry, tr, .page-head, .chart-section-heading, h3').forEach(element => {
             const rect = element.getBoundingClientRect();
             protectedBlocks.push({ top: rect.top - bounds.top, bottom: rect.bottom - bounds.top });
           });
@@ -86,9 +88,11 @@
         pdf.text(`${index} / ${page}`, pageWidth - margin, pageHeight - 8, { align: 'right' });
       }
       const name = `${patient.first_name || ''} ${patient.last_name || ''}`.trim().replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toLowerCase() || 'patient';
-      pdf.save(`patient-billing-P${patient.patient_id}-${name}.pdf`);
+      pdf.save(`${billingOnly ? 'patient-billing' : 'patient-chart'}-P${patient.patient_id}-${name}.pdf`);
     } finally {
       root.remove();
     }
-  };
+  }
+  window.ASDC.downloadBillingLayoutPDF = patient => downloadLayoutPDF(patient, true);
+  window.ASDC.downloadPatientChartLayoutPDF = patient => downloadLayoutPDF(patient, false);
 })();

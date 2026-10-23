@@ -13,8 +13,8 @@
 <link rel="stylesheet" href="../shared/css/buttons.css?v=5">
 <link rel="stylesheet" href="../shared/css/panels.css?v=4">
 <link rel="stylesheet" href="assets/css/admin.css?v=20261020-patient-chart">
-<link rel="stylesheet" href="assets/css/patient-chart.css?v=20261023-a4-pdf">
-<link rel="stylesheet" href="../shared/css/staff-payments.css?v=20261023-layout-pdf">
+<link rel="stylesheet" href="assets/css/patient-chart.css?v=20261023-appointment-layout">
+<link rel="stylesheet" href="../shared/css/staff-payments.css?v=20261023-wrap-pdf">
 </head>
 <body class="patient-chart-page">
 <main class="chart-shell">
@@ -55,14 +55,14 @@
     <p id="patientBillingMessage" role="status">Loading billing information…</p>
     <div class="billing-patient-overview" id="patientBillingTotals" aria-label="Patient billing summary"></div>
     <h3>Billing accounts</h3>
-    <div class="table-scroll"><table><thead><tr><th>Treatment / Plan</th><th>Total</th><th>Recorded payments</th><th>Balance</th><th>Status</th></tr></thead><tbody id="patientBillingAccounts"></tbody></table></div>
+    <div class="table-scroll"><table><colgroup><col style="width:30%"><col style="width:17%"><col style="width:21%"><col style="width:17%"><col style="width:15%"></colgroup><thead><tr><th>Treatment / Plan</th><th>Total</th><th>Recorded payments</th><th>Balance</th><th>Status</th></tr></thead><tbody id="patientBillingAccounts"></tbody></table></div>
     <h3>Payment history</h3>
-    <div class="table-scroll"><table><thead><tr><th>Payment date</th><th>Treatment / Plan</th><th>Amount</th><th>Method</th><th>Status</th><th>Reference / Notes</th></tr></thead><tbody id="patientPaymentHistory"></tbody></table></div>
+    <div class="table-scroll"><table><colgroup><col style="width:13%"><col style="width:17%"><col style="width:13%"><col style="width:12%"><col style="width:14%"><col style="width:31%"></colgroup><thead><tr><th>Payment date</th><th>Treatment / Plan</th><th>Amount</th><th>Method</th><th>Status</th><th>Reference / Notes</th></tr></thead><tbody id="patientPaymentHistory"></tbody></table></div>
     <button class="btn btn-outline btn-sm" type="button" id="refreshPatientBilling">Refresh billing</button>
     <button class="btn btn-outline btn-sm" type="button" id="downloadPatientBilling">Download</button>
   </section>
 
-  <section class="panel chart-history" aria-labelledby="recordsHeading">
+  <section class="panel chart-history" id="chartClinicalHistory" aria-labelledby="recordsHeading">
     <div class="chart-section-heading">
       <div><p class="eyebrow">CARE HISTORY</p><h2 id="recordsHeading">Clinical Treatment Records</h2></div>
       <label class="chart-search"><i class="bi bi-search" aria-hidden="true"></i><input id="recordsSearch" type="search" placeholder="Search records" aria-label="Search clinical records"></label>
@@ -70,7 +70,7 @@
     <div id="recordsList" class="chart-entry-list"></div>
   </section>
 
-  <section class="panel chart-history" aria-labelledby="appointmentsHeading">
+  <section class="panel chart-history" id="chartAppointmentHistory" aria-labelledby="appointmentsHeading">
     <div class="chart-section-heading">
       <div><p class="eyebrow">SCHEDULING HISTORY</p><h2 id="appointmentsHeading">Appointments</h2></div>
       <label class="chart-search"><i class="bi bi-search" aria-hidden="true"></i><input id="appointmentsSearch" type="search" placeholder="Search appointments" aria-label="Search appointment history"></label>
@@ -87,8 +87,8 @@
 <script src="../shared/js/core/HtmlHelpers.js?v=20260921-avatar-fallback" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
 <script src="assets/js/PatientChartPDF.js?v=20261023-statement-tables" defer></script>
-<script src="assets/js/BillingLayoutPDF.js?v=20261023-screen-layout" defer></script>
-<script src="assets/js/patient-chart.js?v=20261023-billing-download" defer></script>
+<script src="assets/js/BillingLayoutPDF.js?v=20261023-chart-layout" defer></script>
+<script src="assets/js/patient-chart.js?v=20261023-appointment-layout" defer></script>
 <script src="../shared/js/core/PatientBilling.js?v=20261023-layout-pdf" defer></script>
 <script src="../shared/js/core/StaffPayments.js?v=20261023-billing-design" defer></script>
 </body>

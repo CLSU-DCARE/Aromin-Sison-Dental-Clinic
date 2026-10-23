@@ -5,9 +5,9 @@
   const esc = value => window.ASDC.HtmlHelpers.escapeHtml(String(value ?? ''));
   const date = value => value ? window.ASDC.HtmlHelpers.formatDate(value) : 'Date not recorded';
 
-  function renderRecords(records) {
+  function renderRecords(records, search = null) {
     const list = document.getElementById('recordsList');
-    const query = document.getElementById('recordsSearch').value.trim().toLowerCase();
+    const query = search ?? document.getElementById('recordsSearch').value.trim().toLowerCase();
     const rows = records.filter(record => [record.date_recorded, record.diagnosis, record.treatment_given, record.treatment_protocol, record.dentist_name]
       .some(value => String(value || '').toLowerCase().includes(query)));
     if (!rows.length) {
@@ -24,20 +24,21 @@
     }).join('');
   }
 
-  function renderAppointments(appointments) {
+  function renderAppointments(appointments, search = null) {
     const list = document.getElementById('appointmentsList');
-    const query = document.getElementById('appointmentsSearch').value.trim().toLowerCase();
+    const query = search ?? document.getElementById('appointmentsSearch').value.trim().toLowerCase();
     const rows = appointments.filter(appointment => [appointment.scheduled_date, appointment.scheduled_time, appointment.status, appointment.service_type, appointment.dentist_name]
       .some(value => String(value || '').toLowerCase().includes(query)));
     if (!rows.length) {
       list.innerHTML = `<p class="chart-empty">${appointments.length ? 'No appointments match your search.' : 'No appointments are on file.'}</p>`;
       return;
     }
-    list.innerHTML = rows.map(appointment => {
+    list.innerHTML = '<div class="chart-table-scroll"><table class="chart-appointments-table"><colgroup><col style="width:23%"><col style="width:28%"><col style="width:30%"><col style="width:19%"></colgroup><thead><tr><th>Date / Time</th><th>Service</th><th>Dentist</th><th>Status</th></tr></thead><tbody>' + rows.map(appointment => {
       const time = String(appointment.scheduled_time || '').slice(0, 5);
       const status = String(appointment.status || 'Unknown').toLowerCase().replace(/[^a-z0-9_-]/g, '-');
-      return `<article class="chart-entry"><div class="chart-entry-top"><strong>${esc(date(appointment.scheduled_date))}${time ? ` · ${esc(time)}` : ''}</strong><span class="chart-status chart-status-${esc(status)}">${esc(appointment.status || 'Unknown')}</span></div><p>${esc(appointment.service_type || 'Appointment')}${appointment.dentist_name ? ` · ${esc(appointment.dentist_name)}` : ''}</p></article>`;
-    }).join('');
+      const color = { completed: 'green', confirmed: 'green', pending: 'amber', rejected: 'red', cancelled: 'red', no_show: 'red' }[appointment.status] || 'gray';
+      return `<tr><td><strong>${esc(date(appointment.scheduled_date))}</strong>${time ? `<small>${esc(time)}</small>` : ''}</td><td>${esc(appointment.service_type || 'Appointment')}</td><td>${esc(appointment.dentist_name || 'Dentist not recorded')}</td><td><span class="tag tag-${color} chart-status-${esc(status)}">${esc(String(appointment.status || 'Unknown').replace(/_/g, ' '))}</span></td></tr>`;
+    }).join('') + '</tbody></table></div>';
   }
 
   async function loadChart() {
@@ -105,7 +106,12 @@
       const status = document.getElementById('chartDownloadStatus');
       try {
         if (window.location.hash === '#billing') await window.ASDC.exportPatientBilling();
-        else window.ASDC.downloadPatientChartPDF(chartData);
+        else {
+          renderRecords(chartData.records || [], '');
+          renderAppointments(chartData.appointments || [], '');
+          try { await window.ASDC.downloadPatientChartLayoutPDF(chartData.patient); }
+          finally { renderRecords(chartData.records || []); renderAppointments(chartData.appointments || []); }
+        }
         status.textContent = 'A4 PDF downloaded.';
       } catch (error) {
         status.textContent = error.message || 'Unable to download the patient chart.';

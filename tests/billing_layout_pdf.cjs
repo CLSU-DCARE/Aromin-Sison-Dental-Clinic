@@ -6,12 +6,13 @@ let root, options, filename, pages = 1, hiddenButtons = false;
 const images = [];
 const profile = { cloneNode: () => ({ kind: 'patient-profile' }) };
 const billing = { cloneNode: () => ({ kind: 'billing-only' }) };
+let chartExport = false;
 const ctx = {
   ASDC: {},
   document: {
     fonts: { ready: Promise.resolve() },
     querySelector: () => profile,
-    getElementById: () => billing,
+    getElementById: id => id === 'view-payments' ? billing : { cloneNode: () => ({ kind: id }) },
     body: { appendChild(element) { root = element; } },
     createElement(tag) {
       if (tag === 'canvas') return { getContext: () => ({ drawImage() {} }), toDataURL: () => 'data:image/png;base64,test' };
@@ -26,7 +27,7 @@ const ctx = {
   },
   html2canvas: async (element, config) => {
     assert.equal(config.windowWidth, 1200, 'Use desktop card layout even when downloading on mobile.');
-    assert.deepEqual(element.children.slice(1).map(child => child.kind), ['patient-profile', 'billing-only']);
+    assert.deepEqual(element.children.slice(1).map(child => child.kind), chartExport ? ['patient-profile', 'chartClinicalHistory', 'chartAppointmentHistory'] : ['patient-profile', 'billing-only']);
     config.onclone({}, element);
     return { width: 2000, height: 4200 };
   },
@@ -50,6 +51,9 @@ vm.runInContext(fs.readFileSync(path.join(__dirname, '../admin-system/assets/js/
   assert.equal(images[0][5], 247, 'Move page break above a card/row instead of cutting it.');
   assert(hiddenButtons, 'Exclude action buttons from PDF.');
   assert(root.removed, 'Remove the temporary export copy.');
+  chartExport = true;
+  await ctx.ASDC.downloadPatientChartLayoutPDF({ patient_id: 2, first_name: 'Layout', last_name: 'Test' });
+  assert.equal(filename, 'patient-chart-P2-layout-test.pdf');
   ctx.html2canvas = async () => { throw new Error('capture failed'); };
   await assert.rejects(ctx.ASDC.downloadBillingLayoutPDF({ patient_id: 2 }), /capture failed/);
   assert(root.removed, 'Clean up the temporary copy after a failed export.');

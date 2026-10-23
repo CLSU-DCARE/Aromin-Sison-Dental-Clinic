@@ -43,4 +43,12 @@
 .chart-status-completed{background:#e8f1e8;color:#537a56;}
 .chart-status-confirmed{background:#e8f1e8;color:#537a56;}
 .chart-status-cancelled,.chart-status-no-show{background:#f7e9e5;color:#9e5143;}
+.chart-table-scroll{overflow-x:auto;margin-top:18px;border:1px solid var(--glass-border,rgba(27,27,25,.08));border-radius:12px;}
+.chart-appointments-table{width:100%;min-width:620px;border-collapse:collapse;table-layout:fixed;text-align:left;}
+.chart-appointments-table th{background:var(--ivory,#fafaf7);font-size:10px;font-weight:600;letter-spacing:.05em;color:rgba(27,27,25,.55);padding:14px 16px;white-space:normal;}
+.chart-appointments-table td{padding:16px;vertical-align:top;border-bottom:1px solid var(--line);font-size:13px;line-height:1.5;white-space:normal;overflow-wrap:anywhere;word-break:break-word;}
+.chart-appointments-table td strong{font-size:12px;font-weight:600;}
+.chart-appointments-table td small{display:block;margin-top:4px;font-size:11px;color:rgba(27,27,25,.5);}
+.chart-appointments-table tr:last-child td{border-bottom:0;}
+.chart-appointments-table .tag{text-transform:capitalize;max-width:100%;white-space:normal;}
 @media(max-width:760px){.chart-shell{width:min(100% - 24px,1120px);padding-top:18px}.chart-profile{align-items:flex-start;flex-direction:column;padding:20px}.chart-contact-grid{width:100%;display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));padding-top:15px;border-top:1px solid var(--line,#e5e1d8)}.chart-history{padding:18px}.chart-section-heading{align-items:flex-start;flex-direction:column}.chart-search{width:100%}.chart-entry-top{flex-direction:column;gap:7px}.chart-entry-top>span{text-align:left}.chart-stats{flex-wrap:wrap}}
