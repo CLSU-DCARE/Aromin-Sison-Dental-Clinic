@@ -1,11 +1,11 @@
 <?php
 /**
- * Payment approval endpoint (shared staff workflow).
- * Delegates to ASDC\PaymentApprovalService.
+ * Staff billing history and direct payment collection.
  *
  * GET  /backend/api/payments/payments.php?status=pending   -> list (default: all)
+ * GET  /backend/api/payments/payments.php?view=accounts    -> open balances
  * POST /backend/api/payments/payments.php
- *   Body: { payment_id, action: "approve"|"reject", reject_reason? }
+ *   Body: { action: "record", account_id: "C-1"|"T-1", amount, payment_method, payment_date, note? }
  */
 require_once __DIR__ . '/../../autoload.php';
 require_once __DIR__ . '/../../config/headers.php';
@@ -16,6 +16,9 @@ require_role('receptionist', 'dentist');
 
 if ($method === 'GET') {
     try {
+        if (($_GET['view'] ?? '') === 'accounts') {
+            \ASDC\ApiResponse::ok(['accounts' => \ASDC\StaffPaymentService::accounts()]);
+        }
         $status = $_GET['status'] ?? '';
         $rows = $status === 'pending'
             ? \ASDC\PaymentApprovalService::listPending()
@@ -27,4 +30,19 @@ if ($method === 'GET') {
     }
 }
 
-\ASDC\ApiResponse::error(410, 'payments_removed', 'Payment processing has been removed. Historical records are read-only.');
+try {
+    \ASDC\CsrfToken::requireValid();
+    $body = \ASDC\ApiResponse::requireJson();
+    if (($body['action'] ?? '') !== 'record') {
+        \ASDC\ApiResponse::error(410, 'payments_removed', 'Online payment submission and review are no longer available.');
+    }
+    $payment = \ASDC\StaffPaymentService::record($body);
+    \ASDC\ApiResponse::ok(['payment' => $payment], 'Payment recorded.', 201);
+} catch (\InvalidArgumentException $e) {
+    \ASDC\ApiResponse::error(422, 'validation_failed', $e->getMessage());
+} catch (\DomainException $e) {
+    \ASDC\ApiResponse::error(409, 'billing_conflict', $e->getMessage());
+} catch (\Throwable $e) {
+    error_log('Staff payment failed: ' . $e->getMessage());
+    \ASDC\ApiResponse::error(500, 'server_error', 'Unable to record payment. Check payment history before retrying.');
+}

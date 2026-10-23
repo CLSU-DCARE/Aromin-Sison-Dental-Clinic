@@ -10,7 +10,7 @@ The system now uses staff and dentist accounts only. Receptionists create patien
 | Patient dashboard, appointment, braces and payment APIs; account registration API | Disable with HTTP 410, including direct requests |
 | Patient login, remembered login and existing sessions | Reject patient roles centrally; keep existing user rows and references |
 | Online payment submission, receipt uploads and approval/rejection | Disable API and service mutation entry points |
-| Staff billing history, authenticated receipt viewing, reports and archived records | Retain for historical reference; payment transactions are read-only |
+| Staff billing history, authenticated receipt viewing, reports and archived records | Retain; receptionists and dentists can record new clinic payments against existing treatment bills and braces contracts |
 | Treatment balances and orthodontic contract schedules | Retain for internal clinical and administrative work |
 | Patients, appointments, requests, treatments, contracts, billing, payments, receipts and notification history | Retain; no deletion or automatic financial reconciliation |
 | `patients.user_id`, submission/reviewer references and other foreign keys | Retain historical relationships; no foreign keys or tables dropped |
@@ -23,5 +23,11 @@ The local database has been recovered, imported into MySQL on port 3306, and mig
 Deploy the migration before the code that reads `patients.is_active`. Validate patient counts, appointment/treatment counts, billing totals and receipt availability against the backup. Newly created patients have no user account. Staff status updates and restoration now operate on the patient record independently.
 
 Do not drop legacy account or payment tables without a separately reviewed export and retention plan. Pending submissions remain pending historical evidence; the revised system does not approve, reject, refund or otherwise settle them automatically.
+
+## Staff payment collection
+
+Both staff dashboards provide **Billing & Payments** with a shared collection form. Choose an existing patient billing account, amount, method, payment date, and optional notes/reference. New collections are immediately approved, attributed to the signed-in staff user, and assigned an internal reference. The payment and balance update commit together; full payment marks a treatment bill paid or a braces contract completed. Amounts reserved by historical pending submissions are unavailable for new collections. Archived patients and inactive or settled accounts cannot receive payments. Existing history and receipts are preserved; patient payment APIs remain disabled.
+
+Run `php tests/staff_payments_integration.php` against a local MySQL instance to verify collection behavior using a disposable schema. No additional database migration is required beyond the existing billing tables.
 
 Older portal/browser integration suites describe retired behavior. Run `node tests/retired_features_regression.cjs` for the retirement boundaries, `php tests/public_booking_integration.php` for account-free booking and receptionist visibility, and `node tests/staff_live_sync.cjs` for automatic updates. These checks pass locally; validate internal registration, booking, records, contracts and history against a migrated test database before production rollout.

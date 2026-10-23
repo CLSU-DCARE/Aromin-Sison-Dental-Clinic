@@ -19,6 +19,7 @@
 <link rel="stylesheet" href="../admin-system/assets/css/admin.css?v=20261020-case-actions-row">
 <link rel="stylesheet" href="assets/css/dentist-records.css?v=20260926-records-columns">
 <link rel="stylesheet" href="../shared/css/dashboard-system.css?v=20260924-unified-dashboard-shell">
+<link rel="stylesheet" href="../shared/css/staff-payments.css?v=20261023">
 </head>
 <body class="dentist-dashboard">
 
@@ -61,9 +62,9 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12h6m-6 4h6M9 8h1"/><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg>
         <span class="nav-label">Braces Contracts</span>
       </button>
-      <button class="nav-item" data-view="payments" data-tooltip="Billing History">
+      <button class="nav-item" data-view="payments" data-tooltip="Billing &amp; Payments">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18"/><path d="M7 15h3"/></svg>
-        <span class="nav-label">Billing History</span>
+        <span class="nav-label">Billing &amp; Payments</span>
       </button>
 
       <div class="nav-group-label">Scheduling</div>
@@ -213,7 +214,7 @@
 
       <!-- ===== PAYMENT & BILLING ===== -->
       <section class="view" id="view-payments">
-        <div class="page-head"><div><div class="eyebrow">Billing</div><p>View patient payment records and billing status.</p></div></div>
+        <div class="page-head"><div><div class="eyebrow">Billing</div><p>Record patient payments, track outstanding balances, and review billing history.</p></div></div>
         <div class="panel"><div class="toolbar payment-toolbar">
           <div class="toolbar-left" role="group" aria-label="Filter payment status">
             <button class="filter-chip active" aria-pressed="true">All</button>
@@ -223,7 +224,7 @@
             <button class="filter-chip" aria-pressed="false">Rejected</button>
           </div>
         </div><div class="table-scroll"><table>
-          <thead><tr><th>Patient</th><th>Amount</th><th>Method</th><th>Due</th><th>Submitted</th><th>Status</th></tr></thead>
+          <thead><tr><th>Patient</th><th>Amount</th><th>Method</th><th>Due</th><th>Recorded / Reference</th><th>Status</th></tr></thead>
           <tbody id="dentistPaymentsBody"></tbody>
         </table></div><p class="notif-empty" id="dentistPaymentsEmpty" hidden>No payment records yet.</p></div>
       </section>
@@ -627,8 +628,9 @@
 <script src="../admin-system/assets/js/AppointmentScheduler.js?v=20261020-phone-first" defer></script>
 <script src="../admin-system/assets/js/AppointmentActions.js?v=20261020-shared-staff-appointment-actions" defer></script>
 <script src="../shared/js/core/PromotionalCaseManager.js?v=20261020-case-actions-spacing" defer></script>
-<script src="assets/js/DentistDashboard.js?v=20260930-dentist-actions" defer></script>
+<script src="assets/js/DentistDashboard.js?v=20261023-staff-payments" defer></script>
 <script src="assets/js/dentist.js?v=20260916-integration" defer></script>
 
+<script src="../shared/js/core/StaffPayments.js?v=20261023" defer></script>
 </body>
 </html>

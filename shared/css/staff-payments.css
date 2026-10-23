@@ -1,0 +1,12 @@
+.staff-payment-entry { padding: 24px; margin-bottom: 24px; }
+.staff-payment-entry h3 { margin: 0 0 8px; }
+.staff-payment-entry p { margin: 10px 0; line-height: 1.6; }
+.staff-payment-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-top: 20px; }
+.staff-payment-grid label { display: flex; flex-direction: column; gap: 8px; font-size: 13px; font-weight: 600; min-width: 0; }
+.staff-payment-grid input, .staff-payment-grid select { width: 100%; min-width: 0; box-sizing: border-box; padding: 11px 12px; border: 1px solid var(--line, #d6d3c8); border-radius: 8px; background: var(--glass-solid, #fff); color: var(--ink, #222); font: inherit; }
+.staff-payment-grid input:focus-visible, .staff-payment-grid select:focus-visible { outline: 2px solid var(--gold, #9c8b3e); outline-offset: 2px; }
+.staff-payment-account { grid-column: span 2; }
+.staff-payment-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 16px; }
+.staff-payment-entry button:disabled { opacity: .55; cursor: wait; }
+#staffPaymentStatus { font-weight: 600; overflow-wrap: anywhere; }
+@media (max-width: 760px) { .staff-payment-grid { grid-template-columns: 1fr; } .staff-payment-account { grid-column: auto; } .staff-payment-entry { padding: 16px; } }

@@ -27,7 +27,7 @@ const views = {
   archived: { title: 'Archived Patients', crumb: 'Patients' },
   appointments: { title: 'Appointment Scheduling', crumb: 'Scheduling' },
   braces: { title: 'Braces Contracts', crumb: 'Scheduling' },
-  payments: { title: 'Billing History', crumb: 'Billing' },
+  payments: { title: 'Billing & Payments', crumb: 'Billing' },
   inventory: { title: 'Inventory', crumb: 'Operations' },
   cases: { title: 'Successful Cases', crumb: 'Marketing' },
   reports: { title: 'Attendance Reports', crumb: 'Operations' },

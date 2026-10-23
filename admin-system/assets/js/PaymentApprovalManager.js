@@ -21,6 +21,11 @@ window.PaymentApprovalManager = class PaymentApprovalManager {
   }
 
   init () {
+    window.addEventListener('staff-payment-recorded', async () => {
+      if (window.staffLiveSync) return;
+      try { await this.render(await apiFetch('../backend/api/payments/payments.php')); }
+      catch (error) { showToast('Payment saved. Refresh billing history to see it.', 'error'); }
+    });
     this._bindReceiptModal();
     this._bindActions();
     this._bindFilter();
@@ -77,7 +82,7 @@ window.PaymentApprovalManager = class PaymentApprovalManager {
         <td>${escapeHtml(s.amount)}</td>
         <td>${escapeHtml(s.method)}</td>
         <td>${this._dueTag(s)}</td>
-        <td>${escapeHtml(s.submittedAt)}</td>
+        <td>${escapeHtml(s.submittedAt)}<br>${escapeHtml(s.orNumber || '')}</td>
         <td><button class="btn btn-outline btn-sm" data-pay-action="view" data-pay-id="${escapeHtml(s.id)}">View</button></td>
         <td><span class="tag tag-${this.TAG[s.status]}">${this.LABEL[s.status]}</span></td>
         <td><div class="pay-actions">${actions}</div></td>
@@ -117,7 +122,7 @@ window.PaymentApprovalManager = class PaymentApprovalManager {
 
     const receiptPreview = document.getElementById('receiptImg');
     const receiptStatus = document.getElementById('receiptImgStatus');
-    const receiptPath = s.id ? `../backend/api/payments/receipt.php?payment_id=${encodeURIComponent(s.id)}` : (s.receipt_url || '');
+    const receiptPath = s.receipt_url || '';
     const receiptUrl = receiptPath && window.ASDC?.ApiClient?.url
       ? window.ASDC.ApiClient.url(receiptPath)
       : receiptPath;

@@ -13,7 +13,7 @@ if (typeof window !== 'undefined') !window.ASDC && (window.ASDC = {});
     dashboard:    { title: 'Dashboard',          crumb: 'Overview' },
     patients:     { title: 'Patients',           crumb: 'Patients' },
     braces:       { title: 'Braces Contracts',   crumb: 'Patients' },
-    payments:     { title: 'Billing History',  crumb: 'Billing' },
+    payments:     { title: 'Billing & Payments',  crumb: 'Billing' },
     records:      { title: 'Treatment Records',  crumb: 'Records' },
     archived:     { title: 'Archived Patients',  crumb: 'Patients' },
     reports:      { title: 'Attendance Reports', crumb: 'Reports' },
@@ -36,6 +36,7 @@ if (typeof window !== 'undefined') !window.ASDC && (window.ASDC = {});
   }
 
   DentistDashboard.prototype.init = function(){
+    window.addEventListener('staff-payment-recorded', () => this._loadPayments());
     this._wireViewSwitching();
     this._initCore();
     this._initNotifications();
@@ -276,7 +277,7 @@ if (inboxEmpty) inboxEmpty.textContent = 'Loading notifications...';
     panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
-  DentistDashboard.prototype._loadPayments = function(){
+  DentistDashboard.prototype._loadPayments = function(snapshot = null){
     var tbody = document.getElementById('dentistPaymentsBody');
     var empty = document.getElementById('dentistPaymentsEmpty');
     if (!tbody) return;
@@ -288,7 +289,7 @@ if (inboxEmpty) inboxEmpty.textContent = 'Loading notifications...';
       new ASDC.FilterChipGroup(statusGroup, function(label){ self.paymentStatus = label; self._loadPayments(); });
     }
     tbody.innerHTML = '<tr><td colspan="6" class="empty-cell">Loading payment records...</td></tr>';
-    apiFetch('../backend/api/payments/payments.php', { cache: 'no-store' })
+    (snapshot ? Promise.resolve(snapshot) : apiFetch('../backend/api/payments/payments.php', { cache: 'no-store' }))
       .then(function(data){
         var payments = (Array.isArray(data.payments) ? data.payments : []).filter(function(payment){
           var statusMatch = status === 'All' ||
@@ -312,7 +313,7 @@ if (inboxEmpty) inboxEmpty.textContent = 'Loading notifications...';
             '<td>' + ASDC.HtmlHelpers.escapeHtml(payment.amount || '') + '</td>' +
             '<td>' + ASDC.HtmlHelpers.escapeHtml(payment.method || '') + '</td>' +
             '<td><span class="tag tag-' + dueTag + '">' + ASDC.HtmlHelpers.escapeHtml(ASDC.HtmlHelpers.formatDate(payment.dueDate || 'Not set')) + '</span></td>' +
-            '<td>' + ASDC.HtmlHelpers.escapeHtml(payment.submittedAt || '') + '</td>' +
+            '<td>' + ASDC.HtmlHelpers.escapeHtml(payment.submittedAt || '') + '<br>' + ASDC.HtmlHelpers.escapeHtml(payment.orNumber || '') + '</td>' +
             '<td><span class="tag tag-' + tag + '">' + ASDC.HtmlHelpers.escapeHtml(label) + '</span></td>' +
           '</tr>';
         }).join('');
@@ -772,6 +773,7 @@ if (inboxEmpty) inboxEmpty.textContent = 'Loading notifications...';
     });
     window.staffLiveSync = ASDC.startPortalSync({ start: () => self.appointmentScheduler.state.start, apply: data => {
       self.snapshot = data;
+      if (document.getElementById('view-payments')?.classList.contains('active')) self._loadPayments(data);
       self._contractsRaw = data.contracts;
       AdminState.records = data.records;
       self._applyPatients(); self._applyBracesContracts(); self._applyRecords();
