@@ -78,8 +78,10 @@ class InputValidator
         if (!$date || $date < date('Y-m-d')) {
             $fields[$dateKey] = 'Use today or a future date in YYYY-MM-DD format.';
         }
-        if (!$time) {
-            $fields[$timeKey] = 'Use a valid time.';
+        if (!$time || !AppointmentTimes::allows($time)) {
+            $fields[$timeKey] = 'Choose a clinic appointment time from the available choices.';
+        } elseif ($date === date('Y-m-d') && $time <= date('H:i:s')) {
+            $fields[$timeKey] = 'That time has already passed. Choose a later available time or another date.';
         }
         $closedMessage = $date ? HolidayCalendar::closedMessage($date) : null;
         if ($closedMessage) {

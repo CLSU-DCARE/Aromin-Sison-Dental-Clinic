@@ -22,6 +22,7 @@
       finally { button.disabled = false; }
     };
     dialog.showModal();
+    return dialog;
   }
   function confirmAction({
     title = 'Confirm action',
@@ -145,6 +146,10 @@
   };
 
   ASDC.openClinicalForm = (snapshot, record = null) => {
+    if (window.ASDCAuthUser?.role !== 'dentist') {
+      ASDC._toast.show('Only a dentist can record or edit clinical treatment records.', 'error');
+      return;
+    }
     const patients = record ? snapshot.patients.filter(p => Number(p.patient_id) === Number(record.patient_id)) : snapshot.patients;
     const patientOptions = patients.map(p => `<option value="${Number(p.patient_id)}">${esc(p.first_name + ' ' + p.last_name)}</option>`).join('');
     if (!patients.length) { ASDC._toast.show('No assigned patients are available.'); return; }
@@ -154,7 +159,10 @@
       field('Diagnosis', `<input name="diagnosis" maxlength="255" value="${esc(record?.diagnosis)}">`) +
       field('Treatment', treatmentSelect(record?.treatment_given)) +
       field('Dentist notes / protocol (shared with patient)', `<textarea name="treatment_protocol" maxlength="10000">${esc(record?.treatment_protocol)}</textarea>`),
-      values => write('patients/records.php', { ...values, ...(record ? { record_id: record.record_id, appointment_id: record.appointment_id } : {}) }, record ? 'PATCH' : 'POST'));
+      async values => {
+        await write('patients/records.php', { ...values, ...(record ? { record_id: record.record_id, appointment_id: record.appointment_id } : {}) }, record ? 'PATCH' : 'POST');
+        await refreshStaffSnapshot();
+      });
   };
 
   ASDC.approveAppointment = async appointment => {
@@ -186,7 +194,11 @@
       const action = button.dataset.clinicalAction;
       const body = { action, appointment_id: appointment.appointment_id, resource_type: 'appointment' };
       if (action === 'reschedule') {
-        form('Reschedule appointment', field('Date', `<input type="date" name="scheduled_date" required value="${esc(appointment.scheduled_date)}">`) + field('Time', `<input type="time" name="scheduled_time" required value="${esc(appointment.scheduled_time.slice(0,5))}">`), async values => { await write('appointments/actions.php', { ...body, ...values }); await refreshStaffSnapshot(); });
+        const dialog = form('Reschedule appointment', field('Date', `<input type="date" name="scheduled_date" required value="${esc(appointment.scheduled_date)}">`) + field('Time', `<select name="scheduled_time" required>${ASDC.AppointmentTimes.options(appointment.scheduled_time)}</select>`), async values => { await write('appointments/actions.php', { ...body, ...values }); await refreshStaffSnapshot(); });
+        const dateInput = dialog.querySelector('[name="scheduled_date"]');
+        const timeInput = dialog.querySelector('[name="scheduled_time"]');
+        ASDC.AppointmentTimes.populate(timeInput, dateInput.value);
+        dateInput.addEventListener('change', () => ASDC.AppointmentTimes.populate(timeInput, dateInput.value));
         return;
       }
       if (action === 'cancel') {

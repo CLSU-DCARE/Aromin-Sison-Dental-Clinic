@@ -13,6 +13,8 @@ try {
         $pdo->exec($create);
     }
     $pdo->exec('SET FOREIGN_KEY_CHECKS=1');
+    // Disposable fixtures must include the existing account-free patient status column.
+    $pdo->exec("ALTER TABLE `$database`.patients ADD COLUMN IF NOT EXISTS is_active TINYINT(1) NOT NULL DEFAULT 1");
     $pdo->exec("INSERT INTO `$database`.users (role,email,password_hash,full_name,is_active) VALUES ('receptionist','staff@example.test','unused-test-hash','Test Receptionist',1)");
     $staffId = (int)$pdo->lastInsertId();
     $date = new DateTimeImmutable('+7 days');

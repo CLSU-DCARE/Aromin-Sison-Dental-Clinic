@@ -1,0 +1,110 @@
+.staff-payment-entry { position: fixed; inset: 0; box-sizing: border-box; width: min(820px, calc(100% - 32px)); max-height: calc(100dvh - 40px); margin: auto; padding: 28px; overflow-y: auto; overscroll-behavior: contain; border: 1px solid var(--line, #e5e1d8); border-radius: 18px; background: var(--glass-solid, #fff); color: var(--ink, #222); box-shadow: 0 24px 80px rgba(0,0,0,.22); }
+.staff-payment-entry:not([open]) { display: none; }
+.staff-payment-entry::backdrop { background: rgba(20, 20, 18, .55); }
+body.staff-payment-modal-open { overflow: hidden; }
+.staff-payment-close { position: absolute; top: 14px; right: 16px; width: 34px; height: 34px; border: 0; border-radius: 50%; background: #f1efe8; color: inherit; font-size: 24px; cursor: pointer; }
+.staff-payment-close:focus-visible { outline: 2px solid var(--gold, #9c8b3e); outline-offset: 2px; }
+.staff-payment-entry h3 { padding-right: 40px; }
+.staff-payment-entry h3 { margin: 0 0 8px; }
+.staff-payment-entry p { margin: 10px 0; line-height: 1.6; }
+.staff-payment-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 20px; }
+.staff-payment-grid label { display: flex; flex-direction: column; gap: 8px; font-size: 13px; font-weight: 600; min-width: 0; }
+.staff-payment-grid input, .staff-payment-grid select { width: 100%; min-width: 0; box-sizing: border-box; padding: 11px 12px; border: 1px solid var(--line, #d6d3c8); border-radius: 8px; background: var(--glass-solid, #fff); color: var(--ink, #222); font: inherit; }
+.staff-payment-grid input:focus-visible, .staff-payment-grid select:focus-visible { outline: 2px solid var(--gold, #9c8b3e); outline-offset: 2px; }
+.staff-payment-account { grid-column: span 2; }
+.staff-payment-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 16px; }
+.staff-payment-entry button:disabled { opacity: .55; cursor: wait; }
+#staffPaymentStatus { font-weight: 600; overflow-wrap: anywhere; }
+.patient-billing { scroll-margin-top: 20px; }
+.patient-billing .table-scroll { overflow-x: auto; margin: 14px 0 20px; }
+.patient-billing table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; }
+.patient-billing th, .patient-billing td { padding: 12px; border-bottom: 1px solid var(--line, #e5e1d8); vertical-align: top; }
+.patient-billing th { font-size: 11px; color: var(--ink-muted, #73746f); }
+.patient-billing td small { display: inline-block; margin-top: 4px; color: var(--ink-muted, #73746f); overflow-wrap: anywhere; max-width: 280px; }
+.patient-billing .chart-stats { display: flex; gap: 12px; flex-wrap: wrap; margin: 18px 0 24px; }
+.patient-billing .chart-stat { display: grid; gap: 6px; min-width: 160px; flex: 1; padding: 16px; border: 1px solid var(--line, #e5e1d8); border-radius: 12px; }
+.patient-billing .chart-stat span { font-size: 22px; font-weight: 700; }
+.patient-billing .chart-status { text-transform: capitalize; }
+.patient-billing .chart-search { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; padding: 12px; }
+.patient-billing .chart-search input { min-width: 0; max-width: 100%; padding: 10px 12px; border: 1px solid var(--line, #e5e1d8); border-radius: 8px; font: inherit; }
+@media (max-width: 760px) { .staff-payment-grid { grid-template-columns: 1fr; } .staff-payment-account { grid-column: auto; } .staff-payment-entry { padding: 16px; } }
+
+/* Billing follows the clinic's ivory surfaces, gold accents and patient tables. */
+.billing-overview, #patientBillingTotals { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; margin: 0 0 24px; }
+.billing-stat { display: flex; flex-direction: column; gap: 12px; padding: 23px 24px; border: 1px solid var(--glass-border); border-radius: var(--r-lg); background: var(--glass-solid); box-shadow: var(--glass-shadow); position: relative; overflow: hidden; }
+.billing-stat::before { content: ''; position: absolute; top: 23px; right: 23px; height: 8px; width: 8px; border-radius: 50%; background: var(--gold); }
+.billing-stat-label { color: rgba(27,27,25,.62); font-size: 11px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; padding-right: 16px; }
+.billing-stat strong { font-family: Fraunces, Georgia, serif; font-size: clamp(24px, 2.3vw, 32px); font-weight: 500; letter-spacing: -.025em; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.billing-stat small { color: rgba(27,27,25,.5); font-size: 12px; }
+.billing-stat-green::before { background: var(--green); }
+.billing-stat-amber::before { background: var(--amber); }
+.billing-stat-gold { background: linear-gradient(125deg, #fff, var(--ivory-2)); border-color: rgba(156,139,62,.25); }
+.billing-directory-panel { overflow: hidden; }
+.billing-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 22px 24px; flex-wrap: wrap; }
+.billing-filter-group { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; background: var(--ivory-2); padding: 5px; border: 1px solid rgba(27,27,25,.08); border-radius: 999px; }
+.billing-filter-group .filter-chip { padding: 9px 15px; border: 0; border-radius: 999px; background: transparent; color: rgba(27,27,25,.58); font: 500 12px var(--font-ui); cursor: pointer; white-space: nowrap; }
+.billing-filter-group .filter-chip.active { background: var(--white); color: var(--ink); box-shadow: var(--shadow-xs); }
+.billing-filter-group .filter-chip:focus-visible { outline: 2px solid var(--gold); outline-offset: 1px; }
+.billing-search { display: flex; align-items: center; gap: 10px; min-width: 220px; width: 285px; max-width: 100%; padding: 11px 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--ivory); box-sizing: border-box; }
+.billing-search svg { width: 17px; height: 17px; color: var(--gold-text); flex: none; }
+.billing-search input { border: 0; outline: 0; width: 100%; min-width: 0; background: transparent; font: 13px var(--font-ui); color: var(--ink); }
+.billing-search:focus-within { border-color: var(--gold); box-shadow: var(--ring-soft); }
+.billing-directory .table-scroll { margin: 0; }
+.billing-directory table { min-width: 820px; }
+.billing-directory th { padding: 14px 24px; background: rgba(241,237,227,.42); font-size: 10px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; white-space: nowrap; }
+.billing-directory td { padding: 20px 24px; vertical-align: middle; }
+.billing-directory tbody tr { background: transparent; }
+.billing-directory tbody tr:hover { background: rgba(241,237,227,.4); }
+.billing-directory tbody tr:last-child td { border-bottom: 0; }
+.billing-patient { display: flex; align-items: center; gap: 12px; min-width: 190px; }
+.billing-avatar { display: grid; place-items: center; width: 40px; height: 40px; flex: none; background: var(--ivory-2); color: var(--gold-text); border: 1px solid rgba(156,139,62,.12); border-radius: 50%; font: 500 15px Fraunces, Georgia, serif; }
+.billing-patient strong { display: block; font-size: 13px; font-weight: 600; }
+.patient-billing .billing-patient small { display: block; margin-top: 5px; font-size: 11px; color: rgba(27,27,25,.48); }
+.patient-billing .billing-money { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.billing-outstanding { color: var(--gold-text); font-weight: 650; }
+.billing-pending { color: var(--amber-text); }
+.billing-muted { color: rgba(27,27,25,.36); }
+.billing-row-action { text-align: right; white-space: nowrap; }
+.billing-row-action .btn { gap: 12px; font-size: 12px; padding: 9px 14px; border-radius: 10px; }
+.billing-row-action .btn span { color: var(--gold-text); }
+.billing-table-footer { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; padding: 16px 24px; border-top: 1px solid var(--glass-border); color: rgba(27,27,25,.45); font-size: 11px; }
+.billing-table-footer p { margin: 0; color: rgba(27,27,25,.6); }
+.patient-billing .billing-empty { text-align: center; padding: 44px 24px; color: rgba(27,27,25,.5); }
+.billing-sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+.patient-chart-page .patient-billing h3 { font: 500 19px Fraunces, Georgia, serif; margin: 26px 0 12px; }
+.patient-chart-page #patientBillingMessage { font-size: 12px; color: rgba(27,27,25,.52); line-height: 1.6; margin: 16px 0 20px; }
+.patient-chart-page .patient-billing table { min-width: 700px; }
+.patient-chart-page .patient-billing th { background: var(--ivory); letter-spacing: .04em; }
+.patient-chart-page .patient-billing .table-scroll { border: 1px solid var(--glass-border); border-radius: 12px; }
+.billing-status { white-space: nowrap; text-transform: capitalize; }
+.billing-pdf-layout .chart-profile { gap: 20px; padding: 22px; }
+.billing-pdf-layout .chart-contact-grid { gap: 16px; }
+.billing-pdf-layout .chart-contact-grid > div { min-width: 90px; font-size: 12px; }
+.billing-pdf-layout .chart-name-line h2 { font-size: 23px; }
+.billing-pdf-layout .table-scroll { overflow: visible; }
+.billing-pdf-layout table { min-width: 0 !important; table-layout: fixed; }
+.billing-pdf-layout td { overflow-wrap: anywhere; }
+.patient-billing td { white-space: normal; overflow-wrap: anywhere; word-break: break-word; }
+.patient-billing td small { display: block; max-width: 100%; min-width: 0; white-space: normal; overflow-wrap: anywhere; word-break: break-word; }
+.billing-pdf-layout th, .billing-pdf-layout td { min-width: 0; white-space: normal !important; overflow-wrap: anywhere; word-break: break-word; }
+.billing-pdf-layout th { font-size: 10px; }
+.billing-pdf-layout td { font-size: 12px; line-height: 1.5; }
+.billing-pdf-layout .billing-status { white-space: normal; max-width: 100%; }
+.billing-pdf-layout .chart-contact-grid > div { min-width: 0; }
+.billing-pdf-layout .chart-contact-grid span, .billing-pdf-layout .chart-contact-grid a { white-space: normal; overflow-wrap: anywhere; word-break: break-word; }
+.billing-pdf-layout .chart-entry-details { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.billing-pdf-layout .page-head { margin-bottom: 0; }
+.billing-export-brand { padding: 0 0 16px; color: var(--gold-text); font-size: 11px; font-weight: 600; letter-spacing: .1em; }
+#patientBillingTotals.billing-patient-overview { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (max-width: 600px) { #patientBillingTotals.billing-patient-overview { grid-template-columns: 1fr; } }
+.staff-payment-entry { padding: 30px; border-radius: 20px; background: var(--ivory); font-family: var(--font-ui); }
+.staff-payment-eyebrow { margin-bottom: 8px; font-size: 10px; font-weight: 600; letter-spacing: .1em; color: var(--gold-text); }
+.staff-payment-entry h3 { font: 500 27px Fraunces, Georgia, serif; }
+.staff-payment-entry #staffPaymentDescription { font-size: 13px; color: rgba(27,27,25,.56); padding-bottom: 18px; border-bottom: 1px solid var(--line); }
+.staff-payment-grid label { font-size: 12px; font-weight: 500; }
+.staff-payment-grid input, .staff-payment-grid select { padding: 12px; border-radius: 10px; font-size: 13px; background: var(--white); }
+#staffPaymentBalance { margin: 20px 0; padding: 13px 15px; background: var(--ivory-2); border-radius: 10px; color: var(--gold-text); font-size: 12px; }
+.staff-payment-actions { border-top: 1px solid var(--line); padding-top: 20px; }
+#staffPaymentStatus { font-size: 12px; line-height: 1.6; }
+@media (max-width: 900px) { .billing-toolbar { align-items: stretch; } .billing-search { flex: 1; } .billing-overview, #patientBillingTotals { gap: 12px; } .billing-stat { padding: 19px; } }
+@media (max-width: 600px) { .billing-overview, #patientBillingTotals { grid-template-columns: 1fr; gap: 10px; } .billing-stat { gap: 7px; padding: 18px; } .billing-stat strong { font-size: 27px; } .billing-toolbar { padding: 16px; gap: 14px; } .billing-filter-group { border-radius: 16px; width: 100%; display: grid; grid-template-columns: 1fr 1fr; } .billing-search { width: 100%; min-width: 0; flex: auto; } .billing-table-footer { padding: 14px 16px; } .billing-table-footer > span { display: none; } .staff-payment-entry { padding: 22px 18px; } }

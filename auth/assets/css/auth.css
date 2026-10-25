@@ -341,6 +341,14 @@ body.modal-open{overflow:hidden;}
   .auth-aside-top{margin-bottom:20px;}
   .auth-main{padding:44px 24px 70px;}
 }
+.staff-signin-note{
+  margin:2px 0 0;
+  color:rgba(27,27,25,.55);
+  font-size:14px;
+  font-weight:400;
+  font-style:italic;
+  line-height:1.6;
+}
 @media (max-width:560px){
   .form-row{grid-template-columns:1fr;}
 }

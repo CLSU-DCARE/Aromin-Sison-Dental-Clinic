@@ -8,6 +8,7 @@ class StaffDashboardService
         $scope = DataScope::current();
         $pdo = Database::pdo();
         NotificationSchema::ensureLogAppointmentColumn();
+        PaymentApprovalService::ensureGeneralTreatmentBillingTables();
         $pdo->exec('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ');
         $pdo->beginTransaction();
         try {
@@ -25,6 +26,8 @@ class StaffDashboardService
             [$contractWhere, $contractParams] = $scope->contractFilter();
             $stmt = $pdo->prepare("SELECT COALESCE(SUM(cp.amount_paid),0) FROM contract_payments cp JOIN braces_contracts c ON c.contract_id=cp.contract_id WHERE cp.status='approved' AND YEARWEEK(cp.payment_date,1)=YEARWEEK(CURRENT_DATE(),1) AND $contractWhere");
             $stmt->execute($contractParams); $collections = (float) $stmt->fetchColumn();
+            $stmt = $pdo->prepare("SELECT COALESCE(SUM(cp.amount_paid),0) FROM treatment_payments cp JOIN treatment_bills c ON c.bill_id=cp.bill_id WHERE cp.status='approved' AND YEARWEEK(cp.payment_date,1)=YEARWEEK(CURRENT_DATE(),1) AND $contractWhere");
+            $stmt->execute($contractParams); $collections += (float) $stmt->fetchColumn();
             $metrics = [$weekActiveCount, count(array_unique(array_column(array_filter($contracts, fn($c) => $c['status_code'] === 'active'), 'patient_id'))), $collections, count(array_filter($contracts, fn($c) => $c['status_code'] === 'defaulted'))];
             $payments = ($scope->isReceptionist() || $scope->isDentist()) ? PaymentApprovalService::listAll() : [];
             $logs = NotificationLogService::list()['logs'];

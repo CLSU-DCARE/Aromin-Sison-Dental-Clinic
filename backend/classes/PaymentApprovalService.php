@@ -770,6 +770,7 @@ class PaymentApprovalService
         return [
             'id'         => 'C-' . (int) $row['payment_id'],
             'payment_id' => (int) $row['payment_id'],
+            'paymentDate' => $row['payment_date'] ?? null,
             'billing_type' => 'braces',
             'category'   => 'Braces',
             'contract_id' => (int) $row['contract_id'],
@@ -798,6 +799,7 @@ class PaymentApprovalService
         return [
             'id'          => 'T-' . (int) $row['payment_id'],
             'payment_id'  => (int) $row['payment_id'],
+            'paymentDate' => $row['payment_date'] ?? null,
             'billing_type' => 'treatment',
             'category'     => 'Treatment',
             'bill_id'     => (int) $row['bill_id'],

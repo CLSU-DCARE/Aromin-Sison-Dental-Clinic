@@ -502,6 +502,7 @@ tbody tr:hover{background:rgba(241,237,227,0.5);}
 .tag-red{background:rgba(180,84,63,0.12);color:var(--red-text);}
 .tag-red::before{background:var(--red-text);}
 .row-actions{display:flex;gap:9px;}
+.patient-view-btn{white-space:nowrap;}
 #view-archived .archive-table{min-width:1180px;}
 #view-archived .archive-table th:last-child,
 #view-archived .archive-table td:last-child{

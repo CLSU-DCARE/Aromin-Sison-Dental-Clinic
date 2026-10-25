@@ -217,6 +217,7 @@ window.AppointmentActions = class AppointmentActions {
     const note      = document.getElementById('requestRescheduleNote');
 
     dateInput.min = AppointmentScheduler.isoDate(new Date());
+    dateInput.addEventListener('change', () => ASDC.AppointmentTimes.populate(timeInput, dateInput.value));
 
     saveBtn.addEventListener('click', async () => {
       if (!this._reschedulingResource || !dateInput.value || !timeInput.value) {
@@ -257,6 +258,7 @@ window.AppointmentActions = class AppointmentActions {
     document.getElementById('requestReschedulePatient').textContent = `${patientName} · ${serviceType}`;
     document.getElementById('requestRescheduleDate').value          = date;
     document.getElementById('requestRescheduleTime').value          = time;
+    ASDC.AppointmentTimes.populate(document.getElementById('requestRescheduleTime'), date);
     document.getElementById('requestRescheduleNote').hidden        = true;
     this.rescheduleModal.open(document.querySelector(`[data-request-id="${id}"], [data-appointment-id="${id}"]`));
   }

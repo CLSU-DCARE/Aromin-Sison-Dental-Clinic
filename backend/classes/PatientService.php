@@ -49,14 +49,22 @@ class PatientService
             ApiResponse::error(422, 'validation_failed', 'Enter both first and last name.', ['name' => 'Enter both first and last name.']);
         }
 
-        $stmt = Database::pdo()->prepare(
-            'INSERT INTO patients (first_name, last_name, contact_number, email) VALUES (?, ?, ?, ?)'
-        );
-        $stmt->execute([$firstName, $lastName, $contact ?: null, $email ?: null]);
-
-        $patientId = (int) Database::pdo()->lastInsertId();
-        PortalEvent::patient($patientId, 'Patient profile created', 'A new patient record was added.');
-        return ['patient_id' => $patientId];
+        return PatientIdentity::locked(function () use ($name, $firstName, $lastName, $contact, $email) {
+            $pdo = Database::pdo();
+            $pdo->beginTransaction();
+            try {
+                PatientIdentity::assertAvailable($name, $contact, $email);
+                $stmt = $pdo->prepare('INSERT INTO patients (first_name, last_name, contact_number, email) VALUES (?, ?, ?, ?)');
+                $stmt->execute([$firstName, $lastName, $contact ?: null, $email ?: null]);
+                $patientId = (int)$pdo->lastInsertId();
+                PortalEvent::patient($patientId, 'Patient profile created', 'A new patient record was added.');
+                $pdo->commit();
+                return ['patient_id'=>$patientId];
+            } catch (\Throwable $error) {
+                if ($pdo->inTransaction()) $pdo->rollBack();
+                throw $error;
+            }
+        });
     }
 
     /**
@@ -146,6 +154,50 @@ class PatientService
         return $stmt->fetchAll();
     }
 
+    /** Return one active patient's chart and history for authorized staff. */
+    public static function activeDetails(int $patientId): array
+    {
+        if ($patientId < 1) {
+            ApiResponse::error(422, 'validation_failed', 'Choose a valid patient.');
+        }
+
+        $pdo = Database::pdo();
+        $scope = DataScope::current();
+        [$where, $params] = $scope->patientFilter();
+        $patientStmt = $pdo->prepare(
+            "SELECT p.patient_id, p.first_name, p.last_name, p.contact_number, p.email,
+                    p.registered_at, p.is_active
+             FROM patients p
+             WHERE p.patient_id=? AND {$where}"
+        );
+        $patientStmt->execute(array_merge([$patientId], $params));
+        $patient = $patientStmt->fetch();
+        if (!$patient) {
+            ApiResponse::error(404, 'not_found', 'Active patient not found.');
+        }
+
+        $appointments = $pdo->prepare(
+            "SELECT a.appointment_id, a.service_type, a.scheduled_date, a.scheduled_time,
+                    a.status, d.full_name AS dentist_name
+             FROM appointments a
+             LEFT JOIN dentists d ON d.dentist_id=a.dentist_id
+             WHERE a.patient_id=?
+             ORDER BY a.scheduled_date DESC, a.scheduled_time DESC, a.appointment_id DESC"
+        );
+        $appointments->execute([$patientId]);
+        $records = $pdo->prepare(
+            "SELECT r.record_id, r.diagnosis, r.treatment_given, r.treatment_protocol,
+                    r.date_recorded, d.full_name AS dentist_name
+             FROM treatment_records r
+             LEFT JOIN dentists d ON d.dentist_id=r.dentist_id
+             WHERE r.patient_id=?
+             ORDER BY r.date_recorded DESC, r.record_id DESC"
+        );
+        $records->execute([$patientId]);
+
+        return ['patient' => $patient, 'appointments' => $appointments->fetchAll(), 'records' => $records->fetchAll()];
+    }
+
     public static function listArchived(): array
     {
         $scope = DataScope::current();
@@ -167,7 +219,7 @@ class PatientService
         return $stmt->fetchAll();
     }
 
-    public static function archivedDetails(int $patientId): array
+    public static function archivedDetails(int $patientId, bool $recordOnly = false): array
     {
         $pdo = Database::pdo();
         $scope = DataScope::current();
@@ -190,6 +242,7 @@ class PatientService
             'notifications' => "SELECT notification_id,title,message,type,created_at,read_at FROM user_notifications WHERE patient_id=? ORDER BY notification_id DESC",
         ];
         $details = ['patient' => $row];
+        if ($recordOnly) $queries = ['appointments'=>$queries['appointments']];
         foreach ($queries as $key => $sql) {
             $stmt = $pdo->prepare($sql);
             $stmt->execute([$patientId]);
@@ -219,14 +272,20 @@ class PatientService
 
     public static function restore(int $patientId): array
     {
+        return PatientIdentity::locked(fn() => self::restoreLocked($patientId));
+    }
+
+    private static function restoreLocked(int $patientId): array
+    {
         $pdo = Database::pdo();
         $pdo->beginTransaction();
         try {
-            $stmt = $pdo->prepare('SELECT user_id, archived_at FROM patients WHERE patient_id=? FOR UPDATE');
+            $stmt = $pdo->prepare('SELECT user_id, archived_at, first_name, last_name, contact_number, email FROM patients WHERE patient_id=? FOR UPDATE');
             $stmt->execute([$patientId]);
             $row = $stmt->fetch();
             if (!$row) { $pdo->rollBack(); ApiResponse::error(404, 'not_found', 'Patient not found.'); }
             if (!$row['archived_at']) { $pdo->rollBack(); ApiResponse::error(409, 'not_archived', 'Patient is already active.'); }
+            PatientIdentity::assertAvailable($row['first_name'] . ' ' . $row['last_name'], (string)$row['contact_number'], (string)$row['email'], $patientId);
 
             $pdo->prepare('UPDATE patients SET is_active=1, archived_at=NULL, archived_by=NULL, retention_note=NULL WHERE patient_id=?')->execute([$patientId]);
 

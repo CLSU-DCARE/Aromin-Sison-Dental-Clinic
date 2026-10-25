@@ -14,13 +14,33 @@ window.ASDC.startPortalSync = function ({ start = () => '', apply }) {
       try { return await apiFetch('../backend/api/appointments/dashboard.php' + (start() ? '?start=' + encodeURIComponent(start()) : ''), { cache: 'no-store', signal: controller.signal, passive: true }); } // passive: background refresh must not keep an idle session alive
       finally { clearTimeout(timer); }
     },
-    applySnapshot: apply,
+    applySnapshot: (data, updated, changedKeys) => apply(data, changedKeys),
     onStatus: status => {
       label.textContent = { live: 'Updates automatically', reconnecting: 'Showing last update. Reconnecting…', unavailable: 'Unable to load clinic records. Retrying…', 'signed-out': 'Session ended. Please sign in.' }[status];
       if (status === 'signed-out') window.location.replace('../auth/login.html');
     }
   });
-  sync.refetch = async () => { if (sync.pending) await sync.pending; return sync.refresh(); };
+  let requestedRefresh = null;
+  let refreshing = false;
+  let refreshAgain = false;
+  sync.refetch = () => {
+    if (requestedRefresh) {
+      if (refreshing) refreshAgain = true;
+      return requestedRefresh;
+    }
+    // A write during polling needs one fresh snapshot after the old request.
+    // Multiple listeners and save handlers share that single follow-up.
+    const pending = sync.pending;
+    requestedRefresh = Promise.resolve(pending).then(async () => {
+      do {
+        refreshAgain = false;
+        refreshing = true;
+        await sync.refresh();
+        refreshing = false;
+      } while (refreshAgain && sync.running);
+    }).finally(() => { requestedRefresh = null; refreshing = false; });
+    return requestedRefresh;
+  };
   window.addEventListener('asdc:mutation', sync.refetch);
   window.addEventListener('asdc:authenticated', () => sync.start());
   window.addEventListener('pagehide', () => sync.stop());

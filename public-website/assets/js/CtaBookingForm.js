@@ -10,11 +10,13 @@
   if (!ctaForm) return;
 
   var ctaDate = document.getElementById('ctaDate');
+  var ctaTime = document.getElementById('ctaTime');
   if (ctaDate){
     var today = new Date();
     today.setMinutes(today.getMinutes() - today.getTimezoneOffset());
     ctaDate.min = today.toISOString().split('T')[0];
     ctaDate.addEventListener('change', function(){
+      window.ASDC.AppointmentTimes.populate(ctaTime, ctaDate.value);
       syncClosedDateNote();
     });
   }
@@ -70,6 +72,11 @@
       ctaDate.focus();
       return;
     }
+    if (!ctaTime || !window.ASDC.AppointmentTimes.allows(ctaTime.value) || ctaTime.selectedOptions[0]?.disabled) {
+      showNote('Please choose an appointment time from the available choices.', 'err');
+      ctaTime?.focus();
+      return;
+    }
 
     hideNote();
     btn.classList.add('is-loading');
@@ -89,11 +96,15 @@
       })
     }).then(function(res){
       return res.json().then(function(payload){
-        if (!res.ok) throw new Error(payload.error && payload.error.message || 'Unable to submit booking.');
+        if (!res.ok) {
+          var fields = payload.error && payload.error.fields || {};
+          throw new Error(fields.requested_time || fields.requested_date || payload.error && payload.error.message || 'Unable to submit booking.');
+        }
         btn.classList.remove('is-loading');
         btn.disabled = false;
         showNote('Request received! Clinic staff will contact you to confirm your appointment.', 'ok');
         ctaForm.reset();
+        window.ASDC.AppointmentTimes.populate(ctaTime);
       });
     }).catch(function(error){
       btn.classList.remove('is-loading');

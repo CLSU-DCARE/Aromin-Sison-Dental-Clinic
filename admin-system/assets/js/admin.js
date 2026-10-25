@@ -23,11 +23,10 @@
 const views = {
   dashboard: { title: 'Dashboard', crumb: 'Overview' },
   patients: { title: 'Patient Management', crumb: 'Patients' },
-  records: { title: 'Treatment Records', crumb: 'Patients' },
   archived: { title: 'Archived Patients', crumb: 'Patients' },
   appointments: { title: 'Appointment Scheduling', crumb: 'Scheduling' },
   braces: { title: 'Braces Contracts', crumb: 'Scheduling' },
-  payments: { title: 'Billing History', crumb: 'Billing' },
+  payments: { title: 'Billing & Payments', crumb: 'Billing' },
   inventory: { title: 'Inventory', crumb: 'Operations' },
   cases: { title: 'Successful Cases', crumb: 'Marketing' },
   reports: { title: 'Attendance Reports', crumb: 'Operations' },
@@ -36,7 +35,12 @@ const views = {
 
 function switchView(view){
   const target = document.getElementById('view-' + view);
-  if (!target || target.classList.contains('active')) return;
+  if (!target || !Object.hasOwn(views, view)) return;
+  // Preserve the selected section when returning from a patient chart or reloading.
+  if (window.location.hash !== '#' + view) {
+    window.history.replaceState(null, '', '#' + view);
+  }
+  if (target.classList.contains('active')) return;
 
   document.querySelectorAll('.nav-item').forEach(el => {
     const active = el.dataset.view === view;
@@ -50,9 +54,7 @@ function switchView(view){
   const crumbEl = document.getElementById('viewCrumb');
   if (crumbEl) crumbEl.textContent = meta.crumb;
 
-  // Crossfade: let the current view slide out first, then swap in the new
-  // one (durations match viewOut/viewIn in admin.css).
-  const current = document.querySelector('.view.active');
+  // Switch immediately so rapid navigation always shows the latest selection.
   const swap = () => {
     document.querySelectorAll('.view').forEach(el => el.classList.remove('active', 'view-leave'));
     target.classList.add('active');
@@ -61,12 +63,7 @@ function switchView(view){
     closeSidebar();
     announce('Showing ' + meta.title);
   };
-  if (current && current !== target){
-    current.classList.add('view-leave');
-    setTimeout(swap, 180);
-  } else {
-    swap();
-  }
+  swap();
 }
 
 document.querySelectorAll('.nav-item').forEach(btn => {
@@ -144,7 +141,7 @@ function renderArchivedPatients(){
       <td>${escapeHtml(retained)}</td>
       <td>${escapeHtml(patient.archived_by_name || 'System')}</td>
       <td><div class="row-actions archive-actions">
-        <button type="button" class="btn btn-outline btn-sm archive-action-btn" data-archive-view="${Number(patient.patient_id)}">View</button>
+        <a class="btn btn-outline btn-sm archive-action-btn patient-view-btn" href="patient-chart.html?patient_id=${Number(patient.patient_id)}&amp;archived=1">View Record</a>
         <button class="btn btn-danger btn-sm archive-action-btn" data-archive-delete="${Number(patient.patient_id)}">Delete</button>
         <button class="btn btn-gold btn-sm archive-action-btn" data-archive-restore="${Number(patient.patient_id)}">Restore</button>
       </div></td>
@@ -276,12 +273,6 @@ document.addEventListener('keydown', event => {
   if (event.key === 'Escape' && !document.getElementById('archivedDetailPanel')?.hidden) closeArchivedDetails();
 });
 
-// =====================================================================
-// RECORDS TABLE: category filter + view details (delegated to RecordTableManager)
-// =====================================================================
-const recordMgr = new RecordTableManager({ state: AdminState });
-recordMgr.init();
-
 // ---------- Inventory and automatic usage rules ----------
 const inventoryMgr = new InventoryTableManager({ state: AdminState });
 inventoryMgr.init();
@@ -400,10 +391,6 @@ if (userChip && userMenu){
 
 // =====================================================================
 // PATIENT MODALS: delegated to PatientTableManager
-// =====================================================================
-
-// =====================================================================
-// RECORDS: add new treatment record (delegated to RecordTableManager)
 // =====================================================================
 
 // =====================================================================
@@ -839,20 +826,34 @@ paymentMgr.init();
 
 window.staffLiveSync = ASDC.startPortalSync({
   start: () => appointmentScheduler.state.start,
-  apply: data => {
+  apply: (data, changed) => {
+    const has = (...keys) => !changed || keys.some(key => changed.has(key));
     window.staffSnapshot = data;
-    appointmentScheduler.applySnapshot(data);
-    patientMgr.load(data);
-    AdminState.records = data.records; recordMgr.apply();
-    AdminState.inventory = data.inventory.map(item => inventoryMgr.normalize(item));
-    inventoryMgr.apply();
-    applyBraces(data); paymentMgr.render(data);
-    inbox.setItems(data.notifications);
-    notificationManager.renderLog(data);
-    AdminState.reports = data.reports || AdminState.reports;
-    renderReports(AdminState.reports);
-    AdminState.dashboard.stats.forEach((stat, index) => { stat.num = index === 2 ? ContractFormat.peso(data.metrics[index]) : String(data.metrics[index]); });
-    renderDashboardStats(AdminState.dashboard.stats);
-    if (document.getElementById('view-archived')?.classList.contains('active')) loadArchivedPatients();
+    if (has('week', 'pending')) appointmentScheduler.applySnapshot(data);
+    if (has('patients', 'contracts')) patientMgr.load(data);
+    if (has('records')) AdminState.records = data.records;
+    if (has('inventory')) {
+      AdminState.inventory = data.inventory.map(item => inventoryMgr.normalize(item));
+      inventoryMgr.apply();
+    }
+    if (has('contracts')) applyBraces(data);
+    if (has('payments')) paymentMgr.render(data);
+    if (has('notifications')) inbox.setItems(data.notifications);
+    if (has('logs')) notificationManager.renderLog(data);
+    if (has('reports')) { AdminState.reports = data.reports || AdminState.reports; renderReports(AdminState.reports); }
+    if (has('metrics')) {
+      AdminState.dashboard.stats.forEach((stat, index) => { stat.num = index === 2 ? ContractFormat.peso(data.metrics[index]) : String(data.metrics[index]); });
+      renderDashboardStats(AdminState.dashboard.stats);
+    }
+    if (has('patients') && document.getElementById('view-archived')?.classList.contains('active')) loadArchivedPatients();
   }
 });
+
+function restoreDashboardView() {
+  const view = window.location.hash.slice(1);
+  if (view === 'records') { switchView('patients'); return; }
+  if (Object.hasOwn(views, view)) switchView(view);
+}
+window.addEventListener('hashchange', restoreDashboardView);
+window.addEventListener('pageshow', restoreDashboardView);
+restoreDashboardView();

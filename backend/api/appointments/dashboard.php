@@ -3,6 +3,8 @@ require_once __DIR__ . '/../../autoload.php';
 require_once __DIR__ . '/../../config/headers.php';
 require_once __DIR__ . '/../../config/auth.php';
 require_role('receptionist', 'dentist');
+// Do not block this user's other requests while assembling a read-only snapshot.
+session_write_close();
 \ASDC\ApiResponse::method('GET');
 header('Cache-Control: no-store');
 $start = \ASDC\InputValidator::date($_GET['start'] ?? date('Y-m-d', strtotime('monday this week')));

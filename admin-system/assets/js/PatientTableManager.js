@@ -20,7 +20,6 @@ window.PatientTableManager = class PatientTableManager {
 
     this._editingPatient = null;
     this._deletingPatient = null;
-    this._detailCurrent  = null;
   }
 
   init () {
@@ -28,7 +27,6 @@ window.PatientTableManager = class PatientTableManager {
     this._bindMobileSearch();
     this._bindFilterChips();
     this._bindRowActions();
-    this._bindDetailModal();
     this._bindFormModal();
     this._bindDeleteModal();
   }
@@ -40,8 +38,13 @@ window.PatientTableManager = class PatientTableManager {
         apiFetch('../backend/api/patients/list.php'), apiFetch('../backend/api/contracts/contracts.php')
       ]);
       if (!Array.isArray(patients.patients) || !Array.isArray(contracts.contracts)) throw new Error('Invalid patient response.');
+      const activeContracts = new Map();
+      for (const contract of contracts.contracts) {
+        const id = Number(contract.patient_id);
+        if (!activeContracts.has(id) && ['Current', 'Overdue'].includes(contract.status)) activeContracts.set(id, contract);
+      }
       this.state.patients = patients.patients.map(p => {
-        const contract = contracts.contracts.find(c => Number(c.patient_id) === Number(p.patient_id) && ['Current', 'Overdue'].includes(c.status));
+        const contract = activeContracts.get(Number(p.patient_id));
         const name = p.first_name + ' ' + p.last_name;
         const active = Number(p.is_active) !== 0;
         return {
@@ -205,7 +208,7 @@ window.PatientTableManager = class PatientTableManager {
         <td>${escapeHtml(p.lastVisit)}</td>
         <td>${statusTag(p)}</td>
         <td><div class="row-actions">
-          <button class="icon-btn" data-action="view" data-id="${p.id}" aria-label="View ${escapeHtml(p.name)}">${eyeIcon}</button>
+          <a class="btn btn-outline btn-sm patient-view-btn" href="patient-chart.html?patient_id=${encodeURIComponent(p.pid)}">View Records</a>
           <button class="icon-btn" data-action="edit" data-id="${p.id}" aria-label="Edit ${escapeHtml(p.name)}">${pencilIcon}</button>
           <button class="icon-btn" data-action="delete" data-id="${p.id}" aria-label="Archive ${escapeHtml(p.name)}">${trashIcon}</button>
         </div></td>
@@ -219,37 +222,9 @@ window.PatientTableManager = class PatientTableManager {
       if (!btn) return;
       const patient = this.state.patients.find(p => p.id === btn.dataset.id);
       if (!patient) return;
-      if (btn.dataset.action === 'view')   this._openDetail(patient);
-      else if (btn.dataset.action === 'edit') this._openForm(patient);
+      if (btn.dataset.action === 'edit') this._openForm(patient);
       else if (btn.dataset.action === 'delete') this._openDelete(patient);
     });
-  }
-
-  /* ------------------------------------------------------------------
-   *  Private – detail modal
-   * ----------------------------------------------------------------*/
-
-  _bindDetailModal () {
-    this._detailModal = new Modal('detailModal');
-    if (!this._detailModal.modal) return;
-    this._detailModal.registerClose(document.getElementById('detailCancelBtn'));
-    this._detailModal.registerClose(document.getElementById('detailClose'));
-    document.getElementById('detailEditBtn')?.addEventListener('click', () => {
-      if (this._detailCurrent) this._openForm(this._detailCurrent);
-    });
-  }
-
-  _openDetail (p) {
-    this._detailCurrent = p;
-    if (!this._detailModal.modal) return;
-    document.getElementById('detailTitle').textContent = 'Patient Details';
-    document.getElementById('detailRows').innerHTML = [
-      ['Patient ID', p.id], ['Contract', p.contract || '-'], ['Phone', p.contact === '-' ? '-' : `<a class="phone-link" href="tel:${escapeHtml(p.contact.replace(/[^+0-9]/g, ''))}">${escapeHtml(p.contact)}</a>`],
-      ['Last Visit', p.lastVisit],
-      ['Status', `<span class="tag tag-${p.tag}">${p.status}</span>`]
-    ].map(([label, value]) => `<div class="row"><span>${label}</span><span>${value}</span></div>`).join('');
-    document.getElementById('detailEditBtn').hidden = true;
-    this._detailModal.open();
   }
 
   /* ------------------------------------------------------------------
