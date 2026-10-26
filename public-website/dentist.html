@@ -43,13 +43,7 @@
     <a href="/" class="logo"><img src="../shared/images/asdc logo.png" alt="Aromin-Sison Dental Clinic"></a>
     <ul class="nav-links">
       <li><a href="/">Home</a></li>
-      <li class="nav-drop">
-        <button class="nav-drop-trigger" aria-expanded="false" aria-haspopup="true">Our Story <i class="bi bi-arrow-down-right chevron"></i></button>
-        <div class="nav-drop-panel">
-          <a href="/about">About the Clinic</a>
-          <a href="/about#mission">Mission &amp; Vision</a>
-        </div>
-      </li>
+      <li><a href="/about">Our Story</a></li>
       <li><a href="/dentists" aria-current="page">Dentists</a></li>
       <li><a href="/services">Services</a></li>
       <li><a href="/gallery">Gallery</a></li>
@@ -73,13 +67,7 @@
   </button>
   <div class="mobile-menu-links">
     <a href="/">Home</a>
-    <details class="mobile-nav-group">
-      <summary>Our Story <i class="bi bi-arrow-down-right chevron"></i></summary>
-      <div class="mobile-nav-sub">
-        <a href="/about">About the Clinic</a>
-        <a href="/about#mission">Mission &amp; Vision</a>
-      </div>
-    </details>
+    <a href="/about">Our Story</a>
     <a href="/dentists">Dentists</a>
     <a href="/services">Services</a>
     <a href="/gallery">Gallery</a>
@@ -109,24 +97,10 @@
 <!-- ===== CLINICIANS =====
      Profiles are rendered from the DENTISTS array in assets/js/dentists.js.
      To add a clinician, add one object to that array: name, title, bio,
-     quote, expertise tags, credentials, and awards. The photo placeholder
+     expertise tags, credentials, and awards. The photo placeholder
      shows a monogram until a portrait photo is added. -->
 <section class="about-section dentist-profiles-section">
   <div class="wrap" id="dentistGrid"></div>
-</section>
-
-<!-- ===== PHILOSOPHY ===== -->
-<section class="about-section alt">
-  <div class="wrap">
-    <div class="section-head" style="margin-bottom:0;">
-      <div class="eyebrow" style="justify-content:center;">Clinic Philosophy</div>
-      <h2>Care that's explained,<br>never <em>rushed.</em></h2>
-    </div>
-    <p class="commitment-quote">
-      "Whether it's a routine cleaning or a full orthodontic plan, every patient at Aromin-Sison Dental Clinic gets the same thing: a clear explanation, an honest recommendation, and the time it takes to get it right."
-      <span>Dr. Kathrine Anne A. Sison &amp; Dr. Arsenia A. Aromin</span>
-    </p>
-  </div>
 </section>
 
 <!-- ===== CTA ===== -->
@@ -177,7 +151,7 @@
 <script src="assets/js/NavDropdownManager.js?v=1" defer></script>
 <script src="assets/js/ScrollReveal.js?v=1" defer></script>
 <script src="assets/js/main.js?v=8" defer></script>
-<script src="assets/js/dentists.js?v=2" defer></script>
+<script src="assets/js/dentists.js?v=2-no-quotes" defer></script>
 
 </body>
 </html>

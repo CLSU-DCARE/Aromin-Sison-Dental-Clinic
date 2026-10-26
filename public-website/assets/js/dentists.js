@@ -1,6 +1,6 @@
 // ---------- Dentist profiles (data-driven) ----------
 // Add a clinician by appending one object to DENTISTS: name, title, bio,
-// quote, expertise tags, credentials, and awards. Each profile uses a
+// expertise tags, credentials, and awards. Each profile uses a
 // portrait photo. Falls back to a monogram if no photo is provided.
 (function(){
   const DENTISTS = [
@@ -14,7 +14,6 @@
         'Dr. Kathrine Anne A. Sison joined the clinic as part of its second generation of clinicians, bringing a focus on orthodontics and cosmetic dentistry that has become central to the practice. From first consultation through every adjustment along the way, Dr. Sison manages braces and cosmetic treatment plans with the same unhurried approach the clinic was built on.',
         'Known among patients for a calm, detail-oriented chairside manner, Dr. Sison takes particular care with younger patients and first-time orthodontic cases, walking through each stage of treatment before it begins.'
       ],
-      quote: '"A smile is something people carry with them every day. I want every patient to feel confident about the plan we\'ve built together, not just the end result."',
       expertise: [
         'Orthodontics &amp; Braces',
         'Cosmetic Dentistry',
@@ -43,7 +42,6 @@
         'Dr. Arsenia A. Aromin founded Aromin-Sison Dental Clinic in 1985 with a simple goal: to make world-class dental care feel personal rather than clinical. Over four decades, that founding philosophy has shaped every part of how the clinic runs: from unhurried appointment scheduling to the way treatment plans are explained.',
         'Today, Dr. Aromin leads diagnostics and restorative treatment, with a particular focus on digital imaging and long-term oral health planning. Patients often describe the experience as feeling more like a conversation with a trusted advisor than a routine dental visit.'
       ],
-      quote: '"I\'ve always believed that if you take the time to explain what you see, patients make better decisions about their own health, and trust follows naturally."',
       expertise: [
         'Restorative Dentistry',
         'Digital Imaging &amp; Scanning',
@@ -78,7 +76,6 @@
         <div class="dentist-name">${d.name}</div>
         <div class="dentist-title">${d.title}</div>
         <div class="dentist-bio">${d.bio.map(p => `<p>${p}</p>`).join('')}</div>
-        <blockquote class="dentist-quote">${d.quote}</blockquote>
         <div class="dentist-block-label">Areas of Expertise</div>
         <div class="expertise-tags">${d.expertise.map(t => `<span class="expertise-tag">${t}</span>`).join('')}</div>
         <div class="dentist-block-label">Qualifications &amp; Certifications</div>
