@@ -73,7 +73,7 @@ async function scenario({ hostname = 'arominsisondental.vercel.app', role = 'rec
   assert.equal(archive.elements.get('view-payments').hidden, true);
   assert.equal(archive.elements.get('chartAppointmentHistory').hidden, false);
   assert(archive.elements.get('patientStatus').innerHTML.includes('Archived'));
-  assert.equal(archive.elements.get('chartBack').href, 'dashboard.html#archived');
+  assert.equal(archive.elements.get('chartBack').href, '/dashboard#archived');
   const local = await scenario({ hostname: 'localhost' });
   assert.equal(local.calls[0].options.credentials, 'same-origin');
   assert.equal(local.calls[0].url, '../backend/api/patients/details.php?patient_id=2');

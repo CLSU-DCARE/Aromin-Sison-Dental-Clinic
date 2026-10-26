@@ -141,7 +141,7 @@ function renderArchivedPatients(){
       <td>${escapeHtml(retained)}</td>
       <td>${escapeHtml(patient.archived_by_name || 'System')}</td>
       <td><div class="row-actions archive-actions">
-        <a class="btn btn-outline btn-sm archive-action-btn patient-view-btn" href="patient-chart.html?patient_id=${Number(patient.patient_id)}&amp;archived=1">View Record</a>
+        <a class="btn btn-outline btn-sm archive-action-btn patient-view-btn" href="/patient-chart?patient_id=${Number(patient.patient_id)}&amp;archived=1">View Record</a>
         <button class="btn btn-danger btn-sm archive-action-btn" data-archive-delete="${Number(patient.patient_id)}">Delete</button>
         <button class="btn btn-gold btn-sm archive-action-btn" data-archive-restore="${Number(patient.patient_id)}">Restore</button>
       </div></td>
@@ -562,7 +562,7 @@ if (archiveRecordsBtn) { archiveRecordsBtn.disabled = true; archiveRecordsBtn.ti
 initToastTriggers();
 initFullscreenToggle();
 initSidebar('asdc.receptionist.sidebar.collapsed');
-initLogout('../auth/login.html');
+initLogout('/login');
 
 // =====================================================================
 // DATA RENDERING

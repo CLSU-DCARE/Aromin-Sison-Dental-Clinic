@@ -28,7 +28,7 @@
     document.getElementById('patientBillingBody').innerHTML = filtered.map(item => `<tr>
       <td><div class="billing-patient"><span class="billing-avatar" aria-hidden="true">${esc(String(item.patient).trim().split(/\s+/).slice(0, 2).map(word => word[0]).join('').toUpperCase())}</span><div><strong>${esc(item.patient)}</strong><small>#P-${Number(item.patient_id)} <span aria-hidden="true">·</span> ${Number(item.accounts || 0)} billing ${Number(item.accounts) === 1 ? 'account' : 'accounts'}</small></div></div></td>
       <td class="billing-money">${peso(item.paid_amount)}</td><td class="billing-money ${Number(item.balance_amount) > 0 ? 'billing-outstanding' : 'billing-muted'}">${peso(item.balance_amount)}</td>
-      <td class="billing-row-action"><a class="btn btn-outline btn-sm patient-view-btn" href="${chart ? '' : '../admin-system/'}patient-chart.html?patient_id=${Number(item.patient_id)}#billing">View Billing <span aria-hidden="true">↗</span></a></td>
+      <td class="billing-row-action"><a class="btn btn-outline btn-sm patient-view-btn" href="/patient-chart?patient_id=${Number(item.patient_id)}#billing">View Billing <span aria-hidden="true">↗</span></a></td>
     </tr>`).join('') || '<tr><td colspan="4" class="billing-empty">No patients found. Try another name or filter.</td></tr>';
     message.textContent = `Showing ${filtered.length} of ${patients.length} patients`;
   }

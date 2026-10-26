@@ -208,7 +208,7 @@ window.PatientTableManager = class PatientTableManager {
         <td>${escapeHtml(p.lastVisit)}</td>
         <td>${statusTag(p)}</td>
         <td><div class="row-actions">
-          <a class="btn btn-outline btn-sm patient-view-btn" href="patient-chart.html?patient_id=${encodeURIComponent(p.pid)}">View Records</a>
+          <a class="btn btn-outline btn-sm patient-view-btn" href="/patient-chart?patient_id=${encodeURIComponent(p.pid)}">View Records</a>
           <button class="icon-btn" data-action="edit" data-id="${p.id}" aria-label="Edit ${escapeHtml(p.name)}">${pencilIcon}</button>
           <button class="icon-btn" data-action="delete" data-id="${p.id}" aria-label="Archive ${escapeHtml(p.name)}">${trashIcon}</button>
         </div></td>

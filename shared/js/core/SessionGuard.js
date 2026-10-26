@@ -17,7 +17,7 @@
 
   class SessionGuard {
     constructor() {
-      this._loginUrl = window.ASDC.Routing ? window.ASDC.Routing.getLoginUrl() : '../auth/login.html';
+      this._loginUrl = window.ASDC.Routing ? window.ASDC.Routing.getLoginUrl() : '/login';
       this._channel = null;
       this._user = null;          // who this page was built for
       this._verifying = null;     // a check that is running right now
@@ -117,9 +117,11 @@
     _pageRole() {
       const routing = window.ASDC.Routing;
       if (routing && routing.getRoleFromPath) return routing.getRoleFromPath(location.pathname);
-      if (location.pathname.includes('/patient-dashboard/')) return 'patient';
-      if (location.pathname.includes('/dentist-dashboard/')) return 'dentist';
-      if (location.pathname.includes('/admin-system/')) return 'staff';
+      // Fallback when the router is missing. Short addresses like /dashboard count too.
+      const path = location.pathname;
+      if (path.includes('/patient-dashboard')) return 'patient';
+      if (path.includes('/dentist-dashboard')) return 'dentist';
+      if (path.includes('/admin-system/') || /^\/(dashboard|patient-chart)\/?$/.test(path)) return 'staff';
       return null;
     }
 
@@ -301,7 +303,7 @@
           .toUpperCase();
       const roleLabel =
         user.role.charAt(0).toUpperCase() + user.role.slice(1);
-      const isPatient = location.pathname.includes('/patient-dashboard/');
+      const isPatient = location.pathname.includes('/patient-dashboard');
 
       const set = (id, value) => {
         const el = document.getElementById(id);
@@ -441,8 +443,8 @@
 
   // Role destinations used when the shared router is not available
   SessionGuard.prototype._roleDestinations = {
-    dentist: '../admin-system/dashboard.html',
-    receptionist: '../admin-system/dashboard.html',
+    dentist: '/dashboard',
+    receptionist: '/dashboard',
   };
 
   window.ASDC.SessionGuard = SessionGuard;

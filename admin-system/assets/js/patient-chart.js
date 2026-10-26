@@ -10,7 +10,7 @@
   document.getElementById('chartPageDescription').textContent = billingView ? 'Billing accounts and payment history for this patient.' : 'Patient details and appointment history for clinic staff.';
   if (billingView || archivedView) {
     const back = document.querySelector('.chart-back');
-    if (back) { back.href = archivedView ? 'dashboard.html#archived' : 'dashboard.html#payments'; back.innerHTML = '<i class="bi bi-arrow-left" aria-hidden="true"></i> ' + (archivedView ? 'Back to Archived Patients' : 'Back to Billing'); }
+    if (back) { back.href = archivedView ? '/dashboard#archived' : '/dashboard#payments'; back.innerHTML = '<i class="bi bi-arrow-left" aria-hidden="true"></i> ' + (archivedView ? 'Back to Archived Patients' : 'Back to Billing'); }
   }
 
   const esc = value => window.ASDC.HtmlHelpers.escapeHtml(String(value ?? ''));

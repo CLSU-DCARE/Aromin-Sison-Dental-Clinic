@@ -34,7 +34,7 @@
     const link = event.target.closest('a.patient-view-btn');
     if (!link || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey || link.target === '_blank') return;
     const url = new URL(link.href, location.href);
-    if (url.origin !== location.origin || !/\/admin-system\/patient-chart\.html$/.test(url.pathname)) return;
+    if (url.origin !== location.origin || !/^(?:\/admin-system\/patient-chart\.html|\/patient-chart)$/.test(url.pathname)) return;
     event.preventDefault();
     trigger = link;
     const path = url.pathname + url.search + url.hash;
@@ -44,7 +44,7 @@
 
   window.addEventListener('popstate', event => {
     const path = event.state?.patientChartPath;
-    if (typeof path === 'string' && /^\/(?:[^?#]*\/)?admin-system\/patient-chart\.html\?patient_id=\d+(?:&archived=1)?(?:#billing)?$/.test(path)) openChart(path);
+    if (typeof path === 'string' && /^(?:\/admin-system\/patient-chart\.html|\/patient-chart)\?patient_id=\d+(?:&archived=1)?(?:#billing)?$/.test(path)) openChart(path);
     else closeChart();
   });
 

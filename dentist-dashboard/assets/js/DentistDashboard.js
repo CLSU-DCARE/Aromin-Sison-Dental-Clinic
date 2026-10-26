@@ -90,7 +90,7 @@ if (typeof window !== 'undefined') !window.ASDC && (window.ASDC = {});
   DentistDashboard.prototype._initCore = function(){
     ASDC._toast.initTriggers();
     ASDC._sidebar.init('asdc.dentist.sidebar.collapsed');
-    ASDC._logout.init('../auth/login.html');
+    ASDC._logout.init('/login');
   };
 
   DentistDashboard.prototype._initNotifications = function(){
@@ -237,7 +237,7 @@ if (inboxEmpty) inboxEmpty.textContent = 'Loading notifications...';
         '<td>' + ASDC.HtmlHelpers.escapeHtml(ASDC.HtmlHelpers.formatDateTime(patient.archived_at || '')) + '</td>' +
         '<td>' + ASDC.HtmlHelpers.escapeHtml(retained) + '</td>' +
         '<td>' + ASDC.HtmlHelpers.escapeHtml(patient.archived_by_name || 'System') + '</td>' +
-        '<td><a class="btn btn-outline btn-sm patient-view-btn" href="../admin-system/patient-chart.html?patient_id=' + Number(patient.patient_id) + '&amp;archived=1">View Record</a></td>' +
+        '<td><a class="btn btn-outline btn-sm patient-view-btn" href="/patient-chart?patient_id=' + Number(patient.patient_id) + '&amp;archived=1">View Record</a></td>' +
       '</tr>';
     }).join('');
   };

@@ -37,3 +37,25 @@
   # this header themselves because Apache sees their upstream HTTP connection.
   Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains" "expr=%{HTTPS} == 'on'"
 </IfModule>
+
+# ---------------------------------------------------------------
+# 4) Short page addresses (same as the ones set in vercel.json).
+#    For example /login opens auth/login.html. The old file addresses still work.
+# ---------------------------------------------------------------
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteRule ^about/?$ public-website/about.html [L]
+  RewriteRule ^dentists/?$ public-website/dentist.html [L]
+  RewriteRule ^services/?$ public-website/services.html [L]
+  RewriteRule ^gallery/?$ public-website/gallery.html [L]
+  RewriteRule ^login/?$ auth/login.html [L]
+  RewriteRule ^admin-login/?$ auth/admin-login.html [L]
+  RewriteRule ^forgot-password/?$ auth/forgot-password.html [L]
+  RewriteRule ^reset-password/?$ auth/reset-password.html [L]
+  RewriteRule ^patient-login/?$ auth/patient-login.html [L]
+  RewriteRule ^patient-signup/?$ auth/patient-signup.html [L]
+  RewriteRule ^dashboard/?$ admin-system/dashboard.html [L]
+  RewriteRule ^patient-chart/?$ admin-system/patient-chart.html [L]
+  RewriteRule ^patient-dashboard/?$ patient-dashboard/dashboard.html [L]
+  RewriteRule ^dentist-dashboard/?$ dentist-dashboard/dashboard.html [L]
+</IfModule>

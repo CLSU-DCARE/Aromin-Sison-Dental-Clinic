@@ -325,7 +325,7 @@ class AuthService
                 return ['success' => false, 'error' => 'Unable to process the request right now.', 'code' => 500];
             }
 
-            $resetUrl = $baseUrl . '/auth/reset-password.html?token=' . rawurlencode($token);
+            $resetUrl = $baseUrl . '/reset-password?token=' . rawurlencode($token);
             $body = "Dear {$user['full_name']},\n\n"
                 . "We received a request to reset the password for your account.\n\n"
                 . "To continue, please click the link below. You will be redirected to a secure page where you can verify your account and set a new password.\n\n"

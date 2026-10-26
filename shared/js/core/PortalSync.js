@@ -17,7 +17,7 @@ window.ASDC.startPortalSync = function ({ start = () => '', apply }) {
     applySnapshot: (data, updated, changedKeys) => apply(data, changedKeys),
     onStatus: status => {
       label.textContent = { live: 'Updates automatically', reconnecting: 'Showing last update. Reconnecting…', unavailable: 'Unable to load clinic records. Retrying…', 'signed-out': 'Session ended. Please sign in.' }[status];
-      if (status === 'signed-out') window.location.replace('../auth/login.html');
+      if (status === 'signed-out') window.location.replace('/login');
     }
   });
   let requestedRefresh = null;

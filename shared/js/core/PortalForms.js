@@ -134,7 +134,7 @@
   ASDC.confirmAction = confirmAction;
   ASDC.promptText = promptText;
   ASDC.openProfileForm = patient => {
-    const receptionist = window.location.pathname.includes('/admin-system/');
+    const receptionist = /\/admin-system\/|^\/(dashboard|patient-chart)\/?$/.test(window.location.pathname);
     const statusField = receptionist
       ? field('Patient status', `<select name="is_active"><option value="1" ${Number(patient.is_active) !== 0 ? 'selected' : ''}>Active</option><option value="0" ${Number(patient.is_active) === 0 ? 'selected' : ''}>Inactive</option></select>`)
       : '';

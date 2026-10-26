@@ -64,7 +64,7 @@ class Mailer
     public static function sendEmail(string $to, string $subject, string $body): array
     {
         self::$calls++;
-        if (!str_contains($body, '/auth/reset-password.html?token=')) throw new \RuntimeException('Reset link missing.');
+        if (!str_contains($body, '/reset-password?token=')) throw new \RuntimeException('Reset link missing.');
         return self::$succeeds ? ['ok' => true] : ['ok' => false, 'error' => 'Email delivery failed: Gmail rejected the address or app password.'];
     }
 }
