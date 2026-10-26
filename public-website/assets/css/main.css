@@ -925,6 +925,10 @@ header.scrolled .nav-toggle:hover{border-color:var(--gold);background:var(--ivor
   color:rgba(18,32,28,0.65);margin-bottom:4px;
 }
 .visit-row .val{font-size:15.5px;color:var(--dark);line-height:1.55;}
+/* Let long text (like the email) wrap, so the card does not grow wider than a small phone screen */
+.visit-grid > *{min-width:0;}
+.visit-row > div{min-width:0;}
+.visit-row .val{overflow-wrap:anywhere;}
 .visit-actions{display:flex;gap:14px;flex-wrap:wrap;margin-top:auto;padding-top:8px;}
 .visit-map{
   border-radius:var(--r-lg);
