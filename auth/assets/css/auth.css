@@ -370,3 +370,16 @@ body.modal-open{overflow:hidden;}
   .modal-actions{flex-direction:column-reverse;gap:10px;}
   .modal-actions .btn{width:100%;}
 }
+
+/* ===== Responsive fixes: bigger tap areas, same look ===== */
+.checkbox-inline input{flex-shrink:0;}
+@media (max-width:1024px),(pointer:coarse){
+  .checkbox-inline{min-height:44px;}
+  .signin-help summary{padding:12px 0;margin:-12px 0;}
+  .signin-help[open] summary{margin-bottom:-2px;}
+  .link-btn{display:inline-block;padding:10px 0;margin:-10px 0;}
+}
+@media (max-height:520px) and (orientation:landscape){
+  /* Phone turned sideways: keep the brand panel short so the form is reachable sooner */
+  .auth-aside{min-height:0;}
+}

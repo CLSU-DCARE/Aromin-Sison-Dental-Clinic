@@ -1260,3 +1260,42 @@ body.sidebar-open{overflow:hidden;}
   border-color:var(--gold, #9C8B3E);
   box-shadow:0 0 0 2px rgba(156,139,62,.15);
 }
+
+/* ===== Responsive fixes (found by testing every size, portrait and landscape) ===== */
+
+/* Short screens (phones turned sideways, small laptops): the menu list scrolls
+   by itself instead of pushing into the user box at the bottom of the sidebar. */
+.side-nav{min-height:0;}
+
+/* Phones: long page titles wrap onto a second line instead of being cut off with "..." */
+@media (max-width:640px){
+  .topbar h1{white-space:normal;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.15;}
+  .topbar h1{font-size:15.5px;}
+}
+@media (max-width:380px){
+  .topbar h1{font-size:14.5px;}
+}
+
+/* Search boxes: tapping anywhere in the box starts typing (padding + negative margin = same layout) */
+.search-box input,.billing-search input{padding-top:11px;padding-bottom:11px;margin-top:-11px;margin-bottom:-11px;}
+
+/* Touch screens: small action buttons in the schedule get a more comfortable height */
+@media (pointer:coarse){
+  .appointment-card-actions .btn{min-height:36px;}
+}
+
+/* Tiny labels become a little larger on phones so they stay readable */
+@media (max-width:640px){
+  .crumb{font-size:11px;}
+  .nav-group-label{font-size:11px;}
+  .brand-name{font-size:11px;}
+  .brand-sub{font-size:10.5px;}
+}
+
+/* Tablets and small laptops (about 960 to 1180 wide): the top bar was so crowded that the page title
+   shrank to "D...". The public-site button shows only its icon and the search box is a little
+   narrower, so the title has room. */
+@media (min-width:961px) and (max-width:1180px){
+  .topbar-right .btn .btn-text{display:none;}
+  .search-box{width:170px;}
+}

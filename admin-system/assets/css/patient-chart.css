@@ -53,3 +53,21 @@
 .chart-appointments-table tr:last-child td{border-bottom:0;}
 .chart-appointments-table .tag{text-transform:capitalize;max-width:100%;white-space:normal;}
 @media(max-width:760px){.chart-shell{width:min(100% - 24px,1120px);padding-top:18px}.chart-profile{align-items:flex-start;flex-direction:column;padding:20px}.chart-contact-grid{width:100%;display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));padding-top:15px;border-top:1px solid var(--line,#e5e1d8)}.chart-history{padding:18px}.chart-section-heading{align-items:flex-start;flex-direction:column}.chart-search{width:100%}.chart-entry-top{flex-direction:column;gap:7px}.chart-entry-top>span{text-align:left}.chart-stats{flex-wrap:wrap}}
+
+/* ===== Responsive fixes: long names and emails wrap instead of running out of the card ===== */
+@media (max-width:760px){
+  .chart-profile{overflow:hidden;}
+  .chart-profile-main,.chart-profile-main>div{min-width:0;}
+  .chart-name-line h2{overflow-wrap:anywhere;}
+  .chart-contact-grid{min-width:0;}
+  .chart-contact-grid>div{min-width:0;}
+  .chart-contact-grid span,.chart-contact-grid a{overflow-wrap:anywhere;}
+}
+@media (max-width:760px),(pointer:coarse){
+  .chart-contact-grid small{font-size:11px;}
+  .chart-appointments-table th{font-size:11px;}
+  .chart-contact-grid .phone-link{display:inline-block;padding:11px 0;margin:-11px 0;}
+}
+@media(min-width:561px) and (max-width:760px){
+  .chart-contact-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
+}
